@@ -2,7 +2,7 @@
 
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 // --- 1. GET TECHNICIANS LIST ---
 export async function getTechnicians() {
