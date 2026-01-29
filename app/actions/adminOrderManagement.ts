@@ -1,6 +1,6 @@
 'use server';
 
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
 import { OrderStatus } from '@prisma/client';
