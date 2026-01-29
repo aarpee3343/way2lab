@@ -37,3 +37,18 @@ body {
 .animate-scroll:hover {
   animation-play-state: paused;
 }
+
+@keyframes scroll-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.animate-scroll-progress {
+  animation: scroll-progress linear;
+  animation-timeline: scroll();
+  transform-origin: left;
+}

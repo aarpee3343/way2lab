@@ -244,18 +244,6 @@ export default async function SingleBlogPage({ params }: Props) {
           </div>
         </div>
       </article>
-
-      {/* Global animation styles */}
-      <style jsx global>{`
-        @keyframes scroll-progress {
-          from { transform: scaleX(0); }
-          to { transform: scaleX(1); }
-        }
-        .animate-scroll-progress {
-          animation: scroll-progress linear;
-          animation-timeline: scroll();
-        }
-      `}</style>
     </div>
   );
 }
