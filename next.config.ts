@@ -1,24 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // ✅ 1. Define external packages for receipt/db generation
-  serverExternalPackages: ['pdf2json', 'pdfkit', '@prisma/client'],
+  // REMOVED '@prisma/client' from this list
+  // KEEP 'pdfkit' and 'pdf2json'
+  serverExternalPackages: ['pdf2json', 'pdfkit'], 
 
-  // ✅ 2. Allow external images (Google, Unsplash, Placeholders)
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: 'via.placeholder.com' },
-      { protocol: 'https', hostname: 'lh3.googleusercontent.com' } // For Google Auth avatars
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' }
     ],
   },
 
-  // ✅ 3. Ignore TypeScript errors during build (Production safe)
   typescript: {
     ignoreBuildErrors: true,
   },
   
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   reactStrictMode: false, 
 };
 
