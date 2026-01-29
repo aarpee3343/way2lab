@@ -1,10 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, User, Clock, Share2, HeartPulse, Stethoscope, BookOpen } from 'lucide-react';
 import { Metadata } from 'next';
-
-// Use a local prisma instance or import from lib/db
 import { prisma } from '@/lib/db';
 
 type Props = {
