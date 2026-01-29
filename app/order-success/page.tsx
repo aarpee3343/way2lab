@@ -67,7 +67,7 @@ function SuccessContent() {
 
       try {
         const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/orders/${orderId}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/order/${orderId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

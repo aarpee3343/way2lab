@@ -277,7 +277,7 @@ export default function ConfirmOrderPage() {
           <Row label="MRP Total" value={mrpTotal} />
 
           {testDiscount > 0 && (
-            <Row label="Test Discount" value={-testDiscount} />
+            <Row label="WayToLab Discount" value={-testDiscount} />
           )}
 
           {couponDiscount > 0 && (
