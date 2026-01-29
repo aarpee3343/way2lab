@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // REMOVED '@prisma/client' from this list
-  // KEEP 'pdfkit' and 'pdf2json'
-  serverExternalPackages: ['pdf2json', 'pdfkit'], 
+  // ✅ CRITICAL: Prisma MUST be here for Server Actions to work
+  serverExternalPackages: ['@prisma/client', 'pdf2json', 'pdfkit'], 
 
   images: {
     remotePatterns: [
