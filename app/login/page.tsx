@@ -16,7 +16,7 @@ function LoginContent() {
 
   // State
   const [step, setStep] = useState<'INPUT' | 'PASSWORD' | 'OTP' | 'REGISTER'>('INPUT');
-  const [identifier, setIdentifier] = useState(''); // Email or Phone
+  const [identifier, setIdentifier] = useState(''); 
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);

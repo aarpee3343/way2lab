@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { sendSMS } from '@/lib/sms'; // ✅ Importing your new reusable helper
+import { sendSMS } from '@/lib/sms'; 
 
 export async function POST(req: Request) {
   try {

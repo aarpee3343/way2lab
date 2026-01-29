@@ -22,52 +22,52 @@ export type SMSType =
 const TEMPLATES: Record<SMSType, { id: string; format: (...args: string[]) => string }> = {
   
   OTP: {
-    id: "170717691709475710091",
+    id: "1707176917094757100",
     format: (otp) => `Your OTP is ${otp}. Use it to verify your mobile number on WayToLab. Valid for 10 minutes.`
   },
 
   ORDER_PLACED: {
-    id: "170717691712675066486",
+    id: "1707176917126750664",
     format: (orderId) => `Your WayToLab order ${orderId} is placed successfully. Our team will contact you shortly.`
   },
 
   HOME_COLLECTION_SCHEDULED: {
-    id: "170717691714604063074",
+    id: "1707176917146040630",
     format: (orderId, date) => `WayToLab home sample collection for order ${orderId} is scheduled on ${date}.`
   },
 
   CENTER_VISIT_CONFIRMED: {
-    id: "170717691715352502481",
+    id: "1707176917153525024",
     format: (orderId) => `Your WayToLab center visit for order ${orderId} is confirmed. Please carry ID proof.`
   },
 
   SAMPLE_COLLECTED: {
-    id: "170717691716682930987",
+    id: "1707176917166829309",
     format: (orderId) => `Sample for your WayToLab order ${orderId} has been collected. Reports will be shared soon.`
   },
 
   REPORT_UPLOADED: {
-    id: "170717691717349371579",
+    id: "1707176917173493715",
     format: (orderId) => `Report for your WayToLab order ${orderId} is uploaded. Login to view and download.`
   },
 
   COLLECTION_FAILED: {
-    id: "170717691718662817675",
+    id: "1707176917186628176",
     format: (orderId) => `WayToLab could not collect the sample for order ${orderId}. Please reschedule.`
   },
 
   REMINDER: {
-    id: "170717691720138409886",
+    id: "1707176917201384098",
     format: (orderId) => `Reminder from WayToLab Sample collection today for order ${orderId}. Please be available.`
   },
 
   PAYMENT_PENDING: {
-    id: "170717691720989288277",
+    id: "1707176917209892882",
     format: (orderId) => `Payment pending for your WayToLab order ${orderId}. Complete payment to proceed.`
   },
 
   REFUND_INITIATED: {
-    id: "170717691721679798984",
+    id: "1707176917216797989",
     format: (orderId) => `Refund for your WayToLab order ${orderId} has been initiated. Amount will reflect soon.`
   }
 };
