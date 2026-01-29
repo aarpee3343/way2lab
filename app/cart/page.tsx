@@ -108,7 +108,7 @@ const totalDiscountPercent =
 
     try {
       const res = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/search/coupon/validate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/search/coupons/validate`,
         {
           code: codeToApply,
           cartTotal: totalSelling,
