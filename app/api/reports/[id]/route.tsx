@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { decryptBuffer } from '@/lib/crypto';
 import { downloadEncryptedFile } from '@/lib/gcs';
 import { cookies } from 'next/headers';

@@ -1,5 +1,5 @@
 // frontend/lib/aiService.ts
-import prisma from '@/lib/prisma'; // 👈 Ensure this path matches your prisma client instance
+import { prisma } from '@/lib/db';
 import { extractTextFromPdf } from './pdfText';
 import { generateReportSummaryFromPdf } from './aiReportSummary';
 

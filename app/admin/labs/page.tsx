@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import prisma from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { deleteLabAction } from '@/app/actions/adminLabActions';
 import { Edit, Plus, Building2, MapPin } from 'lucide-react';
 import DeleteRowButton from '@/components/admin/DeleteRowButton';
