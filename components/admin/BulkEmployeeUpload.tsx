@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Papa from 'papaparse';
-import { bulkUploadEmployeesAction } from '@/app/actions/adminCorporateActions';
+import { uploadCorporateEmployees } from '@/app/actions/adminCorporateActions';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -37,7 +37,7 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
           return;
         }
         
-        const res = await bulkUploadEmployeesAction(corporateId, cleanData);
+        const res = await uploadCorporateEmployees(corporateId, cleanData);
         setUploading(false);
         
         if (res.success) {
