@@ -99,11 +99,11 @@ export default function Header() {
                 className="h-10 w-auto object-contain transition-transform group-hover:scale-105 duration-300" 
               />
               {/* Active pulse indicator */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-75" />
+              {/* <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-75" /> */}
             </div>
             <div className="hidden md:flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">WayToLab</span>
-              <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest leading-none">Healthcare</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">Waytolab</span>
+              <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest leading-none mt-2">Healthcare</span>
             </div>
           </Link>
 
