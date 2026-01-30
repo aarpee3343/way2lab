@@ -620,25 +620,34 @@ model OrderActivity {
 
 model Corporate {
   id            Int      @id @default(autoincrement())
-  companyName   String   @map("company_name")
-  domain        String?
-  
-  // Main Contact / Billing Info
-  contactPerson String   @map("contact_person")
+  companyName   String
+  contactPerson String
+  email         String   @unique
   phone         String
-  address       String?
-  logo          String?
+  password      String
   
-  isActive      Boolean  @default(true) @map("is_active")
-  createdAt     DateTime @default(now()) @map("created_at")
+  // Address Fields
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  
+  // Legal & Stats
+  panNumber     String?
+  gstin         String?
+  employeeCount Int      @default(0)
+  
+  // Logic
+  domains       String[] // e.g. ["@google.com", "@abc.inc"]
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   // Relations
-  users         CorporateUser[]
-  employees     Customer[]      @relation("CorporateEmployees")
-  packages      Package[]
+  employees     Customer[]        @relation("CorporateEmployees")
   tickets       Ticket[]
-
-  @@map("corporates")
+  
+  // ✅ Link to Services (Packages/Coupons) with Validity Dates
+  services      CorporateService[] 
 }
 
 model CorporateUser {

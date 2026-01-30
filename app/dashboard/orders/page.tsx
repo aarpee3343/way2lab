@@ -179,7 +179,7 @@ export default function OrdersPage() {
 
                     {order.status === 'COMPLETED' && (
                       <a
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/receipt?token=${Cookies.get(
+                        href={`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/receipt?token=${Cookies.get(
                           'token'
                         )}`}
                         target="_blank"

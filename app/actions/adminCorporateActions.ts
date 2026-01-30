@@ -1,194 +1,175 @@
 'use server';
 
-import { prisma } from '@/lib/db';
+import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 
-/* =====================================================
-   1. CREATE NEW CORPORATE + SUPER ADMIN USER
-===================================================== */
+// --- 1. GET DASHBOARD STATS ---
+export async function getCorporateDashboardStats() {
+  const [total, recent] = await Promise.all([
+    prisma.corporate.count(),
+    prisma.corporate.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: { _count: { select: { employees: true } } }
+    })
+  ]);
+  return { total, recent };
+}
+
+// --- 2. CREATE CORPORATE ---
 export async function createCorporateAction(data: any) {
   try {
     const hashedPassword = await bcrypt.hash(data.password, 10);
-
-    await prisma.$transaction(async (tx) => {
-      // Create Corporate
-      const corp = await tx.corporate.create({
-        data: {
-          companyName: data.companyName,
-          domain: data.domain,
-          contactPerson: data.contactPerson,
-          phone: data.phone,
-          address: data.address,
-        },
-      });
-
-      // Create Super Admin User
-      await tx.corporateUser.create({
-        data: {
-          corporateId: corp.id,
-          name: data.contactPerson,
-          email: data.email,
-          password: hashedPassword,
-          role: 'SUPER_ADMIN',
-        },
-      });
+    
+    const corp = await prisma.corporate.create({
+      data: {
+        companyName: data.companyName,
+        contactPerson: data.contactPerson || 'Admin',
+        email: data.email,
+        phone: data.phone,
+        password: hashedPassword,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        pincode: data.pincode,
+        panNumber: data.panNumber,
+        gstin: data.gstin,
+        employeeCount: Number(data.employeeCount) || 0
+      }
     });
 
-    revalidatePath('/admin/corporates');
-    return { success: true };
-  } catch (error) {
-    console.error('Create Corporate Error:', error);
-    return { success: false, error: 'Failed to create corporate' };
+    return { success: true, corporateId: corp.id };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: "Failed to create corporate. Email might be duplicate." };
   }
 }
 
-/* =====================================================
-   2. BULK UPLOAD EMPLOYEES (CSV)
-===================================================== */
-export async function bulkUploadEmployeesAction(
-  corporateId: number,
-  employees: any[]
-) {
+// --- 3. FETCH SINGLE CORPORATE DETAILS ---
+export async function getCorporateDetails(id: number) {
+  return await prisma.corporate.findUnique({
+    where: { id },
+    include: {
+      _count: { select: { employees: true } },
+      employees: { take: 50, orderBy: { createdAt: 'desc' } }, // Recent 50 employees
+      services: {
+        include: { package: true, coupon: true },
+        where: { isActive: true }
+      }
+    }
+  });
+}
+
+// --- 4. MAP DOMAIN & UPDATE USERS ---
+export async function mapDomainAction(corporateId: number, domain: string) {
   try {
-    let successCount = 0;
-    let failCount = 0;
+    if (!domain.startsWith('@')) domain = '@' + domain;
+
+    // 1. Add domain to corporate
+    const corp = await prisma.corporate.findUnique({ where: { id: corporateId } });
+    const currentDomains = corp?.domains || [];
+    if (currentDomains.includes(domain)) return { success: false, error: "Domain already mapped" };
+
+    await prisma.corporate.update({
+      where: { id: corporateId },
+      data: { domains: { push: domain } }
+    });
+
+    // 2. Find existing users with this email domain and map them
+    // Note: Prisma 'contains' is simplest here
+    const updateCount = await prisma.customer.updateMany({
+      where: { 
+        email: { endsWith: domain },
+        corporateId: null // Only update unmapped users
+      },
+      data: { corporateId }
+    });
+
+    revalidatePath(`/admin/corporates/${corporateId}`);
+    return { success: true, count: updateCount.count };
+  } catch (e) {
+    return { success: false, error: "Failed to map domain" };
+  }
+}
+
+// --- 5. BULK UPLOAD EMPLOYEES (Smart Check) ---
+export async function uploadCorporateEmployees(corporateId: number, employees: any[]) {
+  try {
+    let mapped = 0;
+    let created = 0;
 
     for (const emp of employees) {
-      if (!emp.email || !emp.phone || !emp.name) {
-        failCount++;
-        continue;
-      }
+      if (!emp.phone && !emp.email) continue;
 
-      const existingCustomer = await prisma.customer.findFirst({
+      // Check existence
+      const existing = await prisma.customer.findFirst({
         where: {
-          OR: [{ email: emp.email }, { phone: emp.phone }],
-        },
+          OR: [
+            { phone: emp.phone },
+            { email: emp.email }
+          ]
+        }
       });
 
-      if (existingCustomer) {
-        // Link existing customer to corporate
+      if (existing) {
+        // Map existing
         await prisma.customer.update({
-          where: { id: existingCustomer.id },
-          data: {
-            corporateId,
-            employeeId: emp.employeeId,
-            department: emp.department,
-            location: emp.location,
-          },
+          where: { id: existing.id },
+          data: { corporateId, employeeId: emp.employeeId }
         });
+        mapped++;
       } else {
-        // Create new customer
-        const randomPass = Math.random().toString(36).slice(-8);
-        const hashedPassword = await bcrypt.hash(randomPass, 10);
-
+        // Create new
+        const hashedPassword = await bcrypt.hash("Welcome123", 10);
         await prisma.customer.create({
           data: {
             name: emp.name,
             email: emp.email,
             phone: emp.phone,
             password: hashedPassword,
-            corporateId,
+            dateOfBirth: emp.dob ? new Date(emp.dob) : null,
+            gender: emp.gender,
             employeeId: emp.employeeId,
-            department: emp.department,
-            location: emp.location,
-            isActive: true,
-          },
+            corporateId,
+            isActive: true
+          }
         });
+        created++;
       }
-
-      successCount++;
     }
-
     revalidatePath(`/admin/corporates/${corporateId}`);
-    return {
-      success: true,
-      stats: { successCount, failCount },
-    };
-  } catch (error) {
-    console.error('Bulk Upload Error:', error);
-    return { success: false, error: 'Bulk upload failed' };
+    return { success: true, stats: { mapped, created } };
+  } catch (e) {
+    console.error(e);
+    return { success: false, error: "Processing failed" };
   }
 }
 
-/* =====================================================
-   3. ASSIGN PACKAGE TO EMPLOYEES
-===================================================== */
-export async function assignPackageAction(
-  corporateId: number,
-  packageId: number,
-  employeeIds: number[]
-) {
+// --- 6. ASSIGN SERVICES (Time Bound) ---
+export async function assignCorporateService(data: any) {
   try {
-    const pkg = await prisma.package.findUnique({
-      where: { id: packageId },
+    await prisma.corporateService.create({
+      data: {
+        corporateId: Number(data.corporateId),
+        packageId: data.type === 'PACKAGE' ? Number(data.itemId) : null,
+        couponId: data.type === 'COUPON' ? Number(data.itemId) : null,
+        validFrom: new Date(data.validFrom),
+        validTill: new Date(data.validTill),
+      }
     });
-
-    if (!pkg) {
-      return { success: false, error: 'Package not found' };
-    }
-
-    const assignments = employeeIds.map((customerId) => ({
-      customerId,
-      packageId,
-      paidBy: pkg.paymentType || 'USER_PAYS',
-      status: 'ASSIGNED',
-    }));
-
-    await prisma.employeePackage.createMany({
-      data: assignments,
-      skipDuplicates: true,
-    });
-
-    revalidatePath(`/admin/corporates/${corporateId}`);
+    revalidatePath(`/admin/corporates/${data.corporateId}`);
     return { success: true };
-  } catch (error) {
-    console.error('Assign Package Error:', error);
-    return { success: false, error: 'Assignment failed' };
+  } catch (e) {
+    return { success: false, error: "Failed to assign service" };
   }
 }
 
-/* =====================================================
-   4. GET ALL CORPORATES (LIST PAGE)
-===================================================== */
-export async function getCorporates() {
-  const corporates = await prisma.corporate.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: {
-      _count: {
-        select: {
-          employees: true,
-          packages: true,
-        },
-      },
-    },
-  });
-
-  return corporates;
-}
-
-/* =====================================================
-   5. GET CORPORATE DETAILS (DETAIL PAGE)
-===================================================== */
-export async function getCorporateById(id: number) {
-  const corporate = await prisma.corporate.findUnique({
-    where: { id },
-    include: {
-      employees: {
-        orderBy: { id: 'desc' },
-        take: 100, // pagination recommended later
-      },
-      packages: true,
-      users: true, // corporate admins / sub-admins
-      _count: {
-        select: {
-          employees: true,
-          packages: true,
-          tickets: true,
-        },
-      },
-    },
-  });
-
-  return corporate;
+// --- 7. GET ALL PACKAGES & COUPONS (For Dropdown) ---
+export async function getAdminInventory() {
+  const [packages, coupons] = await Promise.all([
+    prisma.package.findMany({ where: { isActive: true }, select: { id: true, packageName: true } }),
+    prisma.coupon.findMany({ where: { isActive: true }, select: { id: true, code: true } })
+  ]);
+  return { packages, coupons };
 }
