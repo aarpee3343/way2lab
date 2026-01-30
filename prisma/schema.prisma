@@ -341,6 +341,7 @@ model Package {
   isCorporate        Boolean      @default(false) @map("is_corporate")
   corporateId        Int?         @map("corporate_id")
   paymentType        PaymentType? @default(USER_PAYS) @map("payment_type")
+  corporateServices  CorporateService[]
 
   // Relations
   corporate           Corporate?        @relation(fields: [corporateId], references: [id])
@@ -445,6 +446,7 @@ model Coupon {
   specialties       Specialty[] @relation("SpecialtyCoupons")
   orders            Order[]
   couponUsage       CouponUsage[]
+  corporateServices CorporateService[]
 
   @@map("coupons")
 }
@@ -638,33 +640,57 @@ model Corporate {
   employeeCount Int      @default(0)
   
   // Logic
-  domains       String[] // e.g. ["@google.com", "@abc.inc"]
+  domains       String[] 
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
 
   // Relations
   employees     Customer[]        @relation("CorporateEmployees")
   tickets       Ticket[]
-  
-  // ✅ Link to Services (Packages/Coupons) with Validity Dates
+  users         CorporateUser[] 
+  packages      Package[]
   services      CorporateService[] 
+
+  @@map("corporates")
+}
+
+model CorporateService {
+  id            Int       @id @default(autoincrement())
+  corporateId   Int
+  
+  // Can be a Package OR a Coupon
+  packageId     Int?
+  couponId      Int?
+  
+  // Validity Range
+  validFrom     DateTime
+  validTill     DateTime
+  
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+
+  // Relations
+  corporate     Corporate @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  package       Package?  @relation(fields: [packageId], references: [id])
+  coupon        Coupon?   @relation(fields: [couponId], references: [id])
+
+  @@map("corporate_services")
 }
 
 model CorporateUser {
-  id             Int           @id @default(autoincrement())
-  corporateId    Int           @map("corporate_id")
-  name           String
-  email          String        @unique
-  password       String
-  role           CorporateRole @default(SUPER_ADMIN)
+  id            Int           @id @default(autoincrement())
+  corporateId   Int
+  // This relation expects 'users' to exist on Corporate model (Fixed in Step 1)
+  corporate     Corporate     @relation(fields: [corporateId], references: [id], onDelete: Cascade)
   
-  // Access Scope
-  accessDept     String?       @map("access_dept")
-  accessLocation String?       @map("access_location")
-  createdAt      DateTime      @default(now()) @map("created_at")
-
-  // Relations
-  corporate      Corporate     @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  name          String
+  email         String        @unique 
+  password      String
+  role          CorporateRole @default(SUPER_ADMIN)
+  
+  accessDept    String?       
+  accessLocation String?      
+  createdAt     DateTime      @default(now())
 
   @@map("corporate_users")
 }
