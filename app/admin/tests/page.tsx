@@ -1,3 +1,4 @@
+// app/admin/tests/page.tsx
 import Link from 'next/link';
 import { getTestStats, getTests, deleteTestAction } from '@/app/actions/adminInventoryActions';
 import { Plus, Search, FlaskConical, CheckCircle2, Tags, Stethoscope, Edit, Activity, ArrowUpRight } from 'lucide-react';
@@ -8,99 +9,99 @@ export default async function TestsPage() {
   const tests = await getTests();
 
   return (
-    <div className="space-y-8">
+    <div className="admin-space-y">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Test Inventory</h1>
-          <p className="text-slate-500 mt-1">Manage global catalog of diagnostic tests</p>
+          <h1 className="admin-page-title">Test Inventory</h1>
+          <p className="admin-page-subtitle">Manage global catalog of diagnostic tests</p>
         </div>
-        <Link href="/admin/tests/add" className="bg-slate-900 text-white px-6 py-3 rounded-2xl font-bold shadow-xl shadow-slate-200 hover:bg-black transition-all flex items-center gap-2">
+        <Link href="/admin/tests/add" className="admin-btn-primary">
           <Plus size={20} /> Add New Test
         </Link>
       </div>
 
       {/* Modern Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="admin-stat-grid">
         {[
-          { label: 'Total Tests', val: stats.total, icon: FlaskConical, color: 'text-blue-600', bg: 'bg-blue-50' },
-          { label: 'Active', val: stats.active, icon: Activity, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-          { label: 'Categories', val: stats.categories, icon: Tags, color: 'text-purple-600', bg: 'bg-purple-50' },
-          { label: 'Specialties', val: stats.specialties, icon: Stethoscope, color: 'text-amber-600', bg: 'bg-amber-50' },
+          { label: 'Total Tests', val: stats.total, icon: FlaskConical, color: 'bg-blue-500' },
+          { label: 'Active', val: stats.active, icon: Activity, color: 'bg-emerald-500' },
+          { label: 'Categories', val: stats.categories, icon: Tags, color: 'bg-purple-500' },
+          { label: 'Specialties', val: stats.specialties, icon: Stethoscope, color: 'bg-amber-500' },
         ].map((s, i) => (
-          <div key={i} className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
+          <div key={i} className="admin-stat-card">
             <div className="flex justify-between items-start mb-4">
-              <div className={`w-12 h-12 rounded-xl ${s.bg} flex items-center justify-center ${s.color}`}>
+              <div className={`admin-stat-icon-container ${s.color}`}>
                 <s.icon size={24} />
               </div>
-              <span className="flex items-center text-xs font-bold text-slate-400 bg-slate-50 px-2 py-1 rounded-full">
+              <span className="admin-badge-default flex items-center text-xs">
                 <ArrowUpRight size={12} className="mr-1"/> +2.5%
               </span>
             </div>
-            <h3 className="text-3xl font-black text-slate-800">{s.val}</h3>
-            <p className="text-sm font-semibold text-slate-500">{s.label}</p>
+            <h3 className="admin-stat-value">{s.val}</h3>
+            <p className="admin-stat-label">{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Main Content Card */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="admin-table-container">
         {/* Toolbar */}
-        <div className="p-5 border-b border-slate-100 bg-white flex flex-col sm:flex-row gap-4 justify-between items-center sticky top-0 z-10">
-          <div className="relative w-full sm:w-96">
-            <Search className="absolute left-4 top-3.5 text-slate-400" size={18} />
+        <div className="admin-table-toolbar">
+          <div className="admin-search-container">
+            <Search className="admin-search-icon" size={18} />
             <input 
               placeholder="Search tests by name, category..." 
-              className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all placeholder:text-slate-400" 
+              className="admin-search-input" 
             />
           </div>
-          <div className="flex gap-2">
-            <button className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-100">Filters</button>
-            <button className="px-4 py-2 bg-slate-50 border border-slate-200 text-slate-600 rounded-lg text-sm font-bold hover:bg-slate-100">Export</button>
+          <div className="admin-space-x">
+            <button className="admin-btn-secondary">Filters</button>
+            <button className="admin-btn-secondary">Export</button>
           </div>
         </div>
         
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="bg-slate-50/50 border-b border-slate-200">
+        <div className="overflow-x-auto admin-scrollbar">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <th className="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Test Name</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Category</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Base Price</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase text-slate-500 tracking-wider text-right">Actions</th>
+                <th>Test Name</th>
+                <th>Category</th>
+                <th>Base Price</th>
+                <th>Status</th>
+                <th className="text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody>
               {tests.map((t) => (
-                <tr key={t.id} className="group hover:bg-blue-50/30 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="font-bold text-slate-800 text-sm group-hover:text-blue-700 transition-colors">{t.testName}</div>
-                    <div className="text-xs text-slate-400 mt-0.5 font-mono">{t.slug || '-'}</div>
+                <tr key={t.id} className="group">
+                  <td>
+                    <div className="admin-table-row-primary">{t.testName}</div>
+                    <div className="admin-table-row-secondary">{t.slug || '-'}</div>
                   </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                  <td>
+                    <span className="admin-badge-default">
                       {t.category || 'General'}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td>
                     <div className="flex flex-col">
-                      <span className="font-bold text-slate-800">₹{Number(t.price).toFixed(2)}</span>
+                      <span className="admin-table-row-primary">₹{Number(t.price).toFixed(2)}</span>
                       {Number(t.discount) > 0 && (
-                        <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 rounded w-fit">
+                        <span className="admin-badge-success text-[10px] px-1.5 w-fit">
                           {Number(t.discount)}% OFF
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold w-fit border ${t.isActive ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'}`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${t.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'}`} />
+                  <td>
+                    <div className={`admin-status-indicator ${t.isActive ? 'admin-badge-success' : 'admin-badge-default'}`}>
+                      <div className={`admin-status-dot ${t.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                       {t.isActive ? 'Active' : 'Inactive'}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="text-right">
                     <div className="flex items-center justify-end gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                       <Link href={`/admin/tests/${t.id}`} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                         <Edit size={18} />

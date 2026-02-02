@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Beaker, Heart, Plus } from 'lucide-react';
 import { useCartStore } from '@/store/useCartStore';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 export default function TestCard({ test }: { test: any }) {
   const router = useRouter();

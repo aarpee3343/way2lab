@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { MapPin, Plus, Trash2, Home, Briefcase, Map } from 'lucide-react';
 
 export default function AddressesPage() {
@@ -16,10 +15,8 @@ export default function AddressesPage() {
   });
 
   const fetchAddresses = async () => {
-    const token = Cookies.get('token');
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    // ✅ No token, no header
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`);
     setAddresses(res.data);
   };
 
@@ -27,21 +24,15 @@ export default function AddressesPage() {
 
   const handleDelete = async (id: number) => {
     if(!confirm("Delete this address?")) return;
-    const token = Cookies.get('token');
-    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses/${id}`);
     fetchAddresses();
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = Cookies.get('token');
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`, formData);
       setShowModal(false);
       setFormData({ address_line1: '', address_line2: '', city: '', state: '', pincode: '', type: 'Home' });
       fetchAddresses();

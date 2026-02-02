@@ -1,9 +1,10 @@
+// app/admin/login/page.tsx
 'use client';
 
 import { useState } from 'react';
 import { adminLoginAction } from '@/app/actions/authActions';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { Lock, ShieldCheck, Loader2 } from 'lucide-react';
 
 export default function AdminLoginPage() {
@@ -43,12 +44,12 @@ export default function AdminLoginPage() {
           <p className="text-slate-400 text-sm">Secure access for WayToLab staff</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="admin-space-y">
           <div>
-            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Username</label>
+            <label className="admin-form-label text-slate-400">Username</label>
             <input 
               type="text" 
-              className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+              className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
               placeholder="admin"
               value={form.username}
               onChange={e => setForm({...form, username: e.target.value})}
@@ -56,11 +57,11 @@ export default function AdminLoginPage() {
           </div>
           
           <div>
-            <label className="text-xs font-bold text-slate-400 uppercase ml-1">Password</label>
+            <label className="admin-form-label text-slate-400">Password</label>
             <div className="relative">
               <input 
                 type="password" 
-                className="w-full bg-slate-900/50 border border-slate-700 rounded-xl px-4 py-3 text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
                 placeholder="••••••••"
                 value={form.password}
                 onChange={e => setForm({...form, password: e.target.value})}
@@ -71,7 +72,7 @@ export default function AdminLoginPage() {
 
           <button 
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-lg shadow-blue-900/20 flex items-center justify-center gap-2"
+            className="admin-btn-primary w-full bg-blue-600 hover:bg-blue-500 shadow-lg shadow-blue-900/20"
           >
             {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
           </button>

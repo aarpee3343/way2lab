@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { sendSMS } from '@/lib/sms';
 
 const normalizeGender = (input?: string | null): string => {
   if (!input) return 'Other';
@@ -151,6 +152,21 @@ export async function POST(req: Request) {
 
       return newOrder;
     });
+
+    try {
+      // Priority: 1. Patient Phone (from form), 2. User Registered Phone
+      const mobileToSend = patientDetails.phone || (await prisma.customer.findUnique({ 
+          where: { id: user.id },
+          select: { phone: true } 
+      }))?.phone;
+      
+      if (mobileToSend) {
+        // Run without awaiting to keep response fast
+        sendSMS(mobileToSend, 'ORDER_PLACED', [order.orderNumber]).catch(e => console.error(e));
+      }
+    } catch (smsError) {
+      console.error("Failed to send Order SMS:", smsError);
+    }
 
     return NextResponse.json({
       success: true,

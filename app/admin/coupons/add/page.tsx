@@ -1,3 +1,4 @@
+// app/admin/coupons/add/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +6,7 @@ import { createCouponAction, getCouponFormData } from '@/app/actions/adminCoupon
 import MultiSelect from '@/components/ui/MultiSelect';
 import { Ticket, Save, ArrowLeft, Calendar, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
 
 export default function CreateCouponPage() {
@@ -62,10 +63,10 @@ export default function CreateCouponPage() {
     <div className="max-w-6xl mx-auto pb-20">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Create Offer</h1>
-          <p className="text-slate-500">Design a new discount campaign</p>
+          <h1 className="admin-page-title">Create Offer</h1>
+          <p className="admin-page-subtitle">Design a new discount campaign</p>
         </div>
-        <Link href="/admin/coupons" className="text-slate-500 hover:text-slate-800 flex items-center gap-2">
+        <Link href="/admin/coupons" className="admin-btn-secondary">
           <ArrowLeft size={18} /> Back
         </Link>
       </div>
@@ -74,23 +75,22 @@ export default function CreateCouponPage() {
         
         {/* LEFT: Form */}
         <div className="lg:col-span-2 space-y-6">
-          <form id="coupon-form" onSubmit={handleSubmit} className="space-y-6">
+          <form id="coupon-form" onSubmit={handleSubmit} className="admin-space-y">
             
             {/* 1. Basic Details */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">1</span>
+            <div className="admin-form-section">
+              <h3 className="admin-form-title">
                 Campaign Basics
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="admin-form-grid">
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="label">Coupon Code *</label>
+                  <label className="admin-form-label">Coupon Code *</label>
                   <div className="relative">
                     <input 
                       required 
                       value={code}
                       onChange={e => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
-                      className="input-field pl-10 font-mono tracking-wider font-bold text-slate-700" 
+                      className="admin-form-input pl-10 font-mono tracking-wider font-bold text-slate-700" 
                       placeholder="SUMMER2026" 
                       maxLength={15}
                     />
@@ -98,54 +98,52 @@ export default function CreateCouponPage() {
                   </div>
                 </div>
                 <div className="col-span-2 sm:col-span-1">
-                  <label className="label">Description</label>
-                  <input className="input-field" placeholder="e.g. Summer Sale 20% Off" value={desc} onChange={e => setDesc(e.target.value)} />
+                  <label className="admin-form-label">Description</label>
+                  <input className="admin-form-input" placeholder="e.g. Summer Sale 20% Off" value={desc} onChange={e => setDesc(e.target.value)} />
                 </div>
               </div>
             </div>
 
             {/* 2. Discount Rules */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center text-xs">2</span>
+            <div className="admin-form-section">
+               <h3 className="admin-form-title">
                 Value & Rules
               </h3>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="admin-form-grid">
                 <div>
-                   <label className="label">Discount Type</label>
+                   <label className="admin-form-label">Discount Type</label>
                    <div className="flex p-1 bg-slate-100 rounded-lg">
                       <button type="button" onClick={() => setType('PERCENTAGE')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${type === 'PERCENTAGE' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>% Percentage</button>
                       <button type="button" onClick={() => setType('FIXED')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-all ${type === 'FIXED' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>₹ Fixed Amount</button>
                    </div>
                 </div>
                 <div>
-                  <label className="label">Discount Value *</label>
-                  <input required type="number" className="input-field" placeholder={type === 'PERCENTAGE' ? '20' : '500'} value={value} onChange={e => setValue(e.target.value)} />
+                  <label className="admin-form-label">Discount Value *</label>
+                  <input required type="number" className="admin-form-input" placeholder={type === 'PERCENTAGE' ? '20' : '500'} value={value} onChange={e => setValue(e.target.value)} />
                 </div>
                 
                 {type === 'PERCENTAGE' && (
                   <div className="animate-in fade-in slide-in-from-top-2">
-                    <label className="label">Max Discount Cap (₹)</label>
-                    <input name="maxDiscountAmount" type="number" className="input-field" placeholder="e.g. 500 (Optional)" />
+                    <label className="admin-form-label">Max Discount Cap (₹)</label>
+                    <input name="maxDiscountAmount" type="number" className="admin-form-input" placeholder="e.g. 500 (Optional)" />
                   </div>
                 )}
                 <div>
-                    <label className="label">Min Order Value (₹)</label>
-                    <input name="minOrderValue" type="number" className="input-field" placeholder="0" defaultValue="0" />
+                    <label className="admin-form-label">Min Order Value (₹)</label>
+                    <input name="minOrderValue" type="number" className="admin-form-input" placeholder="0" defaultValue="0" />
                 </div>
               </div>
             </div>
 
             {/* 3. Scope & Validity */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-               <h3 className="font-bold text-slate-800 flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs">3</span>
+            <div className="admin-form-section">
+               <h3 className="admin-form-title">
                 Targeting & Limits
               </h3>
               
               <div>
-                <label className="label">Applicable Scope</label>
-                <select className="input-field mb-3" value={scope} onChange={e => { setScope(e.target.value); setSelectedIds([]); }}>
+                <label className="admin-form-label">Applicable Scope</label>
+                <select className="admin-form-select mb-3" value={scope} onChange={e => { setScope(e.target.value); setSelectedIds([]); }}>
                   <option value="GLOBAL">Global (All Orders)</option>
                   <option value="LAB">Specific Lab(s)</option>
                   <option value="TEST">Specific Test(s)</option>
@@ -158,22 +156,22 @@ export default function CreateCouponPage() {
                 {scope === 'PACKAGE' && <MultiSelect options={formData.packages} selected={selectedIds} onChange={setSelectedIds} placeholder="Select Packages..." />}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="admin-form-grid">
                  <div>
-                    <label className="label">Start Date</label>
-                    <input name="startDate" type="datetime-local" className="input-field" value={startDate} onChange={e => setStartDate(e.target.value)} />
+                    <label className="admin-form-label">Start Date</label>
+                    <input name="startDate" type="datetime-local" className="admin-form-input" value={startDate} onChange={e => setStartDate(e.target.value)} />
                  </div>
                  <div>
-                    <label className="label">Expiry Date</label>
-                    <input name="expiryDate" type="datetime-local" className="input-field" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
+                    <label className="admin-form-label">Expiry Date</label>
+                    <input name="expiryDate" type="datetime-local" className="admin-form-input" value={expiryDate} onChange={e => setExpiryDate(e.target.value)} />
                  </div>
                  <div>
-                    <label className="label">Total Usage Limit</label>
-                    <input name="usageLimit" type="number" className="input-field" placeholder="Unlimited" />
+                    <label className="admin-form-label">Total Usage Limit</label>
+                    <input name="usageLimit" type="number" className="admin-form-input" placeholder="Unlimited" />
                  </div>
                  <div>
-                    <label className="label">Limit Per User</label>
-                    <input name="userLimit" type="number" className="input-field" defaultValue="1" />
+                    <label className="admin-form-label">Limit Per User</label>
+                    <input name="userLimit" type="number" className="admin-form-input" defaultValue="1" />
                  </div>
               </div>
             </div>
@@ -184,9 +182,9 @@ export default function CreateCouponPage() {
         {/* RIGHT: Live Preview */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
-            <h3 className="text-sm font-bold text-slate-400 uppercase mb-4 tracking-wider">Live Preview</h3>
+            <h3 className="admin-form-label text-center">Live Preview</h3>
             
-            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-2xl relative overflow-hidden group">
+            <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-2xl relative overflow-hidden group mb-6">
               {/* Background Decoration */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16" />
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -ml-10 -mb-10" />
@@ -222,7 +220,7 @@ export default function CreateCouponPage() {
             <button 
               form="coupon-form"
               disabled={loading}
-              className="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-200 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="admin-btn-primary w-full py-4"
             >
               {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
               Create Coupon
@@ -232,13 +230,7 @@ export default function CreateCouponPage() {
             </p>
           </div>
         </div>
-
       </div>
-
-      <style jsx>{`
-        .label { @apply block text-xs font-bold text-slate-500 uppercase mb-1.5; }
-        .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700; }
-      `}</style>
     </div>
   );
 }

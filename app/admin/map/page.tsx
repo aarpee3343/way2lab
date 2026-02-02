@@ -1,3 +1,4 @@
+// app/admin/map/page.tsx
 'use client';
 
 import dynamic from 'next/dynamic';
@@ -17,5 +18,15 @@ const LiveMap = dynamic(() => import('@/components/admin/LiveMap'), {
 });
 
 export default function LiveMapPage() {
-  return <LiveMap />;
+  return (
+    <div className="admin-space-y">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="admin-page-title">Live Technician Map</h1>
+          <p className="admin-page-subtitle">Real-time tracking of active technicians</p>
+        </div>
+      </div>
+      <LiveMap />
+    </div>
+  );
 }

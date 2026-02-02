@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Papa from 'papaparse';
 import { uploadCorporateEmployees } from '@/app/actions/adminCorporateActions';
 import { Upload, FileText, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corporateId: number, onSuccess: () => void }) {
   const [uploading, setUploading] = useState(false);

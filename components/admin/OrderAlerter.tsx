@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 // Helper to check count (Server Action)
 import { getAdminDashboardStats } from '@/app/actions/adminDashboard';

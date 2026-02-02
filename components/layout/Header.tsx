@@ -4,20 +4,23 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useCartStore } from '@/store/useCartStore';
-import Cookies from 'js-cookie';
+import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, ShoppingCart, User, LogOut, 
-  LayoutDashboard, ClipboardList, FileText, MapPin, Users, Settings,
-  Home, Search, Package, Info, Phone, ArrowRight, ChevronDown, UserCircle,
+  LayoutDashboard, ClipboardList, FileText, Settings,
+  Home, Search, Package, Info, Phone, ArrowRight, ChevronDown, 
   Heart, ShieldCheck, Stethoscope
 } from 'lucide-react';
 
 export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  
+  // ✅ AUTH STATE
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
   
   const pathname = usePathname();
   const router = useRouter();
@@ -31,19 +34,35 @@ export default function Header() {
 
   const isDashboard = pathname.startsWith('/dashboard');
 
+  // --- 1. AUTH CHECK (Replaces Cookies.get) ---
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await axios.get('/api/auth/me');
+        setUser(res.data.user);
+      } catch (e) {
+        setUser(null);
+      } finally {
+        setLoadingUser(false);
+      }
+    };
+    checkAuth();
+  }, [pathname]); // Re-check on route change to keep sync
+
+  // Scroll Listener
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handleScroll);
-    setIsLoggedIn(!!Cookies.get('token'));
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [pathname]);
+  }, []);
 
-  // Close menus on route change or click outside
+  // Close menus on route change
   useEffect(() => {
     setIsMobileOpen(false);
     setShowUserMenu(false);
   }, [pathname]);
 
+  // Click Outside Listener
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -54,10 +73,15 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleLogout = () => {
-    Cookies.remove('token');
-    setIsLoggedIn(false);
-    router.push('/login');
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/auth/logout'); // Need to create this route to clear cookie
+      setUser(null);
+      router.push('/login');
+      router.refresh(); // Force refresh to clear server cache
+    } catch (e) {
+      console.error("Logout failed", e);
+    }
   };
 
   const publicLinks = [
@@ -80,7 +104,6 @@ export default function Header() {
 
   return (
     <>
-      {/* --- MAIN HEADER --- */}
       <header 
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ease-in-out ${
           isScrolled || isMobileOpen || isDashboard 
@@ -90,7 +113,7 @@ export default function Header() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex justify-between items-center">
           
-          {/* LOGO SECTION */}
+          {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative">
               <img 
@@ -98,8 +121,6 @@ export default function Header() {
                 alt="WayToLab Logo" 
                 className="h-10 w-auto object-contain transition-transform group-hover:scale-105 duration-300" 
               />
-              {/* Active pulse indicator */}
-              {/* <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-75" /> */}
             </div>
             <div className="hidden md:flex flex-col">
               <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">Waytolab</span>
@@ -107,7 +128,7 @@ export default function Header() {
             </div>
           </Link>
 
-          {/* DESKTOP NAVIGATION */}
+          {/* DESKTOP NAV */}
           <nav className="hidden md:flex items-center gap-1 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-teal-100 shadow-sm">
             {currentLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -131,19 +152,16 @@ export default function Header() {
           {/* RIGHT ACTIONS */}
           <div className="flex items-center gap-3">
             
-            {/* Cart Icon with medical styling */}
+            {/* Cart Icon */}
             <Link href="/cart" className="relative p-2.5 text-slate-600 hover:bg-teal-50 rounded-full transition-colors group">
               <div className="relative">
                 <ShoppingCart size={22} className="group-hover:text-teal-600 transition-colors" />
-                {/* Medical cross indicator for cart */}
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-600 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
               <AnimatePresence>
                 {items.length > 0 && (
                   <motion.span 
-                    initial={{ scale: 0 }} 
-                    animate={{ scale: 1 }} 
-                    exit={{ scale: 0 }}
+                    initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                     className="absolute top-0.5 right-0.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full ring-2 ring-white shadow-md"
                   >
                     {items.length}
@@ -152,20 +170,24 @@ export default function Header() {
               </AnimatePresence>
             </Link>
 
-            {/* Auth Logic for Desktop */}
-            {isLoggedIn ? (
+            {/* AUTH SECTION */}
+            {loadingUser ? (
+              // Skeleton Loader while checking auth
+              <div className="hidden md:block w-10 h-10 bg-slate-100 rounded-full animate-pulse" />
+            ) : user ? (
+              // LOGGED IN STATE
               <div className="hidden md:block relative" ref={userMenuRef}>
                 <button 
                   onClick={() => setShowUserMenu(!showUserMenu)}
                   className="flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white border border-teal-100 rounded-xl hover:shadow-md transition-all group hover:border-teal-300"
                 >
                   <div className="w-9 h-9 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
-                    <User size={18} />
+                    {user.name?.[0]?.toUpperCase() || <User size={18} />}
                   </div>
                   <ChevronDown size={14} className={`text-teal-600 transition-transform duration-300 ${showUserMenu ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Desktop Dropdown with healthcare theme */}
+                {/* Dropdown Menu */}
                 <AnimatePresence>
                   {showUserMenu && (
                     <motion.div 
@@ -174,38 +196,23 @@ export default function Header() {
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       className="absolute top-full right-0 mt-3 w-64 bg-white rounded-2xl shadow-xl border border-teal-100 overflow-hidden py-3 z-50"
                     >
-                      {/* Healthcare header */}
                       <div className="px-4 py-3 bg-gradient-to-r from-teal-50 to-teal-50/50 border-b border-teal-100">
                         <p className="text-xs font-bold text-teal-700 uppercase tracking-wider">Health Dashboard</p>
-                        <p className="text-sm text-slate-600 mt-1">Welcome back!</p>
+                        <p className="text-sm text-slate-600 mt-1 truncate">{user.name}</p>
                       </div>
                       
                       <div className="py-2">
-                        <Link href="/dashboard" className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors">
-                          <LayoutDashboard size={18} className="text-teal-600" />
-                          Health Dashboard
-                        </Link>
-                        <Link href="/dashboard/orders" className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors">
-                          <ClipboardList size={18} className="text-teal-600" />
-                          My Test Orders
-                        </Link>
-                        <Link href="/dashboard/reports" className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors">
-                          <FileText size={18} className="text-teal-600" />
-                          Health Reports
-                        </Link>
-                        <Link href="/dashboard/profile" className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors">
-                          <Settings size={18} className="text-teal-600" />
-                          Profile Settings
-                        </Link>
+                        {dashboardLinks.map(link => (
+                          <Link key={link.href} href={link.href} className="flex items-center gap-3 px-4 py-3 text-sm text-slate-700 hover:bg-teal-50 hover:text-teal-700 transition-colors">
+                            <link.icon size={18} className="text-teal-600" />
+                            {link.name}
+                          </Link>
+                        ))}
                       </div>
                       
                       <div className="border-t border-teal-100 pt-2">
-                        <button 
-                          onClick={handleLogout}
-                          className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium"
-                        >
-                          <LogOut size={18} />
-                          Sign Out
+                        <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium">
+                          <LogOut size={18} /> Sign Out
                         </button>
                       </div>
                     </motion.div>
@@ -213,6 +220,7 @@ export default function Header() {
                 </AnimatePresence>
               </div>
             ) : (
+              // LOGGED OUT STATE
               <Link 
                 href="/login" 
                 className="hidden md:inline-flex bg-gradient-to-r from-teal-600 to-teal-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:shadow-xl hover:shadow-teal-200 hover:scale-105 active:scale-95 transition-all"
@@ -232,109 +240,59 @@ export default function Header() {
         </div>
       </header>
 
-      {/* --- MOBILE SLIDE-OVER WITH HEALTHCARE THEME --- */}
+      {/* --- MOBILE MENU --- */}
       <AnimatePresence>
         {isMobileOpen && (
           <>
             <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsMobileOpen(false)}
               className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 md:hidden"
             />
             <motion.div 
-              initial={{ x: '100%' }} 
-              animate={{ x: 0 }} 
-              exit={{ x: '100%' }}
+              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="fixed inset-y-0 right-0 w-[85%] max-w-sm bg-white shadow-2xl z-[60] flex flex-col md:hidden"
             >
-              {/* Healthcare header */}
               <div className="p-6 border-b border-teal-100 bg-gradient-to-r from-teal-50 to-white flex justify-between items-center">
-                <div className="flex items-center gap-3">
-                   <img src="/logo.png" className="h-9 w-auto" alt="WayToLab" />
-                   <div>
-                     <span className="font-bold text-lg text-slate-800">WayToLab</span>
-                     <div className="flex items-center gap-1 mt-0.5">
-                       <ShieldCheck size={12} className="text-teal-600" />
-                       <span className="text-[10px] text-teal-700 font-medium">Certified Healthcare</span>
-                     </div>
-                   </div>
-                </div>
-                <button 
-                  onClick={() => setIsMobileOpen(false)} 
-                  className="p-2 bg-white text-teal-600 rounded-full hover:bg-teal-50 border border-teal-200 transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                 <div className="flex items-center gap-3">
+                    <img src="/logo.png" className="h-9 w-auto" alt="WayToLab" />
+                    <span className="font-bold text-lg text-slate-800">WayToLab</span>
+                 </div>
+                 <button onClick={() => setIsMobileOpen(false)} className="p-2 bg-white text-teal-600 rounded-full hover:bg-teal-50 border border-teal-200">
+                   <X size={20} />
+                 </button>
               </div>
 
               <div className="flex-1 overflow-y-auto p-4 space-y-1">
-                {currentLinks.map((link) => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <Link 
-                      key={link.name} 
-                      href={link.href} 
-                      className={`flex items-center gap-4 px-4 py-4 rounded-2xl transition-all ${
-                        isActive 
-                          ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-lg shadow-teal-200' 
-                          : 'text-slate-600 hover:bg-teal-50 hover:text-teal-700 font-medium'
-                      }`}
-                    >
-                      <link.icon size={20} className={isActive ? 'text-white' : 'text-teal-500'} />
-                      {link.name}
-                    </Link>
-                  );
-                })}
+                {currentLinks.map((link) => (
+                  <Link 
+                    key={link.name} 
+                    href={link.href} 
+                    onClick={() => setIsMobileOpen(false)}
+                    className="flex items-center gap-4 px-4 py-4 rounded-2xl text-slate-600 hover:bg-teal-50 hover:text-teal-700 font-medium"
+                  >
+                    <link.icon size={20} className="text-teal-500" />
+                    {link.name}
+                  </Link>
+                ))}
               </div>
 
               <div className="p-6 border-t border-teal-100 bg-teal-50/30 space-y-3">
-                {isLoggedIn ? (
+                {user ? (
                   <>
-                    <Link 
-                      href="/dashboard" 
-                      className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3.5 rounded-xl font-bold text-sm shadow-lg"
-                    >
-                      <LayoutDashboard size={18} /> 
-                      Health Dashboard
+                    <Link href="/dashboard" className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3.5 rounded-xl font-bold text-sm shadow-lg">
+                      <LayoutDashboard size={18} /> Health Dashboard
                     </Link>
-                    <button 
-                      onClick={handleLogout}
-                      className="flex w-full items-center justify-center gap-3 bg-white border border-rose-200 text-rose-600 px-4 py-3.5 rounded-xl font-bold text-sm"
-                    >
-                      <LogOut size={18} /> 
-                      Sign Out
+                    <button onClick={handleLogout} className="flex w-full items-center justify-center gap-3 bg-white border border-rose-200 text-rose-600 px-4 py-3.5 rounded-xl font-bold text-sm">
+                      <LogOut size={18} /> Sign Out
                     </button>
                   </>
                 ) : (
-                  <Link 
-                    href="/login" 
-                    className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-4 rounded-xl font-bold text-sm hover:shadow-xl hover:shadow-teal-200 transition-all"
-                  >
-                    Sign In / Register 
-                    <ArrowRight size={16} />
+                  <Link href="/login" className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg">
+                    Sign In / Register <ArrowRight size={16} />
                   </Link>
                 )}
-                
-                {/* Healthcare trust badges in mobile */}
-                <div className="pt-4 border-t border-teal-100">
-                  <div className="flex items-center justify-center gap-4">
-                    <div className="flex flex-col items-center">
-                      <ShieldCheck size={16} className="text-teal-600" />
-                      <span className="text-xs text-slate-600 mt-1">NABL</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Stethoscope size={16} className="text-teal-600" />
-                      <span className="text-xs text-slate-600 mt-1">Expert</span>
-                    </div>
-                    <div className="flex flex-col items-center">
-                      <Heart size={16} className="text-teal-600" />
-                      <span className="text-xs text-slate-600 mt-1">Safe</span>
-                    </div>
-                  </div>
-                </div>
               </div>
             </motion.div>
           </>

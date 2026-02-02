@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { getTechnicianFormData, createTechnicianAction } from '@/app/actions/adminTechnicianActions';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { ArrowLeft, Save, Loader2, User, Key, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -12,14 +12,40 @@ export default function AddTechnicianPage() {
   const [loading, setLoading] = useState(false);
   const [labs, setLabs] = useState<any[]>([]);
 
+  // State for Auto-fill logic
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('technician123'); // Default Password
+
   useEffect(() => {
+    // Fetch Labs
     getTechnicianFormData().then(setLabs);
   }, []);
+
+  // ✅ Auto-generate Username: "WTL." + first word of name
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setName(val);
+    const firstWord = val.trim().split(' ')[0];
+    if (firstWord) {
+      setUsername(`WTL.${firstWord}`);
+    } else {
+      setUsername('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+    
+    // Validate Lab Selection Client-side
+    if (formData.getAll('lab_ids').length === 0) {
+        toast.error("Please assign at least one lab");
+        setLoading(false);
+        return;
+    }
+
     const res = await createTechnicianAction(formData);
     
     setLoading(false);
@@ -32,80 +58,112 @@ export default function AddTechnicianPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-32 animate-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-4xl mx-auto pb-32">
       
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Add Technician</h1>
-          <p className="text-slate-500">Create a new account for lab staff</p>
+          <h1 className="admin-page-title">Add Technician</h1>
+          <p className="admin-page-subtitle">Create a new account for lab staff</p>
         </div>
-        <Link href="/admin/technicians" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 font-bold px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+        <Link href="/admin/technicians" className="admin-btn-secondary">
           <ArrowLeft size={18} /> Cancel
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="admin-space-y">
         
         {/* Personal Info */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
+        <div className="admin-form-section">
+          <h3 className="admin-form-title">
              <User size={18} className="text-blue-600"/> Personal Information
           </h3>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="admin-form-grid">
             <div>
-              <label className="label">Full Name <span className="text-rose-500">*</span></label>
-              <input name="name" required className="input-field" placeholder="John Doe" />
+              <label className="admin-form-label">Full Name <span className="text-rose-500">*</span></label>
+              <input 
+                name="name" 
+                required 
+                className="admin-form-input" 
+                placeholder="John Doe" 
+                value={name}
+                onChange={handleNameChange} // Triggers auto-fill
+              />
             </div>
             <div>
-              <label className="label">Phone Number <span className="text-rose-500">*</span></label>
-              <input name="phone" required className="input-field" placeholder="+91 9876543210" />
+              <label className="admin-form-label">Phone Number <span className="text-rose-500">*</span></label>
+              <input name="phone" required className="admin-form-input" placeholder="+91 9876543210" />
             </div>
             <div>
-              <label className="label">Email Address</label>
-              <input name="email" type="email" className="input-field" placeholder="john@example.com" />
+              <label className="admin-form-label">Email Address</label>
+              <input name="email" type="email" className="admin-form-input" placeholder="john@example.com" />
             </div>
             <div className="col-span-2">
-              <label className="label">Address</label>
-              <textarea name="address" rows={2} className="input-field resize-none" placeholder="Residential Address" />
+              <label className="admin-form-label">Address</label>
+              <textarea name="address" rows={2} className="admin-form-textarea resize-none" placeholder="Residential Address" />
             </div>
           </div>
         </div>
 
-        {/* Assignments */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
+        {/* Assignments (Multiple Labs) */}
+        <div className="admin-form-section">
+          <h3 className="admin-form-title">
              <Building2 size={18} className="text-emerald-600"/> Lab Assignment
           </h3>
           <div>
-            <label className="label mb-3">Assign Labs <span className="text-rose-500">*</span></label>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {labs.map(lab => (
-                <label key={lab.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
-                   <input type="checkbox" name="lab_ids" value={lab.id} className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all" />
-                   <div>
-                     <span className="block text-sm font-bold text-slate-700 group-hover:text-blue-700">{lab.labName}</span>
-                     <span className="block text-xs text-slate-400">{lab.city}</span>
-                   </div>
-                </label>
-              ))}
-            </div>
+            <label className="admin-form-label mb-3">Assign Labs (Select Multiple) <span className="text-rose-500">*</span></label>
+            
+            {labs.length === 0 ? (
+                <p className="text-sm text-slate-400 italic p-4 bg-slate-50 rounded-lg text-center">No labs found. Please add labs first.</p>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {labs.map(lab => (
+                    <label key={lab.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all group">
+                    <input 
+                        type="checkbox" 
+                        name="lab_ids" 
+                        value={lab.id} 
+                        className="w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 transition-all" 
+                    />
+                    <div>
+                        <span className="block text-sm font-bold text-slate-700 group-hover:text-blue-700">{lab.labName}</span>
+                        <span className="block text-xs text-slate-400">{lab.city}</span>
+                    </div>
+                    </label>
+                ))}
+                </div>
+            )}
           </div>
         </div>
 
-        {/* Account Security */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2 border-b border-slate-100 pb-4">
+        {/* Account Security (Auto-Filled) */}
+        <div className="admin-form-section">
+          <h3 className="admin-form-title">
              <Key size={18} className="text-purple-600"/> Security
           </h3>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="admin-form-grid">
             <div>
-              <label className="label">Username <span className="text-rose-500">*</span></label>
-              <input name="username" required className="input-field" placeholder="username" />
+              <label className="admin-form-label">Username <span className="text-rose-500">*</span></label>
+              <input 
+                name="username" 
+                required 
+                className="admin-form-input bg-slate-50" 
+                placeholder="Auto-generated"
+                value={username}
+                readOnly // Prevent manual edits to ensure format
+              />
             </div>
             <div>
-              <label className="label">Password <span className="text-rose-500">*</span></label>
-              <input name="password" type="password" required className="input-field" placeholder="••••••••" />
+              <label className="admin-form-label">Password <span className="text-rose-500">*</span></label>
+              <input 
+                name="password" 
+                type="text" 
+                required 
+                className="admin-form-input" 
+                placeholder="••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
             </div>
           </div>
         </div>
@@ -113,18 +171,12 @@ export default function AddTechnicianPage() {
         <button 
           type="submit" 
           disabled={loading}
-          className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="admin-btn-primary w-full py-4"
         >
           {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
           Save Technician
         </button>
-
       </form>
-
-      <style jsx>{`
-        .label { @apply block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1 tracking-wide; }
-        .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700 placeholder:text-slate-400; }
-      `}</style>
     </div>
   );
 }

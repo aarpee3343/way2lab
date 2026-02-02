@@ -2,12 +2,22 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request, 
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const orderId = Number(params.id);
+    // ✅ FIX: Await params here too
+    const { id } = await params;
+    const orderId = Number(id);
+
+    if (isNaN(orderId)) {
+        return NextResponse.json({ message: 'Invalid ID' }, { status: 400 });
+    }
+
     const order = await prisma.order.findUnique({ where: { id: orderId } });
 
     if (!order || order.userId !== user.id) return NextResponse.json({ message: 'Not found' }, { status: 404 });

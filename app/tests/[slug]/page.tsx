@@ -9,7 +9,7 @@ import {
   ShoppingCart, Phone, Share2, Activity, Microscope, AlertCircle,
   Heart, Stethoscope, Users, Calendar
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function TestDetailPage({ params }: { params: Promise<{ slug: string }> }) {

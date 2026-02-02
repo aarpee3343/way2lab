@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET ;
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +13,6 @@ export async function POST(req: Request) {
 
     // SCENARIO A: OTP Login (Phone)
     if (isOtpLogin) {
-      // We assume OTP was verified by the /api/auth/otp route before calling this
       user = await prisma.customer.findUnique({ where: { phone } });
     } 
     // SCENARIO B: Password Login (Email)
@@ -21,9 +20,9 @@ export async function POST(req: Request) {
       user = await prisma.customer.findUnique({ where: { email: identifier } });
       if (user && user.password) {
         const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) user = null; // Invalid pass
+        if (!isMatch) user = null; 
       } else {
-        user = null; // User not found or no password (google auth)
+        user = null;
       }
     }
 
@@ -42,13 +41,32 @@ export async function POST(req: Request) {
       { expiresIn: '7d' }
     );
 
-    return NextResponse.json({
+    // ============================================================
+    // NEW: Set HttpOnly Cookie
+    // ============================================================
+    
+    // 1. Create the response object first
+    const response = NextResponse.json({
       success: true,
-      token,
+      message: 'Logged in successfully',
       user: { id: user.id, name: user.name, email: user.email, role: user.role }
     });
 
+    // 2. Attach the cookie
+    response.cookies.set({
+      name: 'token',
+      value: token,
+      httpOnly: true, // Javascript cannot read this (Critical for security)
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict', // CSRF protection
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7 // 7 days (must match jwt expiresIn)
+    });
+
+    return response;
+
   } catch (error) {
+    console.error("Login Error:", error);
     return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

@@ -7,90 +7,137 @@ import crypto from 'crypto';
 // 1. Get Lab Form Data (Packages & Tests for selection)
 export async function getLabFormData() {
   const [packages, tests] = await Promise.all([
-    prisma.package.findMany({ 
-      where: { isActive: true }, 
-      select: { id: true, packageName: true, price: true } // Fetch price too
+    prisma.package.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        packageName: true,
+        price: true,
+        tests: {
+          select: {
+            test: {
+              select: {
+                id: true,
+                testName: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { packageName: 'asc' },
     }),
-    prisma.test.findMany({ 
-      where: { isActive: true }, 
-      select: { id: true, testName: true, price: true } 
-    })
+
+    prisma.test.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        testName: true,
+        price: true,
+      },
+      orderBy: { testName: 'asc' },
+    }),
   ]);
 
-  // ✅ FIX: Convert Decimals to Numbers to prevent serialization errors
-  return { 
-    packages: packages.map(p => ({ 
-      ...p, 
-      price: Number(p.price) 
-    })), 
-    tests: tests.map(t => ({ 
-      ...t, 
-      price: Number(t.price) 
-    })) 
+  return {
+    packages: packages.map(p => ({
+      id: p.id,
+      packageName: p.packageName,
+      price: Number(p.price),
+      tests: p.tests,
+    })),
+    tests: tests.map(t => ({
+      id: t.id,
+      testName: t.testName,
+      price: Number(t.price),
+    })),
   };
 }
+
 
 // 2. Create Lab (Wizard Logic)
 export async function createLabAction(data: any) {
   try {
-    await prisma.$transaction(async (tx) => {
-      // A. Create Lab
+    await prisma.$transaction(async tx => {
+      // A. CREATE LAB
       const lab = await tx.lab.create({
         data: {
           labName: data.labName,
           address: data.address,
           city: data.city,
+          state: data.state,
           pincode: data.pincode,
+
           contactNo: data.contactNo,
           email: data.email,
-          homeCollectionCharges: parseFloat(data.homeCollectionCharges),
-          status: 'Active'
-        }
+
+          password: data.password || 'password123',
+          activeStatus: true,
+          status: 'Pending',
+
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+
+          rating: data.rating ?? 4.5,
+          reviewCount: data.reviewCount ?? 0,
+
+          features: data.features ?? [],
+          timings: data.timings ?? null,
+
+          panNo: data.panNo ?? undefined,
+          gstNo: data.gstNo ?? undefined,
+
+          homeCollectionCharges: Number(data.homeCollectionCharges) || 0,
+        },
       });
 
-      // B. Assign Pincodes
-      if (data.pincodes && data.pincodes.length > 0) {
+      // B. ASSIGN PINCODES
+      if (Array.isArray(data.pincodes) && data.pincodes.length > 0) {
         await tx.labPincode.createMany({
-          data: data.pincodes.map((pin: string) => ({ labId: lab.id, pincode: pin }))
+          data: data.pincodes.map((pin: string) => ({
+            labId: lab.id,
+            pincode: pin,
+          })),
         });
       }
 
-      // C. Assign Packages (With Custom Pricing)
-      for (const pkg of data.packages) {
-        if (pkg.selected) {
-          await tx.labPackage.create({
-            data: {
-              labId: lab.id,
-              packageId: pkg.id,
-              price: parseFloat(pkg.price),
-              discount: parseFloat(pkg.discount || '0')
-            }
-          });
-        }
+      // C. ASSIGN PACKAGES
+      const selectedPackages = data.packages
+        .filter((p: any) => p.selected)
+        .map((p: any) => ({
+          labId: lab.id,
+          packageId: p.id,
+          price: Number(p.price) || 0,
+          discount: Number(p.discount) || 0,
+        }));
+
+      if (selectedPackages.length > 0) {
+        await tx.labPackage.createMany({ data: selectedPackages });
       }
 
-      // D. Assign Tests (With Custom Pricing)
-      for (const test of data.tests) {
-        if (test.selected) {
-          await tx.labTest.create({
-            data: {
-              labId: lab.id,
-              testId: test.id,
-              price: parseFloat(test.price),
-              discount: parseFloat(test.discount || '0'),
-              available: true
-            }
-          });
-        }
+      // D. ASSIGN TESTS
+      for (const test of data.tests || []) {
+        if (!test.selected) continue;
+
+        await tx.labTest.create({
+          data: {
+            labId: lab.id,
+            testId: test.id,
+            price: Number(test.price) || 0,
+            discount: Number(test.discount) || 0,
+            available: true,
+          },
+        });
       }
     });
+
     revalidatePath('/admin/labs');
     return { success: true };
   } catch (error: any) {
-    console.error("Create Lab Error:", error);
+    console.error('Create Lab Error:', error);
     return { success: false, error: error.message };
   }
 }
+
 
 // 3. Get Lab by ID (FIXED: Converts Decimals to Numbers)
 export async function getLabById(id: number) {
@@ -98,105 +145,148 @@ export async function getLabById(id: number) {
     where: { id },
     include: {
       pincodes: true,
-      // ⚠️ FIX: Use 'packages' instead of 'labPackages'
-      packages: { include: { package: true } }, 
-      // ⚠️ FIX: Use 'tests' instead of 'labTests'
-      tests: { include: { test: true } }        
-    }
+      packages: {
+        include: {
+          package: true,
+        },
+      },
+      tests: {
+        include: {
+          test: true,
+        },
+      },
+    },
   });
 
   if (!lab) return null;
 
-  // CONVERT DECIMALS TO NUMBERS
   return {
-    ...lab,
-    homeCollectionCharges: Number(lab.homeCollectionCharges), 
-    pincodesStr: lab.pincodes.map(p => p.pincode).join(', '),
-    
-    // ⚠️ FIX: Map from 'lab.packages'
+    id: lab.id,
+    labName: lab.labName,
+    address: lab.address,
+    city: lab.city,
+    state: lab.state,
+    pincode: lab.pincode,
+
+    contactNo: lab.contactNo,
+    email: lab.email,
+    password: lab.password,
+
+    latitude: lab.latitude,
+    longitude: lab.longitude,
+    rating: Number(lab.rating),
+    reviewCount: lab.reviewCount,
+
+    features: lab.features ?? [],
+    timings: lab.timings ?? null,
+
+    panNo: lab.panNo,
+    gstNo: lab.gstNo,
+    activeStatus: lab.activeStatus,
+
+    homeCollectionCharges: Number(lab.homeCollectionCharges),
+
+    pincodes: lab.pincodes.map(p => p.pincode),
+
     packages: lab.packages.map(p => ({
       id: p.packageId,
       packageName: p.package.packageName,
-      price: Number(p.price),       
-      discount: Number(p.discount), 
-      selected: true
+      price: Number(p.price),
+      discount: Number(p.discount),
+      selected: true,
     })),
-    
-    // ⚠️ FIX: Map from 'lab.tests'
+
     tests: lab.tests.map(t => ({
       id: t.testId,
       testName: t.test.testName,
-      price: Number(t.price),       
-      discount: Number(t.discount), 
-      selected: true
-    }))
+      price: Number(t.price),
+      discount: Number(t.discount),
+      selected: true,
+    })),
   };
 }
+
 
 // 4. Update Lab
 export async function updateLabAction(id: number, data: any) {
   try {
-    await prisma.$transaction(async (tx) => {
-      // A. Update Base Info
+    await prisma.$transaction(async tx => {
       await tx.lab.update({
         where: { id },
         data: {
           labName: data.labName,
           address: data.address,
           city: data.city,
+          state: data.state,
           pincode: data.pincode,
           contactNo: data.contactNo,
           email: data.email,
-          homeCollectionCharges: parseFloat(data.homeCollectionCharges),
-        }
+          latitude: data.latitude ?? null,
+          longitude: data.longitude ?? null,
+          rating: typeof data.rating === 'number' ? data.rating : undefined,
+          reviewCount: typeof data.reviewCount === 'number' ? data.reviewCount : undefined,
+          features: data.features ?? [],
+          timings: data.timings ?? null,
+          panNo: data.panNo ?? undefined,
+          gstNo: data.gstNo ?? undefined,
+          activeStatus: data.activeStatus, // 🔥 FIX
+          homeCollectionCharges: Number(data.homeCollectionCharges) || 0,
+        },
       });
 
-      // B. Update Pincodes (Delete all & Re-create)
-      await tx.labPincode.deleteMany({ where: { labId: id } });
-      if (data.pincodes && data.pincodes.length > 0) {
+      if (Array.isArray(data.pincodes)) {
+        await tx.labPincode.deleteMany({ where: { labId: id } });
         await tx.labPincode.createMany({
-          data: data.pincodes.map((pin: string) => ({ labId: id, pincode: pin }))
+          data: data.pincodes.map((pin: string) => ({
+            labId: id,
+            pincode: pin,
+          })),
         });
       }
 
-      // C. Update Packages (Delete all & Re-create)
-      await tx.labPackage.deleteMany({ where: { labId: id } });
-      for (const pkg of data.packages) {
-        if (pkg.selected) {
-          await tx.labPackage.create({
-            data: {
-              labId: id,
-              packageId: pkg.id,
-              price: parseFloat(pkg.price),
-              discount: parseFloat(pkg.discount || '0')
-            }
-          });
+      if (Array.isArray(data.packages)) {
+        await tx.labPackage.deleteMany({ where: { labId: id } });
+
+        const packageRows = data.packages
+          .filter((p: any) => p.selected)
+          .map((p: any) => ({
+            labId: id,
+            packageId: p.id,
+            price: Number(p.price) || 0,
+            discount: Number(p.discount) || 0,
+          }));
+
+        if (packageRows.length > 0) {
+          await tx.labPackage.createMany({ data: packageRows });
         }
       }
 
-      // D. Update Tests (Delete all & Re-create)
-      await tx.labTest.deleteMany({ where: { labId: id } });
-      for (const test of data.tests) {
-        if (test.selected) {
+      if (Array.isArray(data.tests)) {
+        await tx.labTest.deleteMany({ where: { labId: id } });
+        for (const test of data.tests) {
+          if (!test.selected) continue;
           await tx.labTest.create({
             data: {
               labId: id,
               testId: test.id,
-              price: parseFloat(test.price),
-              discount: parseFloat(test.discount || '0'),
-              available: true
-            }
+              price: Number(test.price) || 0,
+              discount: Number(test.discount) || 0,
+              available: true,
+            },
           });
         }
       }
     });
+
     revalidatePath('/admin/labs');
     return { success: true };
   } catch (error: any) {
-    console.error(error);
+    console.error('Update Lab Error:', error);
     return { success: false, error: error.message };
   }
 }
+
+
 
 // 5. Delete Lab
 export async function deleteLabAction(id: number) {

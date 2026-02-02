@@ -9,7 +9,7 @@ import {
   Droplets, Moon, Zap, HeartPulse, Leaf
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
 import jsPDF from 'jspdf'; 
 

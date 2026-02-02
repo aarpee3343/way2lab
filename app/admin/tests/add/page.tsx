@@ -1,212 +1,228 @@
+// app/admin/tests/add/page.tsx
 'use client';
 
-import { useState } from 'react';
-import { createTestAction } from '@/app/actions/adminInventoryActions';
-import { Save, ArrowLeft, Loader2, FlaskConical, Clock, FileText, Banknote } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { createTestAction, bulkCreateTestsAction } from '@/app/actions/adminInventoryActions';
+import {
+  Save,
+  ArrowLeft,
+  Loader2,
+  FlaskConical,
+  Clock,
+  FileText,
+  Banknote,
+  FileSpreadsheet
+} from 'lucide-react';
 import Link from 'next/link';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
 
 export default function AddTestPage() {
   const [loading, setLoading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // ---------------- MANUAL CREATE ----------------
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(event.currentTarget);
+    const formData = new FormData(e.currentTarget);
     const result = await createTestAction(formData);
 
     setLoading(false);
 
     if (result?.success) {
-      toast.success("Test Created Successfully!");
-      router.push('/admin/tests'); 
+      toast.success('Test Created Successfully!');
+      router.push('/admin/tests');
     } else {
-      toast.error(result?.error || "Failed to create test");
+      toast.error(result?.error || 'Failed to create test');
     }
   };
 
+  // ---------------- BULK UPLOAD ----------------
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const parseCSV = (text: string) => {
+    const lines = text.split('\n').filter(Boolean);
+    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+
+    return lines.slice(1).map(line => {
+      const values = line.split(',').map(v => v.replace(/"/g, '').trim());
+      const obj: any = {};
+      headers.forEach((h, i) => (obj[h] = values[i] || ''));
+      return obj;
+    });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    const reader = new FileReader();
+
+    reader.onload = async ev => {
+      try {
+        const parsed = parseCSV(ev.target?.result as string);
+        const result = await bulkCreateTestsAction(parsed);
+
+        if (result.success) {
+          toast.success(`${result.count} Tests Imported Successfully!`);
+          router.push('/admin/tests');
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('Invalid CSV format');
+      } finally {
+        setLoading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
   return (
-    <div className="max-w-5xl mx-auto pb-20 animate-in fade-in zoom-in-95 duration-500">
-      
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+    <div className="max-w-5xl mx-auto pb-20">
+      {/* HEADER */}
+      <div className="flex justify-between mb-8">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-             <div className="bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider">New Entry</div>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">Add Diagnostic Test</h1>
-          <p className="text-slate-500 mt-1">Configure details, pricing, and report settings</p>
+          <h1 className="admin-page-title">Add Diagnostic Test</h1>
+          <p className="admin-page-subtitle">Manual or bulk CSV upload</p>
         </div>
-        <Link href="/admin/tests" className="group flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm transition-all border border-transparent hover:border-slate-200">
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform"/> Cancel
-        </Link>
+
+        <div className="admin-space-x">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileChange}
+            className="hidden"
+          />
+
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={loading}
+            className="admin-btn-primary bg-emerald-600 hover:bg-emerald-700"
+          >
+            {loading ? <Loader2 className="animate-spin" size={18} /> : <FileSpreadsheet size={18} />}
+            Bulk Upload
+          </button>
+
+          <Link href="/admin/tests" className="admin-btn-secondary">
+            <ArrowLeft size={18} /> Cancel
+          </Link>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        
-        {/* SECTION 1: Core Identity */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center"><FlaskConical size={18}/></span>
-                    Core Identity
-                 </h3>
-                 <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                    Set the fundamental details of the test. The slug will be auto-generated from the name if left blank.
-                 </p>
-              </div>
-           </div>
-           
-           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="grid grid-cols-2 gap-5">
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="label">Test Name <span className="text-rose-500">*</span></label>
-                  <input name="test_name" required className="input-field" placeholder="e.g. Complete Blood Count" />
-                </div>
-                <div className="col-span-2 sm:col-span-1">
-                  <label className="label">Slug (Optional)</label>
-                  <div className="relative">
-                     <span className="absolute left-3 top-3 text-slate-400 text-sm font-mono">/test/</span>
-                     <input name="slug" className="input-field pl-14 font-mono text-sm" placeholder="auto-generated" />
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Category <span className="text-rose-500">*</span></label>
-                  <select name="category" required className="input-field appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2U9IiM2NDc0OGIiIGNsYXNzPSJ3LTYgaC02Ij48cGF0aCBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGQ9Ik0xOSA5bDctNyA3LTdNMTE5IDlsNyA3IDctNyIvPjwvc3ZnPg==')] bg-no-repeat bg-[right_1rem_center] bg-[length:1em]">
-                    <option value="" disabled selected>Select Category</option>
-                    <option value="Pathology">Pathology</option>
-                    <option value="Radiology">Radiology</option>
-                    <option value="Cardiology">Cardiology</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="label">Specialty <span className="text-rose-500">*</span></label>
-                  <select name="specialty" required className="input-field appearance-none bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIGZpbGw9Im5vbmUiIHZpZXdCb3g9IjAgMCAyNCAyNCIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2U9IiM2NDc0OGIiIGNsYXNzPSJ3LTYgaC02Ij48cGF0aCBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGQ9Ik0xOSA5bDctNyA3LTdNMTE5IDlsNyA3IDctNyIvPjwvc3ZnPg==')] bg-no-repeat bg-[right_1rem_center] bg-[length:1em]">
-                    <option value="" disabled selected>Select Specialty</option>
-                    <option value="General">General Physician</option>
-                    <option value="Heart">Cardiologist</option>
-                    <option value="Diabetes">Diabetologist</option>
-                  </select>
-                </div>
-                <div className="col-span-2">
-                  <label className="label">Short Description <span className="text-rose-500">*</span></label>
-                  <textarea name="description" rows={3} required className="input-field resize-none" placeholder="Brief overview of the test..." />
-                </div>
-              </div>
-           </div>
-        </div>
+      <form onSubmit={handleSubmit} className="admin-space-y">
+        <Section title="Core Identity" icon={<FlaskConical size={18} />}>
+          <div className="admin-form-grid">
+            <InputField name="test_name" label="Test Name *" required />
+            <InputField name="slug" label="Slug" />
+            <SelectField name="category" label="Category *" options={['Pathology', 'Radiology', 'Cardiology']} />
+            <SelectField name="specialty" label="Specialty *" options={['General', 'Heart', 'Diabetes']} />
+            <div className="col-span-2">
+              <TextareaField name="description" label="Short Description *" />
+            </div>
+          </div>
+        </Section>
 
-        {/* SECTION 2: Clinical Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center"><FileText size={18}/></span>
-                    Clinical Details
-                 </h3>
-                 <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                    Important instructions for the patient and technician to ensure accurate results.
-                 </p>
-              </div>
-           </div>
-           
-           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="grid grid-cols-2 gap-5">
-                 <div className="col-span-2">
-                  <label className="label">Preparation Instructions</label>
-                  <textarea name="preparation" rows={2} className="input-field resize-none" placeholder="e.g. 12 hours fasting required, drink water only..." />
-                </div>
-                <div className="col-span-2">
-                  <label className="label">Technician Notes</label>
-                  <textarea name="special_instruction" rows={2} className="input-field resize-none" placeholder="Specific sampling instructions (e.g. use green vial)..." />
-                </div>
-              </div>
-           </div>
-        </div>
+        <Section title="Clinical Details" icon={<FileText size={18} />}>
+          <div className="admin-form-grid">
+            <div className="col-span-2">
+              <TextareaField name="preparation" label="Preparation Instructions" />
+            </div>
+            <div className="col-span-2">
+              <TextareaField name="special_instruction" label="Technician Notes" />
+            </div>
+          </div>
+        </Section>
 
-        {/* SECTION 3: Pricing & Config */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-           <div className="lg:col-span-1">
-              <div className="sticky top-24">
-                 <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center"><Banknote size={18}/></span>
-                    Pricing & Config
-                 </h3>
-                 <p className="text-slate-500 text-sm mt-2 leading-relaxed">
-                    Set the base price (can be overridden per lab) and display settings.
-                 </p>
-              </div>
-           </div>
-           
-           <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-              <div className="grid grid-cols-3 gap-5">
-                <div>
-                  <label className="label">Base Price (₹) <span className="text-rose-500">*</span></label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-slate-400 font-bold">₹</span>
-                    <input type="number" name="price" required step="0.01" className="input-field pl-8 font-bold text-slate-700" placeholder="0.00" />
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Discount (%)</label>
-                  <div className="relative">
-                    <input type="number" name="discount" step="0.01" className="input-field pr-8" placeholder="0" />
-                    <span className="absolute right-3 top-2.5 text-slate-400 font-bold">%</span>
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Report Time</label>
-                  <div className="relative">
-                    <Clock size={16} className="absolute left-3 top-3 text-slate-400"/>
-                    <input name="schedule_reporting" className="input-field pl-9" placeholder="e.g. 24 Hours" />
-                  </div>
-                </div>
-                
-                <div className="col-span-3 pt-4 border-t border-slate-100 flex gap-6">
-                   <label className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-slate-50 rounded-lg transition-colors">
-                      <input type="checkbox" name="is_active" defaultChecked className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all" />
-                      <div>
-                         <span className="block text-sm font-bold text-slate-700">Active Test</span>
-                         <span className="block text-xs text-slate-400">Visible for booking</span>
-                      </div>
-                   </label>
-                   <label className="flex items-center gap-3 cursor-pointer group p-2 hover:bg-slate-50 rounded-lg transition-colors">
-                      <input type="checkbox" name="show_on_homepage" className="w-5 h-5 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition-all" />
-                      <div>
-                         <span className="block text-sm font-bold text-slate-700">Featured</span>
-                         <span className="block text-xs text-slate-400">Show on homepage</span>
-                      </div>
-                   </label>
-                </div>
-              </div>
-           </div>
-        </div>
+        <Section title="Pricing & Config" icon={<Banknote size={18} />}>
+          <div className="admin-form-grid">
+            <InputField name="price" label="Base Price (₹)" type="number" required />
+            <InputField name="discount" label="Discount (%)" type="number" />
+            <InputField name="schedule_reporting" label="Report Time" icon={<Clock size={16} />} />
+            <div className="col-span-2 flex gap-6 mt-4">
+              <CheckboxField name="is_active" label="Active Test" defaultChecked />
+              <CheckboxField name="show_on_homepage" label="Featured" />
+            </div>
+          </div>
+        </Section>
 
-        {/* Footer Actions */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 z-40 lg:pl-72 flex justify-end gap-4">
-           <Link href="/admin/tests" className="px-6 py-2.5 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-colors">
-             Cancel
-           </Link>
-           <button 
-            type="submit" 
-            disabled={loading}
-            className="bg-slate-900 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-black hover:shadow-lg hover:-translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} 
-            {loading ? 'Saving Test...' : 'Save & Publish'}
-          </button>
-        </div>
-
+        <button
+          disabled={loading}
+          className="admin-btn-primary"
+        >
+          {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+          Save & Publish
+        </button>
       </form>
-
-      <style jsx>{`
-        .label { @apply block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1; }
-        .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-medium text-slate-700 placeholder:text-slate-400; }
-      `}</style>
     </div>
+  );
+}
+
+/* ---------------- UI COMPONENTS ---------------- */
+
+function Section({ title, icon, children }: any) {
+  return (
+    <div className="admin-form-section">
+      <h3 className="admin-form-title">
+        {icon} {title}
+      </h3>
+      {children}
+    </div>
+  );
+}
+
+function InputField({ label, icon, ...props }: any) {
+  return (
+    <div>
+      <label className="admin-form-label">{label}</label>
+      <div className="relative">
+        {icon && <span className="absolute left-3 top-3">{icon}</span>}
+        <input {...props} className="admin-form-input" />
+      </div>
+    </div>
+  );
+}
+
+function TextareaField({ label, ...props }: any) {
+  return (
+    <div>
+      <label className="admin-form-label">{label}</label>
+      <textarea {...props} className="admin-form-textarea" />
+    </div>
+  );
+}
+
+function SelectField({ label, options, ...props }: any) {
+  return (
+    <div>
+      <label className="admin-form-label">{label}</label>
+      <select {...props} className="admin-form-select">
+        <option value="">Select</option>
+        {options.map((o: string) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+function CheckboxField({ label, ...props }: any) {
+  return (
+    <label className="admin-form-checkbox">
+      <input type="checkbox" {...props} />
+      <span>{label}</span>
+    </label>
   );
 }

@@ -3,14 +3,16 @@ import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
 async function generateFamilyUHID() {
-  while (true) {
-    const randomSuffix = Math.random().toString(36).substring(2, 9).toUpperCase();
-    const uhid = `WTLF${randomSuffix}`;
-    // Simplified check for now
-    const exists = await prisma.familyMember.findFirst({ where: { uhid } });
-    if (!exists) return uhid;
+  let attempts = 0;
+    while (attempts < 10) {
+      const randomSuffix = Math.random().toString(36).substring(2, 9).toUpperCase();
+      const uhid = `WTLF${randomSuffix}`;
+      const exists = await prisma.familyMember.findFirst({ where: { uhid } });
+      if (!exists) return uhid;
+      attempts++;
+    }
+    throw new Error("Failed to generate unique UHID");
   }
-}
 
 export async function POST(req: Request) {
   const user = await getAuthUser(req);

@@ -3,7 +3,6 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { useCartStore } from '@/store/useCartStore';
 import {
   CheckCircle,
@@ -14,13 +13,14 @@ import {
   Receipt,
   Download,
   Home,
-  ArrowRight,
   AlertCircle,
   Phone,
   FileText,
   Info,
-  Building2
+  Building2,
+  Loader2
 } from 'lucide-react';
+import { toast } from '@/lib/safe-toast';
 
 /* ---------------- HELPERS ---------------- */
 
@@ -30,16 +30,13 @@ const getAgeFromDob = (dob?: string | null) => {
   return Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25));
 };
 
-
 const getReportETA = (items: any[] = []) => {
   let maxHours = 0;
-
   items.forEach((i) => {
     if (i.packageId) maxHours = Math.max(maxHours, 48);
     else if (i.itemName?.toLowerCase().includes('x-ray')) maxHours = Math.max(maxHours, 72);
     else maxHours = Math.max(maxHours, 24);
   });
-
   return maxHours || 24;
 };
 
@@ -54,27 +51,29 @@ function SuccessContent() {
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
+    // Clear cart immediately on success load
     clearCart();
 
     const fetchOrder = async () => {
-      const token = Cookies.get('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       try {
-        const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/order/${orderId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // ✅ FIX: No headers, use HttpOnly cookie
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/order/${orderId}`);
 
         if (res.data?.id) setOrder(res.data);
         else setError('Invalid order response');
       } catch (err: any) {
-        setError(err.response?.data?.message || 'Failed to load order');
+        if (err.response?.status === 401) {
+            // If unauthorized, user might have been logged out.
+            // Since this is a public success page (conceptually), we might show a generic error
+            // or redirect. Typically, viewing an order requires auth.
+            toast.error("Session expired. Please login to view order.");
+            router.push('/login');
+        } else {
+            setError(err.response?.data?.message || 'Failed to load order');
+        }
       } finally {
         setLoading(false);
       }
@@ -82,17 +81,44 @@ function SuccessContent() {
 
     if (orderId) fetchOrder();
     else {
-      setError('Invalid order');
+      setError('Invalid order ID');
       setLoading(false);
     }
   }, [orderId, clearCart, router]);
+
+  // ✅ NEW: Handle Receipt Download Securely
+  const handleDownloadReceipt = async () => {
+    setDownloading(true);
+    try {
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/receipt`,
+        { 
+            responseType: 'blob', // Important for binary data
+            // No headers needed, browser sends cookie
+        }
+      );
+      
+      // Create a link to download the blob
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `Receipt_${order.orderNumber}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (e) {
+      toast.error("Failed to download receipt");
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   /* ---------------- STATES ---------------- */
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="animate-spin w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full" />
+        <Loader2 className="animate-spin text-blue-600" size={40} />
       </div>
     );
   }
@@ -117,17 +143,10 @@ function SuccessContent() {
   /* ---------------- CALCULATIONS ---------------- */
 
   const age = getAgeFromDob(order.patientDob);
-  const isMinor = age !== null && age < 18;
+  const isMinor = typeof age === 'number' && age < 18;
 
-  const totalMRP = order.items.reduce(
-    (s: number, i: any) => s + Number(i.basePrice || 0),
-    0
-  );
-
-  const sellingTotal = order.items.reduce(
-    (s: number, i: any) => s + Number(i.price || 0),
-    0
-  );
+  const totalMRP = order.items.reduce((s: number, i: any) => s + Number(i.basePrice || 0), 0);
+  const sellingTotal = order.items.reduce((s: number, i: any) => s + Number(i.price || 0), 0);
 
   const labDiscount = totalMRP - sellingTotal;
   const couponDiscount = Number(order.discountAmount || 0);
@@ -156,13 +175,11 @@ function SuccessContent() {
             <p className="font-bold text-lg flex items-center gap-2">
               {order.patientName}
               {isMinor && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">
-                  Minor
-                </span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-bold">Minor</span>
               )}
             </p>
             <p className="text-sm text-slate-600">
-              {age ?? '—'} yrs • {order.patientGender || '—'}
+              {age !== '—' ? `${age} yrs` : ''} • {order.patientGender || '—'}
             </p>
             <p className="text-xs text-slate-500">
               UHID: {order.patientUHID || '—'}
@@ -174,10 +191,7 @@ function SuccessContent() {
         <Card title="Schedule" icon={<Calendar />}>
           <p className="font-semibold">
             {new Date(order.preferredDate).toLocaleDateString('en-IN', {
-              weekday: 'long',
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric'
+              weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
             })}
           </p>
           <p className="text-sm text-slate-600 flex items-center gap-1 mt-1">
@@ -188,9 +202,7 @@ function SuccessContent() {
         {/* COLLECTION */}
         <Card title="Collection Type" icon={<MapPin />}>
           <span className="inline-block mb-2 px-3 py-1 rounded-lg bg-blue-100 text-blue-700 font-bold text-sm">
-            {order.collectionType === 'home_collection'
-              ? 'Home Collection'
-              : 'Lab Visit'}
+            {order.collectionType === 'home_collection' ? 'Home Collection' : 'Lab Visit'}
           </span>
 
           {order.collectionType === 'center_visit' && order.lab && (
@@ -231,33 +243,26 @@ function SuccessContent() {
           <hr className="my-2" />
           <SummaryRow label="Total Payable" value={payable} bold />
           {totalSavings > 0 && (
-            <p className="text-xs font-bold text-emerald-600 mt-1">
-              You saved ₹{totalSavings}
-            </p>
+            <p className="text-xs font-bold text-emerald-600 mt-1">You saved ₹{totalSavings}</p>
           )}
         </Card>
 
         {/* REPORT ETA */}
         <Card title="Report ETA" icon={<Info />}>
-          <p className="font-bold">
-            Reports expected within {reportHours} hours
-          </p>
-          <p className="text-sm text-slate-600 mt-1">
-            Reports will be shared via SMS & Email
-          </p>
+          <p className="font-bold">Reports expected within {reportHours} hours</p>
+          <p className="text-sm text-slate-600 mt-1">Reports will be shared via SMS & Email</p>
         </Card>
 
         {/* ACTIONS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <a
-            href={`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/receipt?token=${Cookies.get(
-              'token'
-            )}`}
-            target="_blank"
-            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-blue-600 text-white font-bold"
+          <button
+            onClick={handleDownloadReceipt}
+            disabled={downloading}
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-blue-600 text-white font-bold disabled:opacity-70"
           >
-            <Download size={18} /> Download Receipt
-          </a>
+            {downloading ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />} 
+            Download Receipt
+          </button>
 
           <button
             onClick={() => router.push('/')}
@@ -296,7 +301,7 @@ const SummaryRow = ({ label, value, bold }: any) => (
 
 export default function OrderSuccessPage() {
   return (
-    <Suspense fallback={<div />}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>}>
       <SuccessContent />
     </Suspense>
   );

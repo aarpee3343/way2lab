@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-import Cookies from 'js-cookie';
+// ❌ REMOVED: import Cookies from 'js-cookie'; 
 
 import { useCartStore } from '@/store/useCartStore';
 import { useBookingStore } from '@/store/useBookingStore';
@@ -13,8 +13,12 @@ import {
   User,
   MapPin,
   ArrowRight,
-  ShieldCheck
+  ShieldCheck,
+  Calendar,
+  Clock,
+  Loader2
 } from 'lucide-react';
+import { toast } from '@/lib/safe-toast';
 
 /* ----------------------------------
    HELPERS
@@ -52,84 +56,94 @@ export default function ConfirmOrderPage() {
   } = useBookingStore();
 
   /* ---------- STATE ---------- */
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start loading true
   const [address, setAddress] = useState<any>(null);
   const [patient, setPatient] = useState<any>(null);
   const [homeCharge, setHomeCharge] = useState(0);
+  const [user, setUser] = useState<any>(null);
 
   /* ---------- GUARDS ---------- */
   useEffect(() => {
-    if (!items.length) router.push('/search');
-    if (!selectedAddressId || !scheduleDate) router.push('/checkout/details');
-  }, []);
+    if (!items.length) {
+        router.push('/search');
+        return;
+    }
+    if (!selectedAddressId || !scheduleDate) {
+        router.push('/checkout/details');
+        return;
+    }
+  }, [items.length, selectedAddressId, scheduleDate, router]);
 
   /* ---------- LOAD DATA ---------- */
   useEffect(() => {
     const load = async () => {
-      const token = Cookies.get('token');
-      if (!token) return router.push('/login');
-
       try {
-        /* ADDRESS */
-        const addrRes = await axios.get(
-          `${process.env.NEXT_PUBLIC_API_URL}/user/addresses`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        // ❌ REMOVED: const token = Cookies.get('token');
+        
+        // 1. Fetch User (This acts as the Auth Check)
+        const meRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`);
+        const userData = meRes.data.user;
+        setUser(userData);
+
+        // 2. Fetch Address
+        const addrRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`);
         setAddress(addrRes.data.find((a: any) => a.id === selectedAddressId));
 
-        /* PATIENT */
+        // 3. Set Patient Data
         if (patientType === 'self') {
-          const me = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          const u = me.data.user;
           setPatient({
-            name: u.name,
-            dob: u.dateOfBirth,
-            gender: u.gender,
-            phone: u.phone,
-            uhid: u.uhid,
+            name: userData.name,
+            dob: userData.dateOfBirth,
+            gender: userData.gender,
+            phone: userData.phone,
+            uhid: userData.uhid,
             type: 'self',
             relation: 'Self'
           });
-        }
-
-        if (patientType === 'family_member') {
-          const fam = await axios.get(
-            `${process.env.NEXT_PUBLIC_API_URL}/user/family`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
-
-          const m = fam.data.find((f: any) => f.id === selectedFamilyMemberId);
-          setPatient({
-            name: m.name,
-            dob: m.dateOfBirth,
-            gender: m.gender,
-            phone: m.phone,
-            uhid: m.uhid,
-            type: 'family',
-            relation: m.relationship
-          });
+        } 
+        else if (patientType === 'family_member') {
+          const famRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/family`);
+          const m = famRes.data.find((f: any) => f.id === selectedFamilyMemberId);
+          if (m) {
+            setPatient({
+              name: m.name,
+              dob: m.dateOfBirth,
+              gender: m.gender,
+              phone: m.phone,
+              uhid: m.uhid,
+              type: 'family',
+              relation: m.relationship
+            });
+          }
         }
 
         if (collectionType === 'home_collection') setHomeCharge(200);
-      } catch (e) {
-        console.error(e);
+
+      } catch (e: any) {
+        // ✅ Handle Auth Failure Here
+        if (e.response?.status === 401) {
+           toast.error("Session expired.");
+           router.push('/login?redirect=/checkout/confirm');
+        } else {
+           console.error("Load error", e);
+        }
+      } finally {
+        setLoading(false);
       }
     };
 
-    load();
-  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType]);
+    if (items.length > 0) load();
+  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType, items.length, router]);
 
-  if (!patient || !address) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-slate-500">
-        Loading details…
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <Loader2 className="animate-spin text-blue-600" size={40} />
       </div>
     );
   }
+
+  if (!patient || !address || !user) return null; // Should have redirected or loaded by now
 
   /* ---------- CALCULATIONS ---------- */
   const age = getAgeFromDob(patient.dob);
@@ -147,15 +161,20 @@ export default function ConfirmOrderPage() {
   const testDiscount = mrpTotal - discountedTotal;
   const couponDiscount = totals.couponDiscount || 0;
 
-  const finalTotal =
-    discountedTotal - couponDiscount + homeCharge;
+  const finalTotal = discountedTotal - couponDiscount + homeCharge;
+
+  /* ---------- CORPORATE BILLING CHECK ---------- */
+  const isCorporateCovered =
+    patient.type === 'self' &&
+    !!user.corporateId &&
+    items.some(i => i.isCorporate === true);
 
   /* ---------- PLACE ORDER ---------- */
   const placeOrder = async () => {
     setLoading(true);
 
     try {
-      const token = Cookies.get('token');
+      // ❌ REMOVED: const token = Cookies.get('token');
 
       const payload = {
         labId: items[0].labId,
@@ -175,19 +194,27 @@ export default function ConfirmOrderPage() {
           time: scheduleTime,
           type: collectionType
         },
-        paymentMode: 'Pay Upon Service',
+
+        paymentMode: isCorporateCovered
+          ? 'Corporate Credit'
+          : 'Pay Upon Service',
+
+        paymentStatus: isCorporateCovered
+          ? 'CORPORATE_BILLING'
+          : 'PENDING',
+
         totals: {
           subtotal: mrpTotal,
           discount: testDiscount + couponDiscount,
           homeCollection: homeCharge,
-          final: finalTotal
+          final: isCorporateCovered ? 0 : finalTotal
         }
       };
 
+      // ✅ AUTOMATIC COOKIE HANDLING (No Headers)
       const res = await axios.post(
         `${process.env.NEXT_PUBLIC_API_URL}/orders`,
-        payload,
-        { headers: { Authorization: `Bearer ${token}` } }
+        payload
       );
 
       if (res.data.success) {
@@ -195,14 +222,19 @@ export default function ConfirmOrderPage() {
         router.push(`/order-success?id=${res.data.orderNumber}`);
       }
     } catch (e: any) {
-      alert(e.response?.data?.message || 'Order failed');
+      if (e.response?.status === 401) {
+          toast.error("Session expired.");
+          router.push('/login');
+      } else {
+          toast.error(e.response?.data?.message || 'Order failed');
+      }
     } finally {
       setLoading(false);
     }
   };
 
   /* ==================================
-     UI
+       UI
   ================================== */
 
   return (
@@ -216,7 +248,6 @@ export default function ConfirmOrderPage() {
             <ClipboardList /> Review Order
           </h1>
 
-          {/* PATIENT */}
           <Card title="Patient">
             <div className="flex gap-3">
               <User />
@@ -229,7 +260,6 @@ export default function ConfirmOrderPage() {
             </div>
           </Card>
 
-          {/* SCHEDULE */}
           <Card title="Schedule">
             <p className="font-semibold">
               {new Date(scheduleDate!).toLocaleDateString('en-IN')}
@@ -245,7 +275,6 @@ export default function ConfirmOrderPage() {
             </p>
           </Card>
 
-          {/* ADDRESS */}
           <Card title="Collection Address">
             <div className="flex gap-2">
               <MapPin />
@@ -258,10 +287,9 @@ export default function ConfirmOrderPage() {
             </div>
           </Card>
 
-          {/* TESTS */}
           <Card title={`Tests (${items.length})`}>
             {items.map((i, idx) => (
-              <div key={idx} className="flex justify-between text-sm">
+              <div key={idx} className="flex justify-between text-sm border-b border-slate-50 last:border-0 py-2">
                 <span>{i.name}</span>
                 <span className="font-bold">₹{i.price}</span>
               </div>
@@ -275,29 +303,26 @@ export default function ConfirmOrderPage() {
           <h3 className="font-bold mb-4">Payment Summary</h3>
 
           <Row label="MRP Total" value={mrpTotal} />
-
-          {testDiscount > 0 && (
-            <Row label="WayToLab Discount" value={-testDiscount} />
-          )}
-
-          {couponDiscount > 0 && (
-            <Row label="Coupon Discount" value={-couponDiscount} />
-          )}
-
-          {homeCharge > 0 && (
-            <Row label="Home Collection Charges" value={homeCharge} />
-          )}
+          {testDiscount > 0 && <Row label="WayToLab Discount" value={-testDiscount} />}
+          {couponDiscount > 0 && <Row label="Coupon Discount" value={-couponDiscount} />}
+          {homeCharge > 0 && <Row label="Home Collection Charges" value={homeCharge} />}
 
           <hr className="my-3" />
 
-          <Row label="Amount Payable" value={finalTotal} bold />
+          <Row label="Amount Payable" value={isCorporateCovered ? 0 : finalTotal} bold />
+
+          {isCorporateCovered && (
+            <p className="text-xs text-green-600 font-bold mt-2 bg-green-50 p-2 rounded border border-green-200 text-center">
+              Covered by Corporate Account
+            </p>
+          )}
 
           <button
             onClick={placeOrder}
             disabled={loading}
-            className="mt-4 w-full h-14 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2"
+            className="mt-6 w-full h-14 rounded-xl bg-blue-600 text-white font-bold flex items-center justify-center gap-2 hover:bg-blue-700 active:scale-95 transition-all shadow-lg shadow-blue-200 disabled:opacity-70"
           >
-            {loading ? 'Placing…' : <>Place Order <ArrowRight /></>}
+            {loading ? <Loader2 className="animate-spin" /> : <>Confirm & Book <ArrowRight size={20}/></>}
           </button>
 
           <p className="text-xs text-center mt-3 text-slate-500 flex justify-center gap-1">
@@ -314,17 +339,17 @@ export default function ConfirmOrderPage() {
 ----------------------------------- */
 
 const Card = ({ title, children }: any) => (
-  <div className="bg-white rounded-2xl p-5 shadow-sm">
-    <h3 className="font-bold text-sm mb-3">{title}</h3>
+  <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+    <h3 className="font-bold text-sm mb-3 uppercase text-slate-400 tracking-wider">{title}</h3>
     {children}
   </div>
 );
 
 const Row = ({ label, value, bold }: any) => (
-  <div className={`flex justify-between ${bold ? 'font-extrabold text-lg' : 'text-sm'}`}>
+  <div className={`flex justify-between ${bold ? 'font-extrabold text-lg text-slate-900' : 'text-sm text-slate-600 mb-1'}`}>
     <span>{label}</span>
     <span className={value < 0 ? 'text-green-600' : ''}>
-      ₹{Math.abs(value)}
+      ₹{Math.abs(value).toLocaleString()}
     </span>
   </div>
 );

@@ -1,3 +1,4 @@
+// app/admin/orders/[id]/page.tsx
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -8,7 +9,6 @@ import {
 
 import { OrderStatus } from '@prisma/client';
 import UploadReportForm from '../_components/UploadReportForm';
-
 
 import {
   ArrowLeft,
@@ -44,8 +44,8 @@ const getStatusColor = (status: OrderStatus) => {
 
 const getPaymentColor = (status?: string | null) =>
   status === 'Paid'
-    ? 'bg-emerald-100 text-emerald-700'
-    : 'bg-amber-100 text-amber-700';
+    ? 'admin-badge-success'
+    : 'admin-badge-warning';
 
 /* ================= PAGE ================= */
 
@@ -83,7 +83,6 @@ export default async function OrderDetailsPage({
   
   const assignedTechnician = order.technician;
 
-
   /* ================= BUSINESS LOGIC (UNCHANGED) ================= */
 
   const subtotal = Number(order.totalAmount) || 0;
@@ -120,18 +119,16 @@ export default async function OrderDetailsPage({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-slate-800">
+            <h1 className="admin-page-title">
               Order #{order.orderNumber || order.id}
             </h1>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
-                order.status
-              )}`}
+              className={`admin-badge ${getStatusColor(order.status)}`}
             >
               {order.status.replace('_', ' ')}
             </span>
           </div>
-          <p className="text-slate-500 mt-1">
+          <p className="admin-page-subtitle">
             Customer:{' '}
             <span className="font-medium text-slate-700">
               {order.customer?.name}
@@ -140,17 +137,17 @@ export default async function OrderDetailsPage({
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="admin-space-x">
           <Link
             href="/admin/orders"
-            className="px-4 py-2 bg-white border rounded-xl flex items-center gap-2"
+            className="admin-btn-secondary"
           >
             <ArrowLeft size={18} /> Back
           </Link>
           <a
             href={`/api/order/${order.id}/pdf`}
             target="_blank"
-            className="px-4 py-2 bg-slate-900 text-white rounded-xl flex items-center gap-2"
+            className="admin-btn-primary"
           >
             <Printer size={18} /> Print PDF
           </a>
@@ -158,21 +155,21 @@ export default async function OrderDetailsPage({
       </div>
 
       {/* ================= SUMMARY ================= */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <SummaryCard label="Final Amount" value={`₹${finalAmount}`} highlight />
-        <SummaryCard
+      <div className="admin-stat-grid mb-8">
+        <StatCard label="Final Amount" value={`₹${finalAmount}`} highlight />
+        <StatCard
           label="Order Status"
           value={order.status.replace('_', ' ')}
           badge
           color={getStatusColor(order.status)}
         />
-        <SummaryCard
+        <StatCard
           label="Payment"
           value={order.paymentStatus || 'Pending'}
           badge
           color={getPaymentColor(order.paymentStatus)}
         />
-        <SummaryCard label="Items" value={order.items.length.toString()} />
+        <StatCard label="Items" value={order.items.length.toString()} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -206,30 +203,26 @@ export default async function OrderDetailsPage({
 
           {/* ITEMS */}
           <Card title={`Order Items (${order.items.length})`} icon={FlaskConical}>
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-slate-500 font-semibold">
+            <table className="admin-table">
+              <thead>
                 <tr>
-                  <th className="px-4 py-3 text-left">Item Name</th>
-                  <th className="px-4 py-3 text-center">Type</th>
-                  <th className="px-4 py-3 text-right">Price</th>
+                  <th className="text-left">Item Name</th>
+                  <th className="text-center">Type</th>
+                  <th className="text-right">Price</th>
                 </tr>
               </thead>
-              <tbody className="divide-y">
+              <tbody>
                 {order.items.map(item => (
                   <tr key={item.id}>
-                    <td className="px-4 py-3 font-medium">{item.itemName}</td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="admin-table-row-primary">{item.itemName}</td>
+                    <td className="text-center">
                       <span
-                        className={`text-[10px] uppercase font-bold px-2 py-1 rounded ${
-                          item.itemType === 'package'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-blue-100 text-blue-700'
-                        }`}
+                        className={`admin-badge ${item.itemType === 'package' ? 'admin-badge-info' : 'admin-badge-default'}`}
                       >
                         {item.itemType}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right font-bold">
+                    <td className="text-right admin-table-row-primary">
                       ₹{Number(item.price).toFixed(2)}
                     </td>
                   </tr>
@@ -241,8 +234,8 @@ export default async function OrderDetailsPage({
           {/* PAYMENTS */}
           <Card title="Payment Transactions" icon={CreditCard}>
             {order.payments.length ? (
-              <table className="w-full text-sm">
-                <thead className="text-xs text-slate-400">
+              <table className="admin-table">
+                <thead>
                   <tr>
                     <th>Date</th>
                     <th>Method</th>
@@ -253,10 +246,14 @@ export default async function OrderDetailsPage({
                 <tbody>
                   {order.payments.map(p => (
                     <tr key={p.id}>
-                      <td>{p.createdAt.toLocaleString()}</td>
+                      <td className="admin-table-row-secondary">{p.createdAt.toLocaleString()}</td>
                       <td>{p.method}</td>
-                      <td>{p.status}</td>
-                      <td className="text-right font-bold">
+                      <td>
+                        <span className={`admin-badge ${p.status === 'Paid' ? 'admin-badge-success' : 'admin-badge-warning'}`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="text-right admin-table-row-primary">
                         ₹{p.amount.toString()}
                       </td>
                     </tr>
@@ -277,12 +274,12 @@ export default async function OrderDetailsPage({
                   className="flex justify-between items-center p-3 bg-slate-50 border rounded-xl mb-3"
                 >
                   <div>
-                    <p className="text-sm font-medium">
+                    <p className="admin-table-row-primary">
                       {rep.reportType === 'COMPLETED'
                         ? 'Final Diagnostic Report'
                         : `Partial Report • ${new Date(rep.createdAt).toLocaleDateString()}`}
                     </p>
-                    <span className="text-[10px] uppercase border px-1.5 rounded">
+                    <span className="admin-badge-default text-[10px] uppercase px-1.5 rounded">
                       {rep.reportType}
                     </span>
                   </div>
@@ -305,7 +302,7 @@ export default async function OrderDetailsPage({
                 name="status"
                 defaultValue={order.status}
                 disabled={isCompleted}
-                className="w-full p-2 border rounded-lg"
+                className="admin-form-select"
               >
                 {Object.values(OrderStatus)
                   .filter(s => s !== OrderStatus.CANCELLED)
@@ -317,11 +314,7 @@ export default async function OrderDetailsPage({
               </select>
               <button
                 disabled={isCompleted}
-                className={`w-full py-2 rounded-lg font-bold ${
-                  isCompleted
-                    ? 'bg-slate-300 cursor-not-allowed'
-                    : 'bg-blue-600 text-white'
-                }`}
+                className={`admin-btn-primary w-full ${isCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Update Status
               </button>
@@ -336,14 +329,14 @@ export default async function OrderDetailsPage({
 
               {/* CURRENT ASSIGNMENT */}
               {assignedTechnician && (
-                <div className="p-3 rounded-lg bg-slate-50 border text-sm">
+                <div className="admin-alert admin-alert-info">
                   <p className="text-xs uppercase font-bold text-slate-400 mb-1">
                     Currently Assigned
                   </p>
-                  <p className="font-medium text-slate-800">
+                  <p className="admin-table-row-primary">
                     {assignedTechnician.name}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="admin-table-row-secondary">
                     {assignedTechnician.phone}
                   </p>
                 </div>
@@ -354,7 +347,7 @@ export default async function OrderDetailsPage({
                 name="technicianId"
                 defaultValue={assignedTechnician?.id ?? ''}
                 disabled={isTerminal}
-                className="w-full p-2 border rounded-lg bg-white disabled:bg-slate-100"
+                className="admin-form-select"
                 required
               >
                 <option value="">-- Choose Technician --</option>
@@ -368,13 +361,7 @@ export default async function OrderDetailsPage({
               {/* BUTTON */}
               <button
                 disabled={isTerminal}
-                className={`w-full py-2 rounded-lg font-bold transition ${
-                  isTerminal
-                    ? 'bg-slate-300 cursor-not-allowed'
-                    : assignedTechnician
-                    ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
-                    : 'bg-purple-600 hover:bg-purple-700 text-white'
-                }`}
+                className={`admin-btn-primary w-full ${isTerminal ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {assignedTechnician ? 'Change Technician' : 'Assign Technician'}
               </button>
@@ -389,11 +376,11 @@ export default async function OrderDetailsPage({
           {/* CUSTOMER */}
           <Card title="Customer" icon={User}>
             <div className="space-y-2 text-sm">
-              <div className="font-medium">{order.customer?.name}</div>
-              <div className="flex items-center gap-2">
+              <div className="admin-table-row-primary">{order.customer?.name}</div>
+              <div className="flex items-center gap-2 admin-table-row-secondary">
                 <Phone size={14} /> {order.customer?.phone}
               </div>
-              <div className="flex items-start gap-2">
+              <div className="flex items-start gap-2 admin-table-row-secondary">
                 <MapPin size={14} className="mt-1" />
                 <span>
                   {order.address?.addressLine1}, {order.address?.city}
@@ -426,8 +413,8 @@ export default async function OrderDetailsPage({
                     : 'bg-slate-50 border-slate-300'
                 }`}
               >
-                <p className="font-bold">{preferredDate.toDateString()}</p>
-                <p className="text-sm text-slate-500">
+                <p className="admin-table-row-primary">{preferredDate.toDateString()}</p>
+                <p className="admin-table-row-secondary">
                   {order.preferredTimeSlot || 'Anytime'}
                 </p>
                 {order.collectionInstructions && (
@@ -455,10 +442,10 @@ export default async function OrderDetailsPage({
             <ol className="border-l ml-2">
               {order.activities.map(a => (
                 <li key={a.id} className="ml-4 mb-4">
-                  <p className="font-semibold text-sm">
+                  <p className="admin-table-row-primary">
                     {a.action.replace('_', ' ')}
                   </p>
-                  <p className="text-xs text-slate-500">
+                  <p className="admin-table-row-secondary">
                     {a.oldValue && `${a.oldValue} → `}{a.newValue}
                   </p>
                   <p className="text-[10px] text-slate-400">
@@ -476,24 +463,24 @@ export default async function OrderDetailsPage({
 
 /* ================= UI HELPERS ================= */
 
-function SummaryCard({ label, value, highlight = false, badge = false, color = '' }: any) {
+function StatCard({ label, value, highlight = false, badge = false, color = '' }: any) {
   return (
-    <div className="bg-white p-4 rounded-2xl border shadow-sm">
-      <div className={`text-2xl font-bold ${highlight ? 'text-slate-900' : ''}`}>
-        {badge ? <span className={`text-sm px-3 py-1 rounded-full ${color}`}>{value}</span> : value}
+    <div className="admin-stat-card">
+      <div className={`admin-stat-value ${highlight ? 'text-slate-900' : ''}`}>
+        {badge ? <span className={`admin-badge ${color}`}>{value}</span> : value}
       </div>
-      <div className="text-xs text-slate-400 uppercase font-bold">{label}</div>
+      <div className="admin-stat-label">{label}</div>
     </div>
   );
 }
 
 function Card({ title, icon: Icon, children }: any) {
   return (
-    <div className="bg-white rounded-2xl border shadow-sm">
-      <div className="px-6 py-4 border-b flex items-center gap-2 font-bold">
+    <div className="admin-card">
+      <div className="admin-card-header flex items-center gap-2 font-bold">
         {Icon && <Icon size={18} />} {title}
       </div>
-      <div className="p-6">{children}</div>
+      <div className="admin-card-body">{children}</div>
     </div>
   );
 }
@@ -501,8 +488,8 @@ function Card({ title, icon: Icon, children }: any) {
 function InfoItem({ label, value, capitalize = false }: any) {
   return (
     <div>
-      <div className="text-xs font-bold uppercase text-slate-400">{label}</div>
-      <div className={`font-medium ${capitalize ? 'capitalize' : ''}`}>
+      <div className="admin-form-label">{label}</div>
+      <div className={`admin-table-row-primary ${capitalize ? 'capitalize' : ''}`}>
         {value || 'N/A'}
       </div>
     </div>

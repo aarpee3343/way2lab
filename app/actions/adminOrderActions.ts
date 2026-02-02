@@ -1,6 +1,7 @@
 'use server';
 
 import { prisma } from '@/lib/db';
+import { sendSMS } from '@/lib/sms';
 import {
   generateOrderNumber,
   generateCustomerUHID
@@ -105,7 +106,7 @@ export async function searchAdminTestsAction(
 --------------------------------------------------- */
 export async function placeAdminOrderAction(data: any) {
   try {
-    return await prisma.$transaction(async tx => {
+    return await prisma.$transaction(async (tx) => {
       let customerId = data.customerId;
 
       /* ---------- A. Customer ---------- */
@@ -120,8 +121,8 @@ export async function placeAdminOrderAction(data: any) {
             gender: data.gender,
             dateOfBirth: new Date(data.dob),
             uhid,
-            password: 'hashed_default_password' // replace with real hashing
-          }
+            password: 'hashed_default_password', // replace with real hashing
+          },
         });
 
         customerId = customer.id;
@@ -138,8 +139,8 @@ export async function placeAdminOrderAction(data: any) {
             city: data.city,
             state: data.state,
             pincode: data.pincode,
-            type: 'Other'
-          }
+            type: 'Other',
+          },
         });
 
         addressId = address.id;
@@ -149,42 +150,41 @@ export async function placeAdminOrderAction(data: any) {
       const orderNumber = await generateOrderNumber();
 
       const order = await tx.order.create({
-  data: {
-    orderNumber,
-    userId: customerId,
-    labId: data.labId,
-    addressId,
+        data: {
+          orderNumber,
+          userId: customerId,
+          labId: data.labId,
+          addressId,
 
-    // Financials
-    totalAmount: data.subtotal,
-    discountAmount: 0,
-    homeCollectionCharges: data.homeCharges,
-    finalAmount: data.finalTotal,
+          // Financials
+          totalAmount: data.subtotal,
+          discountAmount: 0,
+          homeCollectionCharges: data.homeCharges,
+          finalAmount: data.finalTotal,
 
-    // Payment / status
-    paymentMode: data.paymentMode,
-    status: 'PENDING',
-    bookingSource: 'Admin',
+          // Payment / status
+          paymentMode: data.paymentMode,
+          status: 'PENDING',
+          bookingSource: 'Admin',
 
-    // Schedule
-    collectionType: data.collectionType,
-    preferredDate: new Date(data.date),
-    preferredTimeSlot: data.time,
+          // Schedule
+          collectionType: data.collectionType,
+          preferredDate: new Date(data.date),
+          preferredTimeSlot: data.time,
 
-    // Associate (safe int conversion)
-    associateId: data.associateId ? parseInt(data.associateId) : null,
+          // Associate
+          associateId: data.associateId ? parseInt(data.associateId) : null,
 
-    // Instructions
-    collectionInstructions: data.instructions || "",
+          // Instructions
+          collectionInstructions: data.instructions || '',
 
-    // Patient
-    patientName: data.name,
-    patientAge: data.age ? parseInt(data.age) : null,
-    patientGender: data.gender,
-    patientPhone: data.phone
-  }
-});
-
+          // Patient
+          patientName: data.name,
+          patientAge: data.age ? parseInt(data.age) : null,
+          patientGender: data.gender,
+          patientPhone: data.phone,
+        },
+      });
 
       /* ---------- D. Order Items ---------- */
       for (const item of data.items) {
@@ -195,33 +195,34 @@ export async function placeAdminOrderAction(data: any) {
             testId: item.type === 'test' ? item.id : null,
             itemName: item.name,
             basePrice: item.mrp,
-            price: item.price
-          }
+            price: item.price,
+          },
         });
       }
 
-      /* ---------- E. Send SMS Notification ---------- */
+      /* ---------- E. SMS Notification (UPDATED) ---------- */
       try {
         await sendSMS(
-          data.phone, 
-          NOTIFICATION_TEMPLATES.ORDER_CONFIRMED(order.orderNumber, data.name)
+          data.phone,
+          'ORDER_PLACED',
+          [orderNumber] // template variables
         );
       } catch (smsError) {
         console.error('SMS sending failed:', smsError);
-        // Don't fail the transaction if SMS fails
+        // Do NOT rollback transaction for SMS failure
       }
 
       return {
         success: true,
         orderId: order.id,
-        orderNumber
+        orderNumber,
       };
     });
   } catch (error: any) {
     console.error('Order Creation Error:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message || 'Order creation failed',
     };
   }
 }

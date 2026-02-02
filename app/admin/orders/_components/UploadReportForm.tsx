@@ -1,3 +1,4 @@
+// app/admin/orders/_components/UploadReportForm.tsx
 'use client';
 
 import { useActionState } from 'react';
@@ -15,13 +16,13 @@ export default function UploadReportForm({ orderId }: { orderId: number }) {
   const { pending } = useFormStatus();
 
   return (
-    <form action={formAction} className="space-y-3">
+    <form action={formAction} className="admin-space-y">
       <input type="hidden" name="orderId" value={orderId} />
 
       {/* REQUIRED — this was missing */}
       <div>
-        <label className="block text-xs font-bold mb-1">Report Type</label>
-        <select name="type" required className="w-full border p-2 rounded">
+        <label className="admin-form-label">Report Type</label>
+        <select name="type" required className="admin-form-select">
           <option value="PARTIAL">Partial</option>
           <option value="COMPLETED">Completed</option>
         </select>
@@ -32,11 +33,12 @@ export default function UploadReportForm({ orderId }: { orderId: number }) {
         name="file"
         accept="application/pdf"
         required
+        className="admin-form-input"
       />
 
       <button
         disabled={pending}
-        className="w-full bg-emerald-600 text-white py-2 rounded-lg disabled:opacity-50"
+        className="admin-btn-primary w-full"
       >
         {pending ? 'Uploading…' : 'Upload Report'}
       </button>

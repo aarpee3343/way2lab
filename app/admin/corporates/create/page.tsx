@@ -1,8 +1,9 @@
+// app/admin/corporates/create/page.tsx
 'use client';
 import { useState } from 'react';
 import { createCorporateAction } from '@/app/actions/adminCorporateActions';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { Save, Loader2 } from 'lucide-react';
 
 export default function CreateCorporate() {
@@ -27,79 +28,73 @@ export default function CreateCorporate() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-black text-slate-800 mb-6">Onboard New Corporate</h1>
+      <h1 className="admin-page-title mb-6">Onboard New Corporate</h1>
       
-      <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="admin-form-section space-y-6">
         {/* Basic Info */}
-        <div className="grid grid-cols-2 gap-6">
+        <div className="admin-form-grid">
           <div className="col-span-2">
-            <label className="label">Corporate Name</label>
-            <input name="companyName" required className="input-field text-lg font-bold" placeholder="Acme Industries Ltd." />
+            <label className="admin-form-label">Corporate Name</label>
+            <input name="companyName" required className="admin-form-input text-lg font-bold" placeholder="Acme Industries Ltd." />
           </div>
           <div>
-            <label className="label">Contact Person</label>
-            <input name="contactPerson" required className="input-field" placeholder="HR Manager Name" />
+            <label className="admin-form-label">Contact Person</label>
+            <input name="contactPerson" required className="admin-form-input" placeholder="HR Manager Name" />
           </div>
           <div>
-            <label className="label">Phone Number</label>
-            <input name="phone" required className="input-field" placeholder="+91..." />
+            <label className="admin-form-label">Phone Number</label>
+            <input name="phone" required className="admin-form-input" placeholder="+91..." />
           </div>
           <div>
-            <label className="label">Official Email (Login ID)</label>
-            <input name="email" type="email" required className="input-field" placeholder="admin@company.com" />
+            <label className="admin-form-label">Official Email (Login ID)</label>
+            <input name="email" type="email" required className="admin-form-input" placeholder="admin@company.com" />
           </div>
           <div>
-            <label className="label">Password</label>
-            <input name="password" type="password" required className="input-field" placeholder="••••••••" />
+            <label className="admin-form-label">Password</label>
+            <input name="password" type="password" required className="admin-form-input" placeholder="••••••••" />
           </div>
         </div>
 
         <hr />
 
         {/* Address & Legal */}
-        <div className="grid grid-cols-3 gap-6">
+        <div className="admin-form-grid">
           <div className="col-span-3">
-            <label className="label">Address</label>
-            <input name="address" className="input-field" placeholder="Street / Building" />
+            <label className="admin-form-label">Address</label>
+            <input name="address" className="admin-form-input" placeholder="Street / Building" />
           </div>
           <div>
-            <label className="label">City</label>
-            <input name="city" className="input-field" />
+            <label className="admin-form-label">City</label>
+            <input name="city" className="admin-form-input" />
           </div>
           <div>
-            <label className="label">State</label>
-            <input name="state" className="input-field" />
+            <label className="admin-form-label">State</label>
+            <input name="state" className="admin-form-input" />
           </div>
           <div>
-            <label className="label">Pincode</label>
-            <input name="pincode" className="input-field" />
+            <label className="admin-form-label">Pincode</label>
+            <input name="pincode" className="admin-form-input" />
           </div>
           <div>
-            <label className="label">PAN Number</label>
-            <input name="panNumber" className="input-field uppercase" />
+            <label className="admin-form-label">PAN Number</label>
+            <input name="panNumber" className="admin-form-input uppercase" />
           </div>
           <div>
-            <label className="label">GSTIN</label>
-            <input name="gstin" className="input-field uppercase" />
+            <label className="admin-form-label">GSTIN</label>
+            <input name="gstin" className="admin-form-input uppercase" />
           </div>
           <div>
-            <label className="label">Est. Employee Count</label>
-            <input name="employeeCount" type="number" className="input-field" />
+            <label className="admin-form-label">Est. Employee Count</label>
+            <input name="employeeCount" type="number" className="admin-form-input" />
           </div>
         </div>
 
         <div className="pt-4">
-          <button disabled={loading} className="btn-primary w-full flex justify-center items-center gap-2">
+          <button disabled={loading} className="admin-btn-primary w-full flex justify-center items-center gap-2">
             {loading ? <Loader2 className="animate-spin"/> : <Save size={18} />} Create Corporate
           </button>
         </div>
       </form>
-
-      <style jsx>{`
-        .label { @apply block text-xs font-bold text-slate-500 uppercase mb-1.5 ml-1; }
-        .input-field { @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 font-medium outline-none focus:ring-2 focus:ring-blue-500 transition-all; }
-        .btn-primary { @apply bg-slate-900 text-white py-3.5 rounded-xl font-bold hover:bg-black transition-all shadow-lg hover:shadow-xl disabled:opacity-70; }
-      `}</style>
     </div>
   );
 }

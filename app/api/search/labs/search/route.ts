@@ -2,11 +2,11 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { safeData } from '@/lib/utils'; // Import the helper
+import { safeData } from '@/lib/utils';
 
 // Helper: Calculate Distance
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 6371; // Radius of the earth in km
+  const R = 6371; 
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a =
@@ -91,6 +91,10 @@ export async function POST(req: Request) {
         }
       }
 
+      // If no items found at this lab, return null (to be filtered out later)
+      // ✅ FIX 1: Early exit if no items match
+      if (foundItems.length === 0) return null;
+
       const totalDiscount = baseTotal > 0 
         ? Math.round(((baseTotal - finalTotal) / baseTotal) * 100) 
         : 0;
@@ -126,13 +130,15 @@ export async function POST(req: Request) {
       };
     }));
 
+    // ✅ FIX 2: Filter out nulls (labs with 0 matching items)
+    const validResults = results.filter(r => r !== null);
+
     // Sort: Full Match first, then Cheapest
-    const sorted = results.sort((a, b) => {
+    const sorted = validResults.sort((a: any, b: any) => {
       if (a.isFullMatch !== b.isFullMatch) return a.isFullMatch ? -1 : 1;
       return a.totalPrice - b.totalPrice;
     });
 
-    // ✅ FIX: Use safeData to clean the entire response
     return NextResponse.json(safeData(sorted));
 
   } catch (error) {

@@ -6,7 +6,7 @@ import { useBookingStore } from '@/store/useBookingStore';
 import { useCartStore } from '@/store/useCartStore';
 import { motion } from 'framer-motion';
 import { ChevronRight, Sun, Moon, Home, Building2, AlertTriangle, ArrowLeft, Calendar, Clock } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 export default function SchedulePage() {
   const router = useRouter();

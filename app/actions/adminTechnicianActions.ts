@@ -38,7 +38,7 @@ export async function getTechnicianStats() {
 // --- 3. GET FORM DATA (Labs List) ---
 export async function getTechnicianFormData() {
   return await prisma.lab.findMany({
-    where: { status: 'Active' },
+    where: { activeStatus: true },
     select: { id: true, labName: true, city: true },
     orderBy: { labName: 'asc' }
   });

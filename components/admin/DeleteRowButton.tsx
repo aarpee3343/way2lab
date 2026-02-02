@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Trash2, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
 
 interface DeleteRowButtonProps {

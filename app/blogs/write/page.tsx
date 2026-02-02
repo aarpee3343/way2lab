@@ -4,7 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { PenTool, Image as ImageIcon, Save, Loader2, CheckCircle2, Lock } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 export default function WriteBlogPage() {
   const router = useRouter();

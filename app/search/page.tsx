@@ -7,52 +7,43 @@ import { useCartStore } from '@/store/useCartStore';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, MapPin, ArrowRight, Star, AlertCircle, ShoppingBag, 
-  Filter, Crosshair, CheckCircle2, X, Loader2, Heart, Truck, Clock, Shield, ChevronDown
+  Filter, Crosshair, CheckCircle2, X, Loader2, ChevronDown
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { LabCardSkeleton } from '@/components/ui/Skeleton';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
 
-// --- TYPES ---
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
+
+// Types
 interface UserLocation {
   pincode: string;
-  area?: string;   
-  city?: string;   
-  display?: string; 
+  area?: string;
+  city?: string;
+  display?: string;
   lat?: number;
   lng?: number;
   isSet: boolean;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5050/api';
-const GOOGLE_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY;
-
-// Helper functions
-const formatPrice = (price: any) => {
-  if (price == null) return '0';
-  const num = Number(price);
-  return isNaN(num) ? '0' : num.toLocaleString();
-};
-
-const getSafeNumber = (value: any, defaultValue = 0) => {
-  if (value == null) return defaultValue;
-  const num = Number(value);
-  return isNaN(num) ? defaultValue : num;
-};
-
-// 1. RENAME your main logic to "SearchContent" (Not exported directly)
 function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // --- STATE ---
+  // --- 1. STATE MANAGEMENT ---
+  
+  // Location State
   const [location, setLocation] = useState<UserLocation>({ pincode: '', isSet: false });
   const [showLocModal, setShowLocModal] = useState(false);
   const [detectingLoc, setDetectingLoc] = useState(false);
 
-  const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [results, setResults] = useState<any[]>([]);
-  const [selectedItems, setSelectedItems] = useState<any[]>([]);
+  // Search State
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState<any[]>([]); // Dropdown results
+  const [selectedItems, setSelectedItems] = useState<any[]>([]); // Active search filters
+  
+  // Results State
   const [labs, setLabs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
@@ -63,8 +54,10 @@ function SearchContent() {
     minRating: 0
   });
 
-  // --- 1. LOCATION LOGIC ---
+  // --- 2. LOCATION LOGIC (Restored) ---
+
   useEffect(() => {
+    // Load location from local storage on mount
     const saved = localStorage.getItem('user_location');
     if (saved) {
       setLocation(JSON.parse(saved));
@@ -73,41 +66,38 @@ function SearchContent() {
     }
   }, []);
 
-  // Trust Manual Input
+  const saveLocation = (loc: UserLocation) => {
+    setLocation(loc);
+    localStorage.setItem('user_location', JSON.stringify(loc));
+    setShowLocModal(false);
+    // If we have items selected, re-fetch labs for new location
+    if (selectedItems.length > 0) fetchLabs(loc);
+  };
+
   const handleManualPincode = async (e: React.FormEvent) => {
     e.preventDefault();
     const pin = (document.getElementById('manual-pin') as HTMLInputElement).value;
     if (pin.length !== 6) return toast.error("Enter valid 6-digit pincode");
 
     setDetectingLoc(true);
-
     try {
       const res = await axios.get(`https://nominatim.openstreetmap.org/search?postalcode=${pin}&country=India&format=json`);
-      
       let lat, lng;
       if (res.data && res.data.length > 0) {
         lat = parseFloat(res.data[0].lat);
         lng = parseFloat(res.data[0].lon);
       }
-
-      const newLoc = { 
-        pincode: pin, 
-        display: pin, 
-        lat, 
-        lng, 
-        isSet: true 
-      };
-      
+      const newLoc = { pincode: pin, display: pin, lat, lng, isSet: true };
       saveLocation(newLoc);
       toast.success(`Location set: ${pin}`);
     } catch (error) {
+      // Fallback if API fails
       saveLocation({ pincode: pin, display: pin, isSet: true });
     } finally {
       setDetectingLoc(false);
     }
   };
 
-  // Robust Auto-Detect using Google Maps
   const handleAutoDetect = () => {
     if (!navigator.geolocation) return toast.error("Geolocation not supported");
     if (!GOOGLE_KEY) return toast.error("Google Maps Key missing");
@@ -118,55 +108,29 @@ function SearchContent() {
       async (pos) => {
         try {
           const { latitude, longitude } = pos.coords;
-          
           const res = await axios.get(
             `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_KEY}`
           );
 
           if (res.data.status === "OK" && res.data.results.length > 0) {
             const result = res.data.results[0];
-            
-            let pincode = '';
-            let area = '';
-            let city = '';
+            let pincode = '', area = '', city = '';
 
             result.address_components.forEach((comp: any) => {
               if (comp.types.includes("postal_code")) pincode = comp.long_name;
-              if (comp.types.includes("sublocality") || comp.types.includes("neighborhood")) {
-                 area = comp.long_name;
-              }
-              if (comp.types.includes("locality") || comp.types.includes("administrative_area_level_2")) {
-                 city = comp.long_name;
-              }
+              if (comp.types.includes("sublocality") || comp.types.includes("neighborhood")) area = comp.long_name;
+              if (comp.types.includes("locality")) city = comp.long_name;
             });
 
-            if (!area) {
-               const parts = result.formatted_address.split(',');
-               area = parts[0] || '';
-            }
-
             if (pincode) {
-              const display = `${area}${city ? ', ' + city : ''} (${pincode})`;
-              
-              const newLoc = { 
-                pincode, 
-                area, 
-                city, 
-                display,
-                lat: latitude, 
-                lng: longitude, 
-                isSet: true 
-              };
-              saveLocation(newLoc);
+              const display = `${area || city || pincode} (${pincode})`;
+              saveLocation({ pincode, area, city, display, lat: latitude, lng: longitude, isSet: true });
               toast.success("Location detected successfully");
             } else {
               toast.error("Area detected, but pincode unclear. Please enter manually.");
             }
-          } else {
-            toast.error("Google Maps could not determine location.");
           }
         } catch (e) {
-          console.error(e);
           toast.error("Location detection failed");
         } finally {
           setDetectingLoc(false);
@@ -179,38 +143,52 @@ function SearchContent() {
     );
   };
 
-  const saveLocation = (loc: UserLocation) => {
-    setLocation(loc);
-    localStorage.setItem('user_location', JSON.stringify(loc));
-    setShowLocModal(false);
-    if (selectedItems.length > 0) fetchLabs(loc);
-  };
+  // --- 3. SEARCH & FETCH LOGIC ---
 
-  // --- 2. SEARCH & FETCH LOGIC ---
-
+  // Initial URL Params Load
   useEffect(() => {
+    const urlQuery = searchParams.get('q');
+    const urlId = searchParams.get('id');
+
+    if (urlQuery && selectedItems.length === 0) {
+      setQuery(urlQuery);
+      
+      const fetchInitialItem = async () => {
+        setLoading(true);
+        try {
+          const res = await axios.get(`${API_BASE}/search`, { params: { query: urlQuery } });
+          const data = res.data.results || [];
+          if (data.length > 0) {
+            const match = urlId ? data.find((i:any) => i.id == urlId) : data[0];
+            if (match) setSelectedItems([match]);
+          }
+        } catch (e) {
+          console.error("Initial load failed", e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchInitialItem();
+    }
+  }, [searchParams]); 
+
+  // Autocomplete Dropdown
+  useEffect(() => {
+    if (!query || query.length < 2) { setResults([]); return; }
+    
     const timer = setTimeout(async () => {
-      if (query.length < 2) return setResults([]);
+      // Don't search if query matches selected item (prevents dropdown opening on load)
+      if (selectedItems.length === 1 && selectedItems[0].name === query) return;
+
       try {
-        const res = await axios.get(`${API_BASE}/search?query=${query}`);
+        const res = await axios.get(`${API_BASE}/search`, { params: { query } });
         setResults(res.data.results || []);
       } catch (err) { console.error(err); }
     }, 300);
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, selectedItems]);
 
-  // Initial Query from URL
-  useEffect(() => {
-    const initialQuery = searchParams.get('q');
-    if (initialQuery && selectedItems.length === 0) {
-       axios.get(`${API_BASE}/search?q=${initialQuery}`)
-        .then(res => {
-           const data = res.data.results || [];
-           if (data.length > 0) setSelectedItems([data[0]]);
-        });
-    }
-  }, [searchParams]);
-
+  // Main Lab Fetch
   const fetchLabs = useCallback(async (currentLoc = location) => {
     if (selectedItems.length === 0 || !currentLoc.isSet) { 
       setLabs([]); 
@@ -233,17 +211,17 @@ function SearchContent() {
 
       data.sort((a: any, b: any) => {
         switch(filters.sort) {
-            case 'price_low': return a.totalPrice - b.totalPrice;
-            case 'price_high': return b.totalPrice - a.totalPrice;
-            case 'rating': return b.lab.rating - a.lab.rating;
-            case 'distance': 
-               const distA = parseFloat(a.lab.distance) || 999;
-               const distB = parseFloat(b.lab.distance) || 999;
-               return distA - distB;
-            default: // relevance
-               if (a.isFullMatch && !b.isFullMatch) return -1;
-               if (!a.isFullMatch && b.isFullMatch) return 1;
-               return a.totalPrice - b.totalPrice;
+           case 'price_low': return a.totalPrice - b.totalPrice;
+           case 'price_high': return b.totalPrice - a.totalPrice;
+           case 'rating': return b.lab.rating - a.lab.rating;
+           case 'distance': 
+              const distA = parseFloat(a.lab.distance) || 999;
+              const distB = parseFloat(b.lab.distance) || 999;
+              return distA - distB;
+           default: // relevance
+              if (a.isFullMatch && !b.isFullMatch) return -1;
+              if (!a.isFullMatch && b.isFullMatch) return 1;
+              return a.totalPrice - b.totalPrice;
         }
       });
 
@@ -255,22 +233,25 @@ function SearchContent() {
     }
   }, [selectedItems, location, filters]);
 
-  useEffect(() => { fetchLabs(); }, [fetchLabs]);
+  // Trigger fetch when dependencies change
+  useEffect(() => { 
+    if (location.isSet) fetchLabs(); 
+  }, [fetchLabs, location.isSet]);
 
+  // --- 4. UI HELPERS ---
 
-  // --- 3. UI HANDLERS ---
-
-  const toggleItem = (item: any) => {
+  const addItem = (item: any) => {
     setSelectedItems(prev => {
-      if (prev.some(i => i.id === item.id)) {
-        return prev.filter(i => i.id !== item.id);
-      }
+      if (prev.some(i => i.id === item.id)) return prev;
       return [...prev, item];
     });
     setQuery('');
     setResults([]);
   };
 
+  const removeItem = (id: any) => {
+    setSelectedItems(prev => prev.filter(i => i.id !== id));
+  };
 
   const { setLabCart, clearCart } = useCartStore();
 
@@ -288,7 +269,6 @@ function SearchContent() {
     }));
 
     clearCart();
-
     setLabCart(
       {
         labId: labData.lab.id,
@@ -297,7 +277,6 @@ function SearchContent() {
       },
       cartItems
     );
-
     router.push('/cart');
   };
 
@@ -355,11 +334,11 @@ function SearchContent() {
           
           {/* SEARCH BAR */}
           <div className="relative z-50">
-            <div className="flex items-center bg-slate-100 rounded-xl px-4 py-3 border focus-within:border-blue-500 focus-within:bg-white focus-within:shadow-md transition-all">
+            <div className="flex items-center bg-slate-100 rounded-xl px-4 py-3 border focus-within:border-blue-500 transition-all">
               <Search className="text-slate-400 mr-3" size={20} />
               <input 
-                className="flex-1 bg-transparent border-none outline-none text-slate-800 placeholder:text-slate-400 font-medium"
-                placeholder="Search tests, packages..."
+                className="flex-1 bg-transparent border-none outline-none text-slate-800"
+                placeholder="Search tests..."
                 value={query}
                 onChange={e => setQuery(e.target.value)}
               />
@@ -368,14 +347,13 @@ function SearchContent() {
             {results.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-xl border border-slate-100 overflow-hidden max-h-80 overflow-y-auto">
                 {results.map((r: any) => (
-                  <div key={r.id} onClick={() => toggleItem(r)} className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center border-b border-slate-50 last:border-0 group">
+                  <div key={r.id} onClick={() => addItem(r)} className="px-4 py-3 hover:bg-slate-50 cursor-pointer flex justify-between items-center border-b border-slate-50">
                     <div>
-                        <p className="font-semibold text-slate-700 text-sm group-hover:text-blue-700">{r.name}</p>
+                        <p className="font-semibold text-slate-700 text-sm">{r.name}</p>
                         <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{r.type}</span>
                     </div>
                     <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm">₹{formatPrice(r.price)}</p>
-                        {r.maxDiscount > 0 && <span className="text-[10px] text-green-600 font-bold">{r.maxDiscount}% Off</span>}
+                        <p className="font-bold text-slate-900 text-sm">₹{r.price}</p>
                     </div>
                   </div>
                 ))}
@@ -383,32 +361,34 @@ function SearchContent() {
             )}
           </div>
 
-          {/* LOCATION BAR & FILTERS TOGGLE */}
+          {/* LOCATION BAR & FILTERS */}
           <div className="flex items-center justify-between">
-              
+             
              {/* Location Display */}
-             {location.isSet && (
-               <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
-                  <MapPin size={14} className="text-blue-600" />
-                  <span className="text-xs font-semibold text-slate-700">
-                     Serving in <span className="text-blue-700 font-bold">{location.display || location.pincode}</span>
-                  </span>
-                  <button onClick={() => setShowLocModal(true)} className="text-[10px] font-bold text-blue-600 underline ml-1 hover:text-blue-800">
-                      CHANGE
-                  </button>
-               </div>
-             )}
+             <div className="flex items-center gap-2 bg-blue-50/50 px-3 py-1.5 rounded-lg border border-blue-100">
+                <MapPin size={14} className="text-blue-600" />
+                <span className="text-xs font-semibold text-slate-700">
+                   {location.isSet ? (
+                     <>Serving in <span className="text-blue-700 font-bold">{location.display || location.pincode}</span></>
+                   ) : (
+                     <span className="text-red-500 font-bold">Location not set</span>
+                   )}
+                </span>
+                <button onClick={() => setShowLocModal(true)} className="text-[10px] font-bold text-blue-600 underline ml-1 hover:text-blue-800">
+                   CHANGE
+                </button>
+             </div>
 
              {/* Filter Toggle */}
-             <button 
+             {/* <button 
                 onClick={() => setShowFilters(!showFilters)} 
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${showFilters ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}
              >
                 <Filter size={14} /> Filters <ChevronDown size={14} className={`transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-             </button>
+             </button> */}
           </div>
 
-          {/* COLLAPSIBLE FILTERS PANEL */}
+          {/* FILTERS PANEL */}
           <AnimatePresence>
             {showFilters && (
               <motion.div 
@@ -416,45 +396,23 @@ function SearchContent() {
                 className="overflow-hidden"
               >
                 <div className="bg-white border border-slate-200 rounded-xl p-4 mt-2 shadow-sm space-y-4">
-                    
-                   {/* Sort Options */}
                    <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sort By</p>
                       <div className="flex flex-wrap gap-2">
-                        {[
-                          { id: 'relevance', label: 'Recommended' },
-                          { id: 'price_low', label: 'Price: Low to High' },
-                          { id: 'price_high', label: 'Price: High to Low' },
-                          { id: 'rating', label: 'Top Rated' },
-                          { id: 'distance', label: 'Nearest Lab' },
-                        ].map(opt => (
-                          <button 
-                             key={opt.id}
-                             onClick={() => setFilters({...filters, sort: opt.id})}
-                             className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${filters.sort === opt.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-300'}`}
-                          >
+                        {[{ id: 'relevance', label: 'Recommended' }, { id: 'price_low', label: 'Price: Low to High' }, { id: 'rating', label: 'Top Rated' }].map(opt => (
+                          <button key={opt.id} onClick={() => setFilters({...filters, sort: opt.id})} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${filters.sort === opt.id ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'}`}>
                              {opt.label}
                           </button>
                         ))}
                       </div>
                    </div>
-
-                   {/* Filter Options */}
                    <div>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Preferences</p>
                       <div className="flex flex-wrap gap-3">
-                         <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
-                            <input type="checkbox" checked={filters.fullMatch} onChange={e => setFilters({...filters, fullMatch: e.target.checked})} className="accent-blue-600 w-4 h-4"/>
-                            <span className="text-xs font-bold text-slate-700">Full Match Only</span>
-                         </label>
-                         
-                         <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 hover:border-blue-300 transition-colors">
-                            <input type="checkbox" checked={filters.minRating === 4.5} onChange={e => setFilters({...filters, minRating: e.target.checked ? 4.5 : 0})} className="accent-blue-600 w-4 h-4"/>
-                            <span className="text-xs font-bold text-slate-700"> Rated 4.5+ ★</span>
-                         </label>
+                         <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200"><input type="checkbox" checked={filters.fullMatch} onChange={e => setFilters({...filters, fullMatch: e.target.checked})} className="accent-blue-600 w-4 h-4"/><span className="text-xs font-bold text-slate-700">Full Match Only</span></label>
+                         <label className="flex items-center gap-2 cursor-pointer bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200"><input type="checkbox" checked={filters.minRating === 4.5} onChange={e => setFilters({...filters, minRating: e.target.checked ? 4.5 : 0})} className="accent-blue-600 w-4 h-4"/><span className="text-xs font-bold text-slate-700"> Rated 4.5+ ★</span></label>
                       </div>
                    </div>
-
                 </div>
               </motion.div>
             )}
@@ -466,44 +424,31 @@ function SearchContent() {
               {selectedItems.map((item) => (
                 <span key={item.id} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-bold shadow-sm">
                   {item.name}
-                  <button onClick={() => toggleItem(item)} className="hover:text-red-300 transition-colors"><X size={12}/></button>
+                  <button onClick={() => removeItem(item.id)} className="hover:text-red-300 transition-colors"><X size={12}/></button>
                 </span>
               ))}
               <button onClick={() => setSelectedItems([])} className="text-xs text-red-500 font-bold hover:underline px-2">Clear All</button>
             </div>
           )}
-
         </div>
       </header>
 
-      {/* --- MAIN RESULTS LIST --- */}
+      {/* --- RESULTS --- */}
       <main className="max-w-4xl mx-auto px-4 py-6 space-y-5">
-
-        {/* Add Breadcrumbs here */}
-          <Breadcrumbs />
-        
-        {/* {loading && (
-           <div className="py-20 text-center">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-3" />
-              <p className="text-slate-500 font-medium">Finding best labs in {location.pincode}...</p>
-           </div>
-        )} */}
+        <Breadcrumbs />
 
         {loading && (
           <div className="space-y-4">
-            {/* Show 3 skeletons while loading */}
-            <LabCardSkeleton />
             <LabCardSkeleton />
             <LabCardSkeleton />
           </div>
-      )}
+        )}
 
-        {!loading && labs.length === 0 && selectedItems.length > 0 && (
+        {!loading && labs.length === 0 && selectedItems.length > 0 && location.isSet && (
            <div className="bg-white rounded-2xl p-8 text-center border border-slate-200">
               <AlertCircle size={40} className="text-slate-300 mx-auto mb-4" />
               <h3 className="text-lg font-bold text-slate-800">No labs found nearby</h3>
-              <p className="text-slate-500 text-sm mt-1 max-w-xs mx-auto">We couldn't find any labs servicing {location.pincode} with these specific tests.</p>
-              <button onClick={() => setShowLocModal(true)} className="mt-4 text-blue-600 font-bold text-sm hover:underline">Try another location</button>
+              <p className="text-slate-500 text-sm mt-1">We couldn't find labs servicing {location.pincode} with these specific tests.</p>
            </div>
         )}
 
@@ -511,11 +456,10 @@ function SearchContent() {
            <div className="bg-white rounded-2xl p-10 text-center border border-slate-200">
               <ShoppingBag size={48} className="text-blue-100 mx-auto mb-4" />
               <h3 className="text-xl font-bold text-slate-800">Start your search</h3>
-              <p className="text-slate-500 text-sm mt-2">Add tests to compare prices across top labs in your area.</p>
+              <p className="text-slate-500 text-sm mt-2">Add tests to compare prices across top labs.</p>
            </div>
         )}
 
-        {/* Lab Cards */}
         {labs.map((labData: any) => (
           <LabCard 
             key={labData.lab.id} 
@@ -524,28 +468,12 @@ function SearchContent() {
             onBook={() => handleBook(labData)} 
           />
         ))}
-
       </main>
     </div>
   );
 }
 
-// 2. EXPORT THE WRAPPER (This fixes the build error)
-export default function SearchPage() {
-  return (
-    <Suspense fallback={
-      <div className="flex h-screen items-center justify-center bg-slate-50">
-        <Loader2 className="animate-spin text-blue-600" size={40} />
-      </div>
-    }>
-      <SearchContent />
-    </Suspense>
-  );
-}
-
-
-// --- SUB-COMPONENTS ---
-
+// Sub-components (LabCard) remain same as before
 const LabCard = ({ data, selectedCount, onBook }: { data: any, selectedCount: number, onBook: () => void }) => {
   const { lab, totalPrice, totalBasePrice, totalDiscount, foundItems, isFullMatch } = data;
 
@@ -566,8 +494,6 @@ const LabCard = ({ data, selectedCount, onBook }: { data: any, selectedCount: nu
                  </span>
                  <span>•</span>
                  <span>{lab.distance} away</span>
-                 <span>•</span>
-                 <span className="text-blue-600 font-medium">{lab.accreditation || 'Verified'}</span>
               </div>
            </div>
         </div>
@@ -632,3 +558,11 @@ const LabCard = ({ data, selectedCount, onBook }: { data: any, selectedCount: nu
     </div>
   );
 };
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center bg-slate-50"><Loader2 className="animate-spin text-blue-600" size={40} /></div>}>
+      <SearchContent />
+    </Suspense>
+  );
+}

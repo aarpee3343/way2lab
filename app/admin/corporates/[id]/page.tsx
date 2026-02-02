@@ -2,7 +2,7 @@
 import { useState, useEffect, use } from 'react';
 import { getCorporateDetails, mapDomainAction, assignCorporateService, getAdminInventory } from '@/app/actions/adminCorporateActions';
 import BulkEmployeeUpload from '@/components/admin/BulkEmployeeUpload';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { Users, Package, Plus, Link as LinkIcon, Calendar } from 'lucide-react';
 
 export default function CorporateDetails({ params }: { params: Promise<{ id: string }> }) {
@@ -15,7 +15,16 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
   
   // Forms State
   const [domainInput, setDomainInput] = useState('');
-  const [serviceForm, setServiceForm] = useState({ type: 'PACKAGE', itemId: '', validFrom: '', validTill: '' });
+  const [serviceForm, setServiceForm] = useState({ 
+  type: 'PACKAGE', 
+  itemId: '', 
+  validFrom: '', 
+  validTill: '',
+  selfPaymentType: 'CORPORATE_PAYS', 
+  familyPaymentType: 'USER_PAYS',
+  selfLimit: 1,
+  familyLimit: 0
+});
 
   const refresh = () => getCorporateDetails(corpId).then(setCorp);
 
@@ -109,15 +118,31 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
               <thead className="text-xs font-bold text-slate-400 uppercase bg-white">
                 <tr><th className="px-4 py-2">Name</th><th className="px-4 py-2">Contact</th><th className="px-4 py-2">Emp ID</th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {corp.employees.map((e: any) => (
-                  <tr key={e.id}>
-                    <td className="px-4 py-3 font-bold">{e.name}</td>
-                    <td className="px-4 py-3 text-slate-500">{e.email}<br/>{e.phone}</td>
-                    <td className="px-4 py-3 font-mono text-slate-500">{e.employeeId || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
+              {/* Inside the Employees Tab mapping */}
+                <tbody className="divide-y divide-slate-100">
+                  {corp.employees.map((e: any) => (
+                    <tr key={e.id} className={!e.isActive ? 'opacity-50 grayscale' : ''}>
+                      <td className="px-4 py-3 font-bold">
+                        {e.name}
+                        {!e.isActive && <span className="ml-2 text-[10px] bg-red-100 text-red-600 px-1 rounded">INACTIVE</span>}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500">
+                        {/* DATA MASKING LOGIC */}
+                        {user.maskContactInfo ? `******${e.phone.slice(-4)}` : e.phone}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <button 
+                          onClick={() => toggleEmployeeStatus(e.id, !e.isActive)}
+                          className={`text-xs font-bold px-3 py-1 rounded-lg border transition-all ${
+                            e.isActive ? 'border-red-200 text-red-500 hover:bg-red-50' : 'border-emerald-200 text-emerald-500 hover:bg-emerald-50'
+                          }`}
+                        >
+                          {e.isActive ? 'Mark Inactive' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
             </table>
           </div>
         </div>

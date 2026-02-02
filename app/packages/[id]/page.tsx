@@ -9,7 +9,7 @@ import {
   ShoppingCart, Phone, Share2, FlaskConical, LayoutList, HeartPulse,
   Users, Award, Stethoscope, Calendar
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function PackageDetailPage({ params }: { params: Promise<{ id: string }> }) {

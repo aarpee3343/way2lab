@@ -7,7 +7,7 @@ import Link from 'next/link';
 import Cookies from 'js-cookie';
 import { motion } from 'framer-motion';
 import { ArrowRight, Loader2, CheckCircle2, ShieldCheck, Phone, Mail, HeartPulse, Stethoscope, Users } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 function LoginContent() {
   const router = useRouter();
@@ -81,10 +81,15 @@ function LoginContent() {
       const res = await axios.post('/api/auth/login', payload);
       
       if (res.data.success) {
-        Cookies.set('token', res.data.token, { expires: 7 });
+        // ❌ REMOVED: Cookies.set(...) -> Security handled by Backend now
+        
+        // Optional: Keep user info for UI display (Non-sensitive data only)
         localStorage.setItem('user', JSON.stringify(res.data.user));
+        
         toast.success("Welcome back!");
-        router.push(redirectUrl);
+        
+        // ✅ CHANGED: Force full reload to ensure HttpOnly cookie is attached to next request
+        window.location.href = redirectUrl; 
       }
 
     } catch (err: any) {

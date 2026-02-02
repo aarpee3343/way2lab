@@ -4,7 +4,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Send, Loader2, HeartPulse, Users, ShieldCheck } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);

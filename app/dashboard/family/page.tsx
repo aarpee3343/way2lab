@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
 import { Users, Plus, Trash2, UserCircle } from 'lucide-react';
 
 export default function FamilyPage() {
@@ -15,10 +14,7 @@ export default function FamilyPage() {
   });
 
   const fetchMembers = async () => {
-    const token = Cookies.get('token');
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/family`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/family`);
     setMembers(res.data);
   };
 
@@ -26,21 +22,15 @@ export default function FamilyPage() {
 
   const handleDelete = async (id: number) => {
     if(!confirm("Delete this family member?")) return;
-    const token = Cookies.get('token');
-    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/family/${id}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/family/${id}`);
     fetchMembers();
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = Cookies.get('token');
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/family`, formData, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/family`, formData);
       setShowModal(false);
       setFormData({ name: '', relationship: 'Parent', gender: 'Male', date_of_birth: '', phone: '' });
       fetchMembers();

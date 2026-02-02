@@ -8,6 +8,52 @@ import { redirect } from 'next/navigation';
 // 1. TESTS MANAGEMENT
 // ==========================================
 
+// ==========================================
+// 3. BULK UPLOAD TESTS (CLEAN VERSION)
+// ==========================================
+
+export async function bulkCreateTestsAction(testsData: any[]) {
+  try {
+    const formattedTests = testsData.map((t) => {
+      // 1. Auto-generate Slug if missing (Clean & Readable)
+      const slug = t.slug?.trim() || t.testName
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+
+      // 2. Direct Mapping (Types Converted)
+      return {
+        testName: t.testName,
+        slug: slug,
+        category: t.category,
+        specialty: t.specialty,
+        description: t.description,
+        scheduleReporting: t.scheduleReporting,
+        preparation: t.preparation,
+        specialInstruction: t.specialInstruction,
+        
+        // Type Conversions (CSV strings -> Prisma types)
+        price: parseFloat(t.price || '0'),
+        discount: parseFloat(t.discount || '0'),
+        isActive: t.isActive == '1' || t.isActive === 'true' || t.isActive === true,
+        showOnHomepage: t.showOnHomepage == '1' || t.showOnHomepage === 'true' || t.showOnHomepage === true,
+      };
+    });
+
+    // 3. Bulk Insert
+    const result = await prisma.test.createMany({
+      data: formattedTests,
+      skipDuplicates: true, 
+    });
+
+    revalidatePath('/admin/tests');
+    return { success: true, count: result.count };
+  } catch (e: any) {
+    console.error('Bulk Upload Error:', e);
+    return { success: false, error: 'Failed to process CSV data. Check headers.' };
+  }
+}
+
 export async function getTestStats() {
   const [total, active, categories, specialties] = await Promise.all([
     prisma.test.count(),

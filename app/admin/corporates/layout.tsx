@@ -1,3 +1,4 @@
+// app/admin/corporates/layout.tsx
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -10,12 +11,11 @@ export default function CorporateLayout({ children }: { children: React.ReactNod
     { name: 'Dashboard', href: '/admin/corporates', icon: LayoutDashboard },
     { name: 'View All', href: '/admin/corporates/list', icon: List },
     { name: 'Create Corporate', href: '/admin/corporates/create', icon: Building2 },
-    // "Create Services" interpreted as assigning services page or list
     { name: 'Manage Services', href: '/admin/corporates/services', icon: Plus }, 
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="admin-space-y">
       {/* Submenu Bar */}
       <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-16 z-20">
         <div className="flex gap-1">
@@ -25,7 +25,7 @@ export default function CorporateLayout({ children }: { children: React.ReactNod
               <Link 
                 key={n.href} 
                 href={n.href}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                className={`admin-nav-item ${isActive ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'} flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold`}
               >
                 <n.icon size={16} /> {n.name}
               </Link>

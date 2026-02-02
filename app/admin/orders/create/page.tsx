@@ -1,3 +1,4 @@
+// app/admin/orders/create/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,7 @@ import {
   CheckCircle2, Printer, Plus, Trash2, Home,
   AlertCircle, Calendar, Package
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 import Link from 'next/link';
 // ✅ Import Google Autocomplete
 import Autocomplete from "react-google-autocomplete";
@@ -309,10 +310,10 @@ export default function AdminCreateOrder() {
         </div>
         
         <div className="flex gap-4">
-          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-colors">
+          <button onClick={() => window.location.reload()} className="admin-btn-primary">
             <Plus size={18} className="inline mr-2"/> New Booking
           </button>
-          <a href={`/api/order/${orderSuccessId}/pdf`} target="_blank" className="px-6 py-3 border-2 border-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-50 transition-colors">
+          <a href={`/api/order/${orderSuccessId}/pdf`} target="_blank" className="admin-btn-secondary border-2">
             <Printer size={18} className="inline mr-2"/> Receipt
           </a>
         </div>
@@ -328,34 +329,34 @@ export default function AdminCreateOrder() {
       <div className="col-span-12 lg:col-span-7 space-y-6 overflow-y-auto pr-2 pb-20">
         
         {/* Customer */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+        <div className="admin-form-section">
+          <h3 className="admin-form-title mb-4">
             <User size={20} className="text-blue-600"/> Customer Details
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="admin-form-grid">
             <div className="col-span-2 sm:col-span-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Phone Number</label>
+              <label className="admin-form-label">Phone Number</label>
               <div className="flex gap-2 mt-1">
-                <input className="flex-1 input-field" placeholder="9876543210" maxLength={10} value={phone} onChange={e => setPhone(e.target.value)} />
-                <button onClick={handleCheckCustomer} disabled={loading} className="bg-blue-600 text-white px-3 rounded-lg hover:bg-blue-700">
+                <input className="flex-1 admin-form-input" placeholder="9876543210" maxLength={10} value={phone} onChange={e => setPhone(e.target.value)} />
+                <button onClick={handleCheckCustomer} disabled={loading} className="admin-btn-primary bg-blue-600 px-3">
                   {loading ? '...' : <Search size={16}/>}
                 </button>
               </div>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <label className="text-xs font-bold text-slate-500 uppercase">Full Name</label>
-              <input className="w-full mt-1 input-field" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} />
+              <label className="admin-form-label">Full Name</label>
+              <input className="w-full mt-1 admin-form-input" value={customer.name} onChange={e => setCustomer({...customer, name: e.target.value})} />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">DOB</label>
-              <input type="date" className="w-full mt-1 input-field" value={customer.dob} onChange={e => handleDobChange(e.target.value)} />
+              <label className="admin-form-label">DOB</label>
+              <input type="date" className="w-full mt-1 admin-form-input" value={customer.dob} onChange={e => handleDobChange(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase">Age</label>
-              <input type="number" className="w-full mt-1 input-field" value={customer.age} onChange={e => handleAgeChange(e.target.value)} />
+              <label className="admin-form-label">Age</label>
+              <input type="number" className="w-full mt-1 admin-form-input" value={customer.age} onChange={e => handleAgeChange(e.target.value)} />
             </div>
             <div className="col-span-2">
-              <label className="text-xs font-bold text-slate-500 uppercase">Gender</label>
+              <label className="admin-form-label">Gender</label>
               <div className="flex gap-4 mt-1">
                 {['Male', 'Female', 'Other'].map(g => (
                   <label key={g} className="flex items-center gap-2 cursor-pointer">
@@ -369,9 +370,9 @@ export default function AdminCreateOrder() {
         </div>
 
         {/* Address (Enhanced with Google Maps) */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative">
+        <div className="admin-form-section relative">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="admin-form-title">
               <MapPin size={20} className="text-emerald-600"/> Location
             </h3>
             {savedAddresses.length > 0 && (
@@ -399,7 +400,7 @@ export default function AdminCreateOrder() {
           <div className="space-y-4">
             {/* Google Autocomplete Input */}
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Search Address (Google Maps)</label>
+              <label className="admin-form-label">Search Address (Google Maps)</label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 text-slate-400" size={16} />
                 <Autocomplete
@@ -415,17 +416,17 @@ export default function AdminCreateOrder() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
+            <div className="admin-form-grid">
               <div className="col-span-3">
-                <label className="text-xs font-bold text-slate-500 uppercase">Address Line *</label>
-                <input className="w-full mt-1 input-field" placeholder="House No, Street, Landmark"
+                <label className="admin-form-label">Address Line *</label>
+                <input className="w-full mt-1 admin-form-input" placeholder="House No, Street, Landmark"
                   value={address.line} onChange={e => setAddress({...address, line: e.target.value, id: null})}
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Pincode *</label>
+                <label className="admin-form-label">Pincode *</label>
                 <input 
-                  className="w-full mt-1 input-field font-bold" 
+                  className="w-full mt-1 admin-form-input font-bold" 
                   placeholder="110001" maxLength={6}
                   value={address.pincode}
                   onChange={e => {
@@ -436,21 +437,21 @@ export default function AdminCreateOrder() {
                 />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">City</label>
-                <input className="w-full mt-1 input-field bg-slate-50" readOnly value={address.city} />
+                <label className="admin-form-label">City</label>
+                <input className="w-full mt-1 admin-form-input bg-slate-50" readOnly value={address.city} />
               </div>
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">State</label>
-                <input className="w-full mt-1 input-field bg-slate-50" readOnly value={address.state} />
+                <label className="admin-form-label">State</label>
+                <input className="w-full mt-1 admin-form-input bg-slate-50" readOnly value={address.state} />
               </div>
             </div>
           </div>
         </div>
 
         {/* Packages Section */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+        <div className="admin-form-section">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="font-bold text-slate-800 flex items-center gap-2">
+            <h3 className="admin-form-title">
               <Package size={20} className="text-amber-600"/> Packages
             </h3>
             <button onClick={() => setShowPackages(!showPackages)} className="text-sm font-medium text-blue-600 hover:underline">
@@ -475,11 +476,11 @@ export default function AdminCreateOrder() {
         </div>
 
         {/* Logistics */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-           <h3 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+        <div className="admin-form-section">
+           <h3 className="admin-form-title mb-4">
             <Clock size={20} className="text-purple-600"/> Schedule & Payment
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="admin-form-grid">
              <div className="col-span-2">
                  <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
                     <button onClick={() => setLogistics({...logistics, collectionType: 'center_visit'})} className={`px-4 py-2 text-sm font-bold rounded-md ${logistics.collectionType === 'center_visit' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}>Center Visit</button>
@@ -488,17 +489,17 @@ export default function AdminCreateOrder() {
              </div>
              {logistics.collectionType === 'home_collection' && (
                 <div className="col-span-2">
-                    <label className="text-xs font-bold text-slate-500 uppercase">Home Charges</label>
-                    <input type="number" className="w-32 mt-1 input-field" value={logistics.homeCharges} onChange={e => setLogistics({...logistics, homeCharges: Number(e.target.value)})} />
+                    <label className="admin-form-label">Home Charges</label>
+                    <input type="number" className="w-32 mt-1 admin-form-input" value={logistics.homeCharges} onChange={e => setLogistics({...logistics, homeCharges: Number(e.target.value)})} />
                 </div>
              )}
              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Date</label>
-                <input type="date" className="w-full mt-1 input-field" value={logistics.date} onChange={e => setLogistics({...logistics, date: e.target.value})} />
+                <label className="admin-form-label">Date</label>
+                <input type="date" className="w-full mt-1 admin-form-input" value={logistics.date} onChange={e => setLogistics({...logistics, date: e.target.value})} />
              </div>
              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase">Time</label>
-                <select className="w-full mt-1 input-field" value={logistics.time} onChange={e => setLogistics({...logistics, time: e.target.value})}>
+                <label className="admin-form-label">Time</label>
+                <select className="w-full mt-1 admin-form-input" value={logistics.time} onChange={e => setLogistics({...logistics, time: e.target.value})}>
                     <option value="">Select</option>
                     <option value="07:00 - 08:00">07:00 - 08:00 AM</option>
                     <option value="08:00 - 09:00">08:00 - 09:00 AM</option>
@@ -507,8 +508,8 @@ export default function AdminCreateOrder() {
                 </select>
              </div>
              <div className="col-span-2">
-                <label className="text-xs font-bold text-slate-500 uppercase">Special Instructions</label>
-                <textarea className="w-full mt-1 input-field min-h-[80px]" 
+                <label className="admin-form-label">Special Instructions</label>
+                <textarea className="w-full mt-1 admin-form-textarea" 
                   placeholder="Any special instructions for sample collection..."
                   value={patientNotes}
                   onChange={e => setPatientNotes(e.target.value)}
@@ -528,7 +529,6 @@ export default function AdminCreateOrder() {
              </div>
           </div>
         </div>
-
       </div>
 
       {/* RIGHT: SEARCH & CART */}
@@ -556,11 +556,11 @@ export default function AdminCreateOrder() {
                       className="p-3 hover:bg-blue-50 rounded-lg cursor-pointer group flex justify-between items-center"
                     >
                       <div>
-                        <div className="font-bold text-slate-800 text-sm">{item.name}</div>
-                        <div className="text-xs text-slate-500">{item.labName}</div>
+                        <div className="admin-table-row-primary">{item.name}</div>
+                        <div className="admin-table-row-secondary">{item.labName}</div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-emerald-600 text-sm">₹{item.price}</div>
+                        <div className="admin-table-row-primary text-emerald-600">₹{item.price}</div>
                       </div>
                     </div>
                   ))
@@ -583,12 +583,12 @@ export default function AdminCreateOrder() {
              cart.map((item, i) => (
                <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <div>
-                     <p className="font-bold text-slate-800 text-sm">{item.name}</p>
-                     <p className="text-xs text-slate-500">{item.labName}</p>
+                     <p className="admin-table-row-primary">{item.name}</p>
+                     <p className="admin-table-row-secondary">{item.labName}</p>
                   </div>
                   <div className="flex items-center gap-3">
-                     <span className="font-bold">₹{item.price}</span>
-                     <button onClick={() => removeFromCart(i)} className="text-rose-500 hover:bg-rose-50 p-1 rounded"><Trash2 size={16}/></button>
+                     <span className="admin-table-row-primary">₹{item.price}</span>
+                     <button onClick={() => removeFromCart(i)} className="admin-btn-danger p-1 rounded"><Trash2 size={16}/></button>
                   </div>
                </div>
              ))
@@ -599,11 +599,11 @@ export default function AdminCreateOrder() {
         <div className="p-6 border-t border-slate-200 bg-slate-50">
           {/* Associate ID */}
           <div className="mb-4">
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Associate ID (Optional)</label>
+            <label className="admin-form-label mb-1">Associate ID (Optional)</label>
             <input 
               type="text" 
               placeholder="ASSOC-123"
-              className="w-full input-field"
+              className="w-full admin-form-input"
               value={associateId}
               onChange={(e) => setAssociateId(e.target.value)}
             />
@@ -611,12 +611,12 @@ export default function AdminCreateOrder() {
           
           {/* Coupon Section */}
           <div className="mb-4">
-            <label className="text-xs font-bold text-slate-500 uppercase mb-1 block">Coupon Code</label>
+            <label className="admin-form-label mb-1">Coupon Code</label>
             <div className="flex gap-2">
               <input 
                 type="text" 
                 placeholder="DISCOUNT10"
-                className="flex-1 input-field"
+                className="flex-1 admin-form-input"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
                 disabled={discountApplied}
@@ -666,7 +666,7 @@ export default function AdminCreateOrder() {
             </div>
           </div>
            
-           <button onClick={handleSubmit} disabled={loading} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold hover:bg-black transition-all">
+           <button onClick={handleSubmit} disabled={loading} className="admin-btn-primary w-full py-3">
               {loading ? 'Processing...' : 'Confirm Order'}
            </button>
         </div>
@@ -674,10 +674,3 @@ export default function AdminCreateOrder() {
     </div>
   );
 }
-
-// Simple styling helper class
-const styles = `
-  .input-field {
-    @apply bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all;
-  }
-`;

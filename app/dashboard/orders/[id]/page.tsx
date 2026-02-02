@@ -2,30 +2,16 @@
 
 import { useEffect, useState, use } from 'react';
 import axios from 'axios';
-import Cookies from 'js-cookie';
-import AiHealthDashboard from './AiHealthDashboard'; 
+import AiHealthDashboard from './AiHealthDashboard';
 import {
-  Calendar,
-  Clock,
-  MapPin,
-  Home,
-  Building2,
-  User,
-  Phone,
-  FileText,
-  Receipt,
-  X,
-  RefreshCcw,
-  Ban,
-  FlaskConical,
-  FileDown,
-  UserCog,
-  Activity
+  Calendar, Clock, MapPin, Home, Building2, User, Phone, FileText, Receipt,
+  X, RefreshCcw, Ban, FlaskConical, FileDown, UserCog, Activity, AlertTriangle,
+  Microscope, Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 /* ---------------- HELPERS ---------------- */
-
+// ... (Keep your existing formatDate, getAgeLabel, isRescheduleAllowed helpers here) ...
 const formatDate = (dateStr: string) => {
   if (!dateStr) return '—';
   const [y, m, d] = dateStr.split('T')[0].split('-');
@@ -34,39 +20,37 @@ const formatDate = (dateStr: string) => {
 
 const getAgeLabel = (dob?: string | null) => {
   if (!dob) return '—';
-  const age =
-    Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
+  const age = Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
   if (age < 1) return 'Infant';
   if (age < 18) return 'Minor';
   return `${age} yrs`;
 };
 
+const isRescheduleAllowed = (orderDateStr: string) => {
+  if (!orderDateStr) return false;
+  const orderDate = new Date(orderDateStr);
+  const deadline = new Date(orderDate);
+  deadline.setDate(orderDate.getDate() - 1);
+  deadline.setHours(18, 0, 0, 0);
+  return new Date() < deadline;
+};
+
 /* ---------------- PAGE ---------------- */
 
-export default function OrderDetailsPage({
-  params
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function OrderDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-
-  /* Reschedule */
+  
+  // Reschedule State
   const [open, setOpen] = useState(false);
   const [newDate, setNewDate] = useState('');
   const [newTime, setNewTime] = useState('');
-  const [newType, setNewType] =
-    useState<'home_collection' | 'center_visit'>('home_collection');
+  const [newType, setNewType] = useState<'home_collection' | 'center_visit'>('home_collection');
 
   const fetchOrder = async () => {
-    const token = Cookies.get('token');
     try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_API_URL}/orders/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/order/${id}`);
       setOrder(res.data);
       setNewType(res.data.collectionType);
     } catch {
@@ -76,23 +60,24 @@ export default function OrderDetailsPage({
     }
   };
 
-  useEffect(() => {
-    fetchOrder();
-  }, [id]);
+  useEffect(() => { fetchOrder(); }, [id]);
 
-  const handleReschedule = async () => {
+  // ... (Keep your existing Handlers: onRescheduleClick, handleConfirmReschedule, handleCancel) ...
+  const onRescheduleClick = () => {
+    if (!isRescheduleAllowed(order.preferredDate)) {
+      alert("You can't do this action now, contact Support");
+      return;
+    }
+    setOpen(true);
+  };
+
+  const handleConfirmReschedule = async () => {
     if (!newDate || !newTime) {
       toast.warning('Select date & time');
       return;
     }
-
     try {
-      const token = Cookies.get('token');
-      await axios.put(
-        `${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/reschedule`,
-        { date: newDate, time: newTime, collectionType: newType },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/reschedule`, { date: newDate, time: newTime, collectionType: newType });
       toast.success('Order rescheduled');
       setOpen(false);
       fetchOrder();
@@ -101,215 +86,189 @@ export default function OrderDetailsPage({
     }
   };
 
-  if (loading || !order) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-slate-400">
-        Loading order…
-      </div>
-    );
-  }
+  const handleCancel = async () => {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+    try {
+      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/cancel`, {});
+      toast.success('Order cancelled');
+      fetchOrder();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Cancel failed');
+    }
+  };
 
-  const mrp = order.totalAmount || 0;
-  const discount = order.discountAmount || 0;
-  const home = order.homeCollectionCharges || 0;
-  const final = order.finalAmount || 0;
-  const savings = mrp + home - final;
+  if (loading || !order) return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading order...</div>;
+
+  const mrp = Number(order.totalAmount || 0);
+  const discount = Number(order.discountAmount || 0);
+  const home = Number(order.homeCollectionCharges || 0);
+  const final = Number(order.finalAmount || 0);
+  const savings = (mrp + home) - final;
 
   return (
-    <div className="min-h-screen bg-slate-100 pb-32">
-
+    <div className="min-h-screen bg-slate-100 relative">
       {/* HEADER */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-6 rounded-b-3xl">
-        <h1 className="text-xl font-extrabold">
-          Order #{order.orderNumber}
-        </h1>
-        <span className="mt-3 inline-block text-xs font-bold bg-white/20 px-3 py-1 rounded-full">
-          {order.status}
-        </span>
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-8 pb-16 rounded-b-[2.5rem] shadow-lg mb-[-3rem]">
+        <div className="max-w-3xl mx-auto flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-black tracking-tight">Order #{order.orderNumber}</h1>
+            <p className="text-blue-100 text-sm mt-1 opacity-90">Booked on {new Date(order.createdAt).toLocaleDateString()}</p>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white border border-white/30">{order.status}</span>
+        </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 space-y-5 mt-6">
+      <div className="max-w-3xl mx-auto px-4 space-y-5 pb-24">
 
-        {/* PATIENT */}
-        <Card title="Patient" icon={<User />}>
+        {/* 1. PATIENT */}
+        <Card title="Patient Details" icon={<User />}>
           <p className="font-bold">{order.patientName}</p>
-          <p className="text-sm text-slate-600">
-            {getAgeLabel(order.patientDob)} • {order.patientGender} •{' '}
-            {order.patientRelation || 'Self'}
-          </p>
-          <p className="text-xs text-slate-500">
-            UHID: {order.patientUHID || '—'}
-          </p>
-          {order.patientPhone && (
-            <p className="flex items-center gap-2 text-sm mt-1">
-              <Phone size={14} /> {order.patientPhone}
-            </p>
+          <p className="text-sm text-slate-600">{getAgeLabel(order.patientDob)} • {order.patientGender}</p>
+          {order.patientPhone && <p className="text-sm mt-1 text-slate-500 flex items-center gap-2"><Phone size={14}/> {order.patientPhone}</p>}
+        </Card>
+
+        {/* 2. ORDER ITEMS (TESTS & PACKAGES) */}
+        <Card title="Order Items" icon={<Microscope />}>
+          <div className="space-y-3">
+            {order.items?.map((item: any, idx: number) => (
+              <div key={idx} className="flex justify-between items-start border-b border-slate-50 last:border-0 pb-2 last:pb-0">
+                <div className="flex gap-3">
+                  <div className={`p-2 rounded-lg ${item.itemType === 'package' ? 'bg-purple-50 text-purple-600' : 'bg-blue-50 text-blue-600'}`}>
+                    {item.itemType === 'package' ? <Package size={18} /> : <FlaskConical size={18} />}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-slate-800 text-sm">{item.itemName}</p>
+                    <span className="text-[10px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-0.5 rounded">{item.itemType}</span>
+                  </div>
+                </div>
+                <p className="font-bold text-slate-700 text-sm">₹{item.price}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* 3. TECHNICIAN SECTION */}
+        <Card title="Technician Details" icon={<UserCog />}>
+          {order.technician ? (
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-slate-400 font-bold text-xl">
+                {order.technician.name.charAt(0)}
+              </div>
+              <div>
+                <p className="font-bold text-slate-800">{order.technician.name}</p>
+                <p className="text-sm text-blue-600 font-medium flex items-center gap-1">
+                  <Phone size={14} /> {order.technician.phone}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+              <UserCog className="mx-auto text-slate-300 mb-2" size={24} />
+              <p className="text-sm text-slate-500 font-medium">Technician not assigned yet</p>
+              <p className="text-xs text-slate-400">You can see technician details here once assigned.</p>
+            </div>
           )}
         </Card>
-        {/* AI REPORT SUMMARY */}
-          {order.reportSummary &&
-            order.reports?.some((r: any) => r.reportType === 'COMPLETED') && (
-              <Card title="AI Health Analysis" icon={<Activity className="text-indigo-600" />}>
-                {/* ✅ UPDATED COMPONENT CALL */}
+
+        {/* 4. AI REPORT SUMMARY */}
+        {/* Only show if Report is generated */}
+        {(order.reportSummary || order.reports?.length > 0) && (
+          <Card title="Report Summary" icon={<Activity className="text-indigo-600" />}>
+            {order.reportSummary ? (
+              <>
                 <AiHealthDashboard 
                   dataString={order.reportSummary.content} 
                   orderId={order.id} 
                   orderNumber={order.orderNumber}
                 />
-                
-                <div className="mt-4 pt-3 border-t flex items-center justify-between text-[10px] text-slate-400">
-                  <span>Powered by MediAI v2.0</span>
-                  <span>This summary is AI generated and for reference only. Not a medical diagnosis.</span>
+                <div className="mt-4 pt-3 border-t flex justify-between text-[10px] text-slate-400">
+                  <span>Powered by MediAI</span><span>Not a diagnosis</span>
                 </div>
-              </Card>
-          )}
-
-        {/* REPORTS */}
-        <Card title="Reports" icon={<FileText />}>
-          {order.reports?.length ? (
-            order.reports.map((r: any) => (
-              <a
-                key={r.id}
-                href={`/api/reports/${r.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex justify-between items-center text-sm py-2"
-              >
-                <span>{r.reportType} Report</span>
-                <FileDown size={16} />
-              </a>
-            ))
-          ) : (
-            <p className="text-sm text-slate-500">
-              Reports will appear here once uploaded.
-            </p>
-          )}
-        </Card>
-
-        {/* SCHEDULE */}
-        <Card title="Schedule" icon={<Calendar />}>
-          <p className="font-semibold">{formatDate(order.preferredDate)}</p>
-          <p className="text-sm flex items-center gap-1">
-            <Clock size={14} /> {order.preferredTimeSlot}
-          </p>
-          <span className="mt-2 inline-flex items-center gap-2 text-xs font-bold bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full">
-            {order.collectionType === 'home_collection'
-              ? <><Home size={14} /> Home Collection</>
-              : <><Building2 size={14} /> Lab Visit</>}
-          </span>
-        </Card>
-
-        {/* LAB */}
-        {order.lab && (
-          <Card title="Laboratory" icon={<FlaskConical />}>
-            <p className="font-bold">{order.lab.labName}</p>
-            <p className="text-sm text-slate-600">
-              {order.lab.address}, {order.lab.city} - {order.lab.pincode}
-            </p>
-            {order.lab.contactNo && (
-              <p className="text-sm mt-1">
-                <Phone size={14} /> {order.lab.contactNo}
+              </>
+            ) : (
+              <p className="text-sm text-slate-500 italic">
+                AI Summary will be generated once the report is uploaded.
               </p>
             )}
           </Card>
         )}
 
-        {/* TECHNICIAN */}
-        <Card title="Technician" icon={<UserCog />}>
-          {order.technician ? (
-            <>
-              <p className="font-bold">{order.technician.name}</p>
-              <p className="text-sm">
-                <Phone size={14} /> {order.technician.phone}
-              </p>
-            </>
+        {/* 5. DOWNLOAD REPORTS */}
+        <Card title="Download Reports" icon={<FileText />}>
+          {order.reports?.length > 0 ? (
+            <div className="space-y-2">
+              {order.reports.map((r: any) => (
+                <a key={r.id} href={`/api/reports/${r.id}`} target="_blank" className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors group">
+                  <span className="text-sm font-medium text-blue-700">{r.reportType || 'Lab Report'}</span>
+                  <FileDown size={18} className="text-blue-500 group-hover:scale-110 transition-transform" />
+                </a>
+              ))}
+            </div>
           ) : (
-            <p className="text-sm text-slate-500">
-              Technician not assigned yet.
-            </p>
+            <p className="text-sm text-slate-500">Reports will appear here once uploaded by the lab.</p>
           )}
         </Card>
 
-        {/* PAYMENT */}
-        <Card title="Payment Summary" icon={<Receipt />}>
-          <Row label="MRP" value={mrp} />
-          {discount > 0 && <Row label="Coupon Discount" value={-discount} />}
-          {home > 0 && <Row label="Home Collection" value={home} />}
-          {savings > 0 && (
-            <Row label="You Saved" value={-savings} highlight />
-          )}
-          <hr />
-          <Row label="Total Paid" value={final} bold />
-        </Card>
-      </div>
+        {/* 6. LAB DETAILS */}
+        {order.lab && (
+          <Card title="Laboratory" icon={<Building2 />}>
+            <p className="font-bold">{order.lab.labName}</p>
+            <p className="text-sm text-slate-600">{order.lab.address}, {order.lab.city} - {order.lab.pincode}</p>
+            {order.lab.contactNo && <p className="text-sm mt-1 text-blue-600 font-medium flex gap-1"><Phone size={14}/> {order.lab.contactNo}</p>}
+          </Card>
+        )}
 
-      {/* FOOTER ACTIONS */}
-      {order.status === 'PENDING' && (
-        <div className="
-          fixed bottom-0 right-0 left-0 md:left-72
-          z-30 bg-white border-t
-          px-4 py-3 flex gap-3
-        ">
-          <button
-            onClick={() => setOpen(true)}
-            className="flex-1 h-14 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2"
-          >
-            <RefreshCcw size={18} /> Reschedule
-          </button>
+        {/* 7. SCHEDULE & PAYMENT */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <Card title="Schedule" icon={<Calendar />}>
+            <p className="font-semibold">{formatDate(order.preferredDate)}</p>
+            <p className="text-sm flex items-center gap-1 text-slate-600"><Clock size={14} /> {order.preferredTimeSlot}</p>
+            <span className="inline-block mt-2 text-xs font-bold bg-green-100 text-green-700 px-2 py-1 rounded">
+              {order.collectionType === 'home_collection' ? 'Home Collection' : 'Lab Visit'}
+            </span>
+          </Card>
 
-          <button
-            onClick={async () => {
-              if (!confirm('Cancel this order?')) return;
-              const token = Cookies.get('token');
-              await axios.put(
-                `${process.env.NEXT_PUBLIC_API_URL}/orders/${order.id}/cancel`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
-              );
-              toast.success('Order cancelled');
-              fetchOrder();
-            }}
-            className="flex-1 h-14 border border-red-300 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2"
-          >
-            <Ban size={18} /> Cancel
-          </button>
+          <Card title="Payment" icon={<Receipt />}>
+            <Row label="MRP" value={mrp} />
+            <Row label="Discount" value={-discount} />
+            <Row label="Collection" value={home} />
+            <div className="border-t my-1 pt-1"><Row label="Paid" value={final} bold /></div>
+          </Card>
         </div>
-      )}
 
-      {/* RESCHEDULE SHEET */}
-      {open && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-end">
-          <div className="bg-white w-full rounded-t-3xl p-6">
-            <div className="flex justify-between mb-4">
-              <h3 className="font-bold">Reschedule</h3>
-              <button onClick={() => setOpen(false)}>
-                <X />
+        {/* FOOTER ACTIONS (Only Pending) */}
+        {order.status === 'PENDING' && (
+          <div className="sticky bottom-4 z-20">
+            <div className="bg-white/90 backdrop-blur-md border border-slate-200 p-3 rounded-2xl shadow-xl flex gap-3">
+              <button onClick={onRescheduleClick} className="flex-1 h-12 bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700">
+                <RefreshCcw size={18} /> Reschedule
+              </button>
+              <button onClick={handleCancel} className="flex-1 h-12 bg-white border border-red-200 text-red-600 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-50">
+                <Ban size={18} /> Cancel
               </button>
             </div>
+          </div>
+        )}
 
-            <input
-              type="date"
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full border rounded-xl p-3 mb-3"
-              onChange={e => setNewDate(e.target.value)}
-            />
+      </div>
 
-            <select
-              className="w-full border rounded-xl p-3 mb-6"
-              onChange={e => setNewTime(e.target.value)}
-            >
-              <option>Select Time</option>
-              <option>07:00 AM - 08:00 AM</option>
-              <option>08:00 AM - 09:00 AM</option>
-              <option>09:00 AM - 10:00 AM</option>
-            </select>
-
-            <button
-              onClick={handleReschedule}
-              className="w-full h-14 bg-blue-600 text-white rounded-xl font-bold"
-            >
-              Confirm Reschedule
-            </button>
+      {/* Reschedule Modal (Same as before) */}
+      {open && (
+        <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-bold text-lg">Reschedule</h3>
+              <button onClick={() => setOpen(false)}><X/></button>
+            </div>
+            <div className="space-y-4">
+              <input type="date" className="w-full border p-3 rounded-xl" onChange={e => setNewDate(e.target.value)} min={new Date(Date.now() + 86400000).toISOString().split('T')[0]} />
+              <select className="w-full border p-3 rounded-xl" onChange={e => setNewTime(e.target.value)}>
+                <option>07:00 AM - 08:00 AM</option>
+                <option>08:00 AM - 09:00 AM</option>
+                <option>09:00 AM - 10:00 AM</option>
+              </select>
+              <button onClick={handleConfirmReschedule} className="w-full bg-black text-white py-3 rounded-xl font-bold">Confirm</button>
+            </div>
           </div>
         </div>
       )}
@@ -317,26 +276,19 @@ export default function OrderDetailsPage({
   );
 }
 
-/* ---------------- UI HELPERS ---------------- */
-
+// UI Components
 const Card = ({ title, icon, children }: any) => (
-  <div className="bg-white rounded-2xl p-5 shadow-sm space-y-2">
-    <h3 className="font-bold text-sm flex items-center gap-2">
+  <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 h-full">
+    <h3 className="font-bold text-sm flex items-center gap-2 text-slate-800 mb-3 uppercase tracking-wider">
       {icon} {title}
     </h3>
     {children}
   </div>
 );
 
-const Row = ({ label, value, bold, highlight }: any) => (
-  <div
-    className={`flex justify-between text-sm ${
-      bold ? 'font-extrabold text-lg' : ''
-    }`}
-  >
+const Row = ({ label, value, bold }: any) => (
+  <div className={`flex justify-between text-sm ${bold ? 'font-extrabold text-slate-900 text-lg' : 'text-slate-600 mb-1'}`}>
     <span>{label}</span>
-    <span className={highlight ? 'text-green-600 font-bold' : ''}>
-      ₹{Math.abs(value)}
-    </span>
+    <span>₹{Math.abs(value).toLocaleString()}</span>
   </div>
 );

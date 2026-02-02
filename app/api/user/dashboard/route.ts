@@ -1,93 +1,98 @@
-export const dynamic = 'force-dynamic';
-
+// app/api/user/dashboard/route.ts
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/db';
+import { db, successResponse } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { handleApiError, AuthError, AppError } from '@/lib/utils/error-handling';
+import type { DashboardResponse } from '@/lib/types/dashboard';
+
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30; // 30 seconds max
+export const runtime = 'nodejs';
+
+// Cache control headers
+const CACHE_HEADERS = {
+  'Cache-Control': 'private, no-cache, no-store, must-revalidate',
+  'CDN-Cache-Control': 'no-cache',
+  'Vercel-CDN-Cache-Control': 'no-cache',
+};
 
 export async function GET(req: Request) {
-  // 1. Authentication Check
-  const user = await getAuthUser(req);
-  if (!user) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
-    const userId = user.id;
+    // Authentication
+    const user = await getAuthUser(req);
+    if (!user) {
+      throw new AuthError();
+    }
 
-    // 2. Fetch All Data in Parallel (Fastest)
-    const [
-      totalOrders, 
-      pendingOrders, 
-      homeCollection, 
-      familyMembers, 
-      recentOrders, 
-      latestCompletedOrder, 
-      members
-    ] = await Promise.all([
-      // Stats
-      prisma.order.count({ where: { userId } }),
-      prisma.order.count({ where: { userId, status: 'PENDING' } }),
-      prisma.order.count({ where: { userId, collectionType: 'home_collection' } }),
-      prisma.familyMember.count({ where: { customerId: userId } }),
+    // Validate user
+    if (!user.id || !user.email) {
+      throw new AppError('Invalid user data', 'INVALID_USER', 400);
+    }
 
-      // Recent Orders (Limit 5)
-      prisma.order.findMany({
-        where: { userId },
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: { 
-          lab: { select: { labName: true } } 
-        }
-      }),
-
-      // 🌟 AI Widget Data: Latest Completed Order
-      // Matches your old backend logic
-      prisma.order.findFirst({
-        where: { 
-          userId, 
-          status: 'COMPLETED'
-        },
-        orderBy: { createdAt: 'desc' },
-        include: {
-          items: true,
-          lab: { select: { labName: true } },
-          // Uncomment the line below ONLY if you have added the 'ReportSummary' model to your schema
-          // reportSummary: true 
-        }
-      }),
-
-      // Recent Family Members (Limit 3)
-      prisma.familyMember.findMany({
-        where: { customerId: userId },
-        take: 3,
-        orderBy: { id: 'desc' }
-      })
+    // Fetch dashboard data in parallel with timeout
+    const dashboardPromise = Promise.all([
+      db.dashboard.getStats(user.id),
+      db.dashboard.getRecentOrders(user.id, 5),
+      db.dashboard.getLatestCompletedOrder(user.id),
+      db.dashboard.getRecentFamilyMembers(user.id, 3),
     ]);
 
-    // 3. Format Response
-    const formattedOrders = recentOrders.map(o => ({
-      ...o,
-      labName: o.lab?.labName || 'Unknown Lab'
-    }));
-
-    // 4. Return JSON
-    return NextResponse.json({
-      stats: {
-        totalOrders,
-        pendingOrders,
-        homeCollection,
-        familyMembers
-      },
-      recentOrders: formattedOrders,
-      latestCompletedOrder,
-      members
+    // Add timeout to prevent hanging requests
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new AppError('Request timeout', 'TIMEOUT', 408)), 10000);
     });
 
-  } catch (error) {
-    console.error("Dashboard API Error:", error);
+    const [stats, recentOrders, latestCompletedOrder, members] = 
+      await Promise.race([dashboardPromise, timeoutPromise]) as any[];
+
+    // Validate response
+    if (!stats || !recentOrders) {
+      throw new AppError('Failed to fetch dashboard data', 'DASHBOARD_FETCH_ERROR', 500);
+    }
+
+    const response: DashboardResponse = {
+      stats,
+      recentOrders,
+      latestCompletedOrder,
+      members,
+      user: {
+        name: user.name,
+        email: user.email,
+      },
+    };
+
+    // Return successful response
+    return NextResponse.json(successResponse(response), {
+      status: 200,
+      headers: CACHE_HEADERS,
+    });
+
+  } catch (error: any) {
+    // Handle known errors
+    const { message, code, statusCode, ...rest } = handleApiError(error);
+    
+    // Log full error in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Dashboard API Error Details:', {
+        error,
+        message,
+        code,
+        statusCode,
+        ...rest,
+      });
+    }
+
     return NextResponse.json(
-      { message: 'Error fetching dashboard data' }, 
-      { status: 500 }
+      {
+        success: false,
+        message,
+        code,
+        ...rest,
+      },
+      {
+        status: statusCode || 500,
+        headers: CACHE_HEADERS,
+      }
     );
   }
 }

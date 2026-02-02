@@ -5,6 +5,7 @@ import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
 import { OrderStatus } from '@prisma/client';
 import { processAndSaveSummary } from '@/lib/aiService';
+import { sendSMS } from '@/lib/sms';
 
 
 
@@ -109,29 +110,59 @@ export async function updateOrderStatusAction(formData: FormData) {
   const orderId = Number(formData.get('orderId'));
   const newStatus = formData.get('status') as OrderStatus;
 
-  const order = await prisma.order.findUnique({
+  if (!orderId || !newStatus) {
+    return { success: false };
+  }
+
+  /* ---------- 1. Fetch existing order + phone ---------- */
+  const orderData = await prisma.order.findUnique({
     where: { id: orderId },
-    select: { status: true }
+    select: {
+      status: true,
+      orderNumber: true,
+      customer: { select: { phone: true } },
+      patientPhone: true,
+    },
   });
 
-  if (!order) return { success: false };
+  if (!orderData) {
+    return { success: false };
+  }
 
-  await prisma.$transaction(async tx => {
+  /* ---------- 2. Update status + activity (transaction) ---------- */
+  await prisma.$transaction(async (tx) => {
     await tx.order.update({
       where: { id: orderId },
-      data: { status: newStatus }
+      data: { status: newStatus },
     });
 
     await tx.orderActivity.create({
       data: {
         orderId,
         action: 'STATUS_UPDATED',
-        oldValue: order.status,
+        oldValue: orderData.status,
         newValue: newStatus,
-        performedBy: 'ADMIN'
-      }
+        performedBy: 'ADMIN',
+      },
     });
   });
+
+  /* ---------- 3. Send SMS (non-blocking) ---------- */
+  const mobile =
+    orderData.customer?.phone || orderData.patientPhone;
+
+  if (mobile && newStatus === 'PROCESSING') {
+    try {
+      await sendSMS(
+        mobile,
+        'SAMPLE_COLLECTED',
+        [orderData.orderNumber || String(orderId)]
+      );
+    } catch (smsError) {
+      console.error('SMS sending failed:', smsError);
+      // Do NOT affect success response
+    }
+  }
 
   return { success: true };
 }
@@ -198,10 +229,7 @@ export async function uploadReportAction(
     }
 
     /* 1️⃣ Encrypt + upload */
-    // We create the buffer ONCE. We use it for encryption AND for the AI.
     const buffer = Buffer.from(await file.arrayBuffer());
-    
-    // Encrypt for storage (GCS/S3)
     const { encrypted, iv, tag } = encryptBuffer(buffer);
 
     const storagePath = `reports/order-${orderId}/${type.toLowerCase()}/${Date.now()}.enc`;
@@ -209,20 +237,17 @@ export async function uploadReportAction(
 
     /* 2️⃣ FAST DB transaction */
     await prisma.$transaction(async tx => {
-      // If uploading the final report, clean up any partial drafts
       if (type === 'COMPLETED') {
         await tx.orderReport.deleteMany({
           where: { orderId, reportType: 'PARTIAL' }
         });
-        
-        // Optional: Auto-update Order Status to COMPLETED
+
         await tx.order.update({
           where: { id: orderId },
           data: { status: 'COMPLETED' }
         });
       }
 
-      // Save the file record
       await tx.orderReport.create({
         data: {
           orderId,
@@ -235,7 +260,6 @@ export async function uploadReportAction(
         }
       });
 
-      // Log the activity
       await tx.orderActivity.create({
         data: {
           orderId,
@@ -247,16 +271,36 @@ export async function uploadReportAction(
       });
     });
 
-    /* 3️⃣ Trigger AI in background (DIRECT CALL) */
-    // ---------------------------------------------------------
-    // ⚡ FIX: We call the service function directly using 'void'.
-    // This runs in Node.js immediately without an API route.
-    // ---------------------------------------------------------
+    /* 3️⃣ Trigger AI in background */
     if (type === 'COMPLETED') {
       void processAndSaveSummary(orderId, buffer);
+
+      /* 4️⃣ Fetch phone & send SMS (non-blocking) */
+      try {
+        const orderData = await prisma.order.findUnique({
+          where: { id: orderId },
+          select: {
+            orderNumber: true,
+            customer: { select: { phone: true } },
+            patientPhone: true
+          }
+        });
+
+        const mobile =
+          orderData?.customer?.phone || orderData?.patientPhone;
+
+        if (mobile) {
+          await sendSMS(
+            mobile,
+            'REPORT_UPLOADED',
+            [orderData?.orderNumber || String(orderId)]
+          );
+        }
+      } catch (smsError) {
+        console.error('SMS sending failed:', smsError);
+      }
     }
 
-    /* 4️⃣ Return immediately */
     return { success: true };
 
   } catch (err) {
