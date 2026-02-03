@@ -17,9 +17,14 @@ export async function GET(req: Request) {
     const reports = await prisma.order.findMany({
       where: {
         userId: user.id,
-        status: 'COMPLETED',
+        
+        // ✅ 1. Only fetch orders that actually have reports uploaded
+        // This covers both 'COMPLETED' and 'PARTIAL' status automatically
+        reports: {
+          some: {} 
+        },
 
-        // ❌ Exclude Pre-Employment Checkup orders
+        // ✅ 2. Your Existing Rule: Exclude Pre-Employment Checkup orders
         items: {
           none: {
             package: {
@@ -28,12 +33,44 @@ export async function GET(req: Request) {
           }
         }
       },
-      include: {
+      // ✅ 3. Select specific fields (No prices, just names/details)
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true, // Needed for the 'Partial' vs 'Completed' badge logic
+        createdAt: true,
+
+        // Patient Snapshot
+        patientName: true,
+        patientDob: true,
+        patientGender: true,
+        patientRelation: true,
+        patientUHID: true,
+
+        // Lab Details
         lab: {
-          select: { labName: true }
+          select: { 
+            labName: true,
+            address: true 
+          }
         },
-        items: true,
-        reports: true // report file metadata
+
+        // Items: Name only (No Price)
+        items: {
+          select: {
+            itemName: true,
+            itemType: true
+          }
+        },
+
+        // Report Files metadata
+        reports: {
+          select: {
+            id: true,
+            createdAt: true
+          },
+          orderBy: { createdAt: 'desc' }
+        }
       },
       orderBy: {
         createdAt: 'desc'

@@ -150,26 +150,33 @@ export async function uploadCorporateEmployees(
     let created = 0;
 
     for (const emp of employees) {
-      if (!emp.phone && !emp.email) continue;
+      if (!emp.phone && !emp.email) continue; // Skip empty rows
 
+      // Logic: Check if user exists by Phone OR Email
       const existing = await prisma.customer.findFirst({
         where: {
-          OR: [{ phone: emp.phone }, { email: emp.email }]
+          OR: [
+            { phone: emp.phone }, // Priority match
+            { email: emp.email }
+          ]
         }
       });
 
       if (existing) {
+        // Map existing user to corporate
         await prisma.customer.update({
           where: { id: existing.id },
           data: {
             corporateId,
-            employeeId: emp.employeeId
+            employeeId: emp.employeeId,
+            department: emp.department || existing.department,
+            location: emp.location || existing.location
           }
         });
         mapped++;
       } else {
-        const hashedPassword = await bcrypt.hash('Welcome123', 10);
-
+        // Create new account
+        const hashedPassword = await bcrypt.hash('Welcome123', 10); // Default password
         await prisma.customer.create({
           data: {
             name: emp.name,
@@ -179,8 +186,11 @@ export async function uploadCorporateEmployees(
             dateOfBirth: emp.dob ? new Date(emp.dob) : null,
             gender: emp.gender,
             employeeId: emp.employeeId,
+            department: emp.department,
+            location: emp.location,
             corporateId,
-            isActive: true
+            isActive: true, // Auto-activate
+            loginMethod: 'email'
           }
         });
         created++;
@@ -189,9 +199,9 @@ export async function uploadCorporateEmployees(
 
     revalidatePath(`/admin/corporates/${corporateId}`);
     return { success: true, stats: { mapped, created } };
-  } catch (e) {
-    console.error(e);
-    return { success: false, error: 'Processing failed' };
+  } catch (e: any) {
+    console.error("Upload Error:", e);
+    return { success: false, error: 'Processing failed: ' + e.message };
   }
 }
 
@@ -208,29 +218,32 @@ export async function assignCorporateService(data: {
   familyLimit: number;
 }) {
   try {
+    // 1. Create the Link
     await prisma.corporateService.create({
       data: {
         corporateId: data.corporateId,
-        packageId: data.type === 'PACKAGE' ? data.itemId : null,
-        couponId: data.type === 'COUPON' ? data.itemId : null,
+        packageId: data.type === 'PACKAGE' ? Number(data.itemId) : null,
+        couponId: data.type === 'COUPON' ? Number(data.itemId) : null,
         validFrom: new Date(data.validFrom),
         validTill: new Date(data.validTill),
-
-        // ✅ NEW RULES
         selfPaymentType: data.selfPaymentType,
         familyPaymentType: data.familyPaymentType,
-        selfUsageLimit: data.selfLimit,
-        familyUsageLimit: data.familyLimit
+        selfUsageLimit: Number(data.selfLimit),
+        familyUsageLimit: Number(data.familyLimit),
+        isActive: true
       }
     });
 
-    // ✅ Auto-mark package as corporate-owned
+    // 2. Logic: Make Package Active & Corporate Owned
+    // NOTE: This assumes strict ownership. If this package is used by others, you should CLONE it instead of updating it.
     if (data.type === 'PACKAGE') {
       await prisma.package.update({
-        where: { id: data.itemId },
+        where: { id: Number(data.itemId) },
         data: {
           isCorporate: true,
-          corporateId: data.corporateId
+          corporateId: data.corporateId,
+          isActive: true, // REQUIRED: Make it active as requested
+          showOnHomepage: false // Ensure it's hidden from public
         }
       });
     }
@@ -239,16 +252,33 @@ export async function assignCorporateService(data: {
     return { success: true };
   } catch (error) {
     console.error(error);
-    return { success: false, error: 'Failed to map service rules' };
+    return { success: false, error: 'Failed to assign service' };
   }
 }
 
 // --- 7. GET ALL PACKAGES & COUPONS ---
-export async function getAdminInventory() {
+export async function getAdminInventory(searchQuery: string = '') {
   const [packages, coupons] = await Promise.all([
     prisma.package.findMany({
-      where: { isActive: true },
-      select: { id: true, packageName: true }
+      where: {
+        // Filter logic:
+        // 1. Must match search (if any)
+        // 2. We assume 'Corporate' packages might have a specific category OR 
+        //    you want to select from ANY package to assign.
+        //    User request: "only packages that are for corporate"
+        AND: [
+          { isActive: true }, // Only show active templates
+          { 
+            OR: [
+              { category: 'CORPORATE' }, // If you label them via category
+              { isCorporate: true },     // Or if they are already flagged
+              // { tag: { contains: 'B2B' } } // Optional tag check
+            ]
+          },
+          searchQuery ? { packageName: { contains: searchQuery, mode: 'insensitive' } } : {}
+        ]
+      },
+      select: { id: true, packageName: true, price: true }
     }),
     prisma.coupon.findMany({
       where: { isActive: true },

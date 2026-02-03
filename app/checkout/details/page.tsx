@@ -278,9 +278,6 @@ export default function CheckoutDetails() {
           </button>
         </div>
       </div>
-
-      {/* --- MODALS (Keep existing AnimatePresence logic) --- */}
-      {/* ... [Your existing Modals for Pincode Alert, Add Address, Add Member go here] ... */}
       {/* Ensure you keep the Modals code block exactly as it was in your previous snippet */}
       <AnimatePresence>
         {showPincodeAlert && (
@@ -314,18 +311,17 @@ export default function CheckoutDetails() {
                 <button
                   onClick={() => {
                     setShowPincodeAlert(false);
+
+                    setNewAddr(prev => ({
+                      ...prev,
+                      pincode: String(allowedPincode || '')
+                    }));
+
                     setActiveModal('address');
                   }}
                   className="w-full bg-slate-900 text-white h-12 rounded-xl font-bold hover:bg-black transition-all"
                 >
                   Add New Address
-                </button>
-
-                <button
-                  onClick={() => setShowPincodeAlert(false)}
-                  className="w-full h-11 rounded-xl font-bold text-slate-500 hover:bg-slate-100 transition-all"
-                >
-                  I’ll do it later
                 </button>
               </div>
             </motion.div>
@@ -360,7 +356,7 @@ export default function CheckoutDetails() {
                     <input placeholder="Area / Sector / Locality" className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl p-3.5 font-medium outline-none transition-all" onChange={e => setNewAddr({...newAddr, address_line2: e.target.value})} />
                     <div className="grid grid-cols-2 gap-3">
                       <input placeholder="City" className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl p-3.5 font-medium outline-none transition-all" required onChange={e => setNewAddr({...newAddr, city: e.target.value})} />
-                      <input placeholder="Pincode" className="w-full bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white rounded-xl p-3.5 font-medium outline-none transition-all" required onChange={e => setNewAddr({...newAddr, pincode: e.target.value})} />
+                      <input placeholder="Pincode" value={newAddr.pincode} disabled={!!allowedPincode} className={`w-full rounded-xl p-3.5 font-medium outline-none transition-all ${allowedPincode ? 'bg-slate-100 border border-slate-200 text-slate-500 cursor-not-allowed' : 'bg-slate-50 border border-slate-200 focus:border-blue-500 focus:bg-white'}`} required />
                     </div>
                   </div>
                   

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { getPackageFormData, createPackageAction } from '@/app/actions/adminPackageActions';
+import { useState, useEffect, use } from 'react';
+import { getPackageById, getPackageFormData, updatePackageAction } from '@/app/actions/adminPackageActions';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/safe-toast';
 import {
@@ -15,30 +15,69 @@ import {
   Building,
   X,
   CheckCircle2,
-  Trash2,
   Check
 } from 'lucide-react';
 import Link from 'next/link';
 
-export default function AddPackagePage() {
+export default function EditPackagePage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  // Unwrap params using React.use()
+  const { id } = use(params);
+  const packageId = parseInt(id);
+
+  const [loading, setLoading] = useState(true);
   
   // Data States
   const [tests, setTests] = useState<any[]>([]);
-  const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]); // ✅ Track IDs separately
+  const [selectedTestIds, setSelectedTestIds] = useState<number[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   
   // Form States
+  const [packageData, setPackageData] = useState<any>(null);
   const [isCorporate, setIsCorporate] = useState(false);
   const [basePrice, setBasePrice] = useState(0);
   const [discount, setDiscount] = useState(0);
 
+  // --- 1. INITIAL LOAD ---
   useEffect(() => {
-    getPackageFormData().then(setTests);
-  }, []);
+    const init = async () => {
+      try {
+        // Fetch both the Package Data and the Full Test List in parallel
+        const [pkg, allTests] = await Promise.all([
+          getPackageById(packageId),
+          getPackageFormData()
+        ]);
 
-  // ✅ Toggle Logic: Adds or Removes ID from state
+        if (!pkg) {
+          toast.error("Package not found");
+          router.push('/admin/packages');
+          return;
+        }
+
+        setTests(allTests);
+        setPackageData(pkg);
+        
+        // Pre-fill State
+        setSelectedTestIds(pkg.testIds); // [1, 5, 10]
+        setBasePrice(pkg.price);
+        setDiscount(pkg.discount);
+        
+        // Logic to determine if "Corporate Toggle" should be on
+        if (pkg.category && pkg.category !== 'ANNUAL') {
+          setIsCorporate(true);
+        }
+
+      } catch (e) {
+        toast.error("Failed to load data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
+  }, [packageId, router]);
+
+
+  // --- 2. HANDLERS ---
   const toggleTest = (testId: number) => {
     setSelectedTestIds(prev => 
       prev.includes(testId) 
@@ -49,42 +88,34 @@ export default function AddPackagePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     if (selectedTestIds.length === 0) {
       toast.error("Please select at least one test");
       return;
     }
 
     setLoading(true);
-
     const formData = new FormData(e.currentTarget);
     
-    const defaultStatus = isCorporate ? 'off' : 'on';
-    formData.append('is_active', defaultStatus);
-
-    // ✅ IMPORTANT: Since we use custom state for checkboxes, 
-    // we must manually append selected IDs if we don't use hidden inputs.
-    // However, I have added Hidden Inputs below, so FormData will catch them automatically.
-
-    const res = await createPackageAction(formData);
+    // Call Update Action
+    const res = await updatePackageAction(packageId, formData);
 
     setLoading(false);
     if (res.success) {
-      toast.success('Package Created Successfully');
+      toast.success('Package Updated Successfully');
       router.push('/admin/packages');
     } else {
       toast.error(res.error);
     }
   };
 
-  // Filter for the Search List
+  if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
+
+  // Filter & Calc
   const filteredTests = tests.filter(t =>
     t.testName.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Get full objects of selected tests for the "Selected Container"
+  
   const selectedTestsData = tests.filter(t => selectedTestIds.includes(t.id));
-
   const finalPrice = basePrice - (basePrice * discount) / 100;
 
   return (
@@ -94,12 +125,12 @@ export default function AddPackagePage() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <div className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-purple-200">
-              New Bundle
+            <div className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-amber-200">
+              Edit Mode
             </div>
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Create Health Package
+            Edit Package: {packageData.packageName}
           </h1>
         </div>
 
@@ -114,14 +145,14 @@ export default function AddPackagePage() {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* ✅ HIDDEN INPUTS: This ensures FormData captures selected IDs regardless of search filter */}
+        {/* Hidden Inputs for Selected Tests */}
         {selectedTestIds.map(id => (
           <input key={id} type="hidden" name="test_ids" value={id} />
         ))}
 
         <div className="lg:col-span-2 space-y-6">
           
-          {/* 1. Package Info Card */}
+          {/* PACKAGE INFO */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
             <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -133,14 +164,32 @@ export default function AddPackagePage() {
             <div className="space-y-5">
               <div>
                 <label className="label">Package Name *</label>
-                <input name="package_name" required className="input-field text-lg font-semibold" />
+                <input 
+                  name="package_name" 
+                  defaultValue={packageData.packageName}
+                  required 
+                  className="input-field text-lg font-semibold" 
+                />
+              </div>
+
+               {/* Active Status */}
+               <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <input 
+                  type="checkbox" 
+                  name="is_active" 
+                  id="activeToggle"
+                  className="w-5 h-5 rounded accent-blue-600"
+                  defaultChecked={packageData.isActive}
+                />
+                <label htmlFor="activeToggle" className="text-sm font-bold text-slate-700 cursor-pointer">
+                  Package is Active & Visible
+                </label>
               </div>
 
               {/* Corporate Toggle */}
               <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl border border-purple-100">
                 <input 
                   type="checkbox" 
-                  name="isCorporate" 
                   id="corpToggle"
                   className="w-5 h-5 rounded accent-purple-600"
                   checked={isCorporate}
@@ -160,7 +209,12 @@ export default function AddPackagePage() {
                     </label>
                     <div className="flex items-center gap-6 p-3 bg-slate-50 rounded-xl border border-slate-200">
                       <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="isPreEmployment" className="w-4 h-4" />
+                        <input 
+                          type="checkbox" 
+                          name="isPreEmployment" 
+                          className="w-4 h-4" 
+                          // defaultChecked={packageData.isPreEmployment} // Uncomment if in DB
+                        />
                         <span className="text-sm font-bold text-slate-700">Pre-Employment</span>
                       </label>
                     </div>
@@ -168,7 +222,11 @@ export default function AddPackagePage() {
 
                   <div className="space-y-3">
                     <label className="label">Package Category</label>
-                    <select name="category" className="input-field">
+                    <select 
+                      name="category" 
+                      className="input-field"
+                      defaultValue={packageData.category || 'ANNUAL'}
+                    >
                       <option value="ANNUAL">Annual Health Checkup</option>
                       <option value="PRE_EMPLOYMENT">Pre-Employment Checkup</option>
                       <option value="EXECUTIVE">Executive Health Check</option>
@@ -181,17 +239,27 @@ export default function AddPackagePage() {
               <div className="grid grid-cols-2 gap-5">
                 <div>
                   <label className="label">Description</label>
-                  <textarea name="description" rows={3} className="input-field resize-none" placeholder="Summary..." />
+                  <textarea 
+                    name="description" 
+                    defaultValue={packageData.description}
+                    rows={3} 
+                    className="input-field resize-none" 
+                  />
                 </div>
                 <div>
                   <label className="label">Preparation</label>
-                  <textarea name="preparation" rows={3} className="input-field resize-none" placeholder="Instructions..." />
+                  <textarea 
+                    name="preparation" 
+                    defaultValue={packageData.preparation}
+                    rows={3} 
+                    className="input-field resize-none" 
+                  />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* ✅ 2. SELECTED TESTS CONTAINER (The "Cart") */}
+          {/* SELECTED TESTS CONTAINER */}
           {selectedTestIds.length > 0 && (
             <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl animate-in slide-in-from-bottom-2">
               <h3 className="font-bold text-indigo-900 mb-3 flex items-center justify-between">
@@ -223,7 +291,7 @@ export default function AddPackagePage() {
             </div>
           )}
 
-          {/* 3. TEST SELECTOR (The "Inventory") */}
+          {/* TEST SELECTOR */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-bold text-slate-800 flex items-center gap-2">
@@ -254,7 +322,6 @@ export default function AddPackagePage() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {/* Controlled Checkbox */}
                       <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
                         isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300'
                       }`}>
@@ -268,17 +335,11 @@ export default function AddPackagePage() {
                   </div>
                 );
               })}
-              
-              {filteredTests.length === 0 && (
-                <div className="text-center py-10 text-slate-400 text-sm">
-                  No tests found matching "{searchQuery}"
-                </div>
-              )}
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN – PRICING */}
+        {/* RIGHT COLUMN */}
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 sticky top-4">
             <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
@@ -290,6 +351,7 @@ export default function AddPackagePage() {
               name="price"
               className="input-field mb-3"
               placeholder="Base Price"
+              value={basePrice}
               onChange={e => setBasePrice(+e.target.value || 0)}
             />
 
@@ -298,6 +360,7 @@ export default function AddPackagePage() {
               name="discount"
               className="input-field"
               placeholder="Discount %"
+              value={discount}
               onChange={e => setDiscount(+e.target.value || 0)}
             />
 
@@ -318,7 +381,7 @@ export default function AddPackagePage() {
               className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex justify-center gap-2 mt-6 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
             >
               {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-              Save & Publish
+              Update Package
             </button>
           </div>
         </div>

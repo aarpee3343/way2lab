@@ -59,16 +59,12 @@ function SuccessContent() {
 
     const fetchOrder = async () => {
       try {
-        // ✅ FIX: No headers, use HttpOnly cookie
         const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/order/${orderId}`);
 
         if (res.data?.id) setOrder(res.data);
         else setError('Invalid order response');
       } catch (err: any) {
         if (err.response?.status === 401) {
-            // If unauthorized, user might have been logged out.
-            // Since this is a public success page (conceptually), we might show a generic error
-            // or redirect. Typically, viewing an order requires auth.
             toast.error("Session expired. Please login to view order.");
             router.push('/login');
         } else {
@@ -93,8 +89,7 @@ function SuccessContent() {
       const response = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/receipt`,
         { 
-            responseType: 'blob', // Important for binary data
-            // No headers needed, browser sends cookie
+            responseType: 'blob', 
         }
       );
       

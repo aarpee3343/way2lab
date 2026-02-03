@@ -32,7 +32,33 @@ export async function POST(req: Request) {
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
     const uhid = `WTLC${randomSuffix}`;
 
-    // 4. Create Customer
+    // ---------------------------------------------------------
+    // 4. NEW: Corporate Domain Auto-Mapping Logic
+    // ---------------------------------------------------------
+    let assignedCorporateId = null;
+
+    if (email && email.includes('@')) {
+      // Extract domain (e.g., 'john@acme.com' -> '@acme.com')
+      // Ensure we format it with '@' prefix to match your Admin Domain Mapping format
+      const domainPart = email.split('@')[1];
+      const domain = domainPart.startsWith('@') ? domainPart : '@' + domainPart;
+
+      // Find active corporate that claims this domain
+      const corporate = await prisma.corporate.findFirst({
+        where: {
+          domains: { has: domain }, // Checks if the array contains this domain
+          isActive: true
+        }
+      });
+
+      if (corporate) {
+        assignedCorporateId = corporate.id;
+        console.log(`Auto-mapped user ${email} to Corporate: ${corporate.companyName}`);
+      }
+    }
+    // ---------------------------------------------------------
+
+    // 5. Create Customer
     const user = await prisma.customer.create({
       data: {
         name,
@@ -45,14 +71,17 @@ export async function POST(req: Request) {
         isActive: true,
         role: 'USER',
         loginMethod: loginMethod || 'email', // 'email' or 'google'
-        googleId: googleId || null
+        googleId: googleId || null,
+        
+        // Assign the found corporate ID (or null)
+        corporateId: assignedCorporateId
       },
     });
 
     return NextResponse.json({
       success: true,
       message: 'Registration successful',
-      user: { id: user.id, name: user.name, email: user.email }
+      user: { id: user.id, name: user.name, email: user.email, corporateId: user.corporateId }
     });
 
   } catch (error) {

@@ -24,9 +24,9 @@ export async function POST(req: Request) {
     const history = await prisma.order.findMany({
       where: {
         userId: currentOrder.userId,
-        status: 'COMPLETED',
+        // Remove 'COMPLETED' filter to allow Partial reports to be analyzed too
+        reports: { some: {} }, 
         createdAt: { gte: timeLimit },
-        patientName: { contains: currentOrder.patientName.split(' ')[0], mode: 'insensitive' }
       },
       orderBy: { createdAt: 'desc' },
       include: { reportSummary: true }
@@ -35,9 +35,7 @@ export async function POST(req: Request) {
     const reportCount = history.length; 
     
     // 3. Build Unique Data Fingerprint
-    // Sort by ID so the string is always consistent
     const sortedHistory = history.sort((a, b) => a.id - b.id);
-    
     let combinedContext = "";
     let analyzedCount = 0;
 
@@ -47,7 +45,6 @@ export async function POST(req: Request) {
         analyzedCount++;
         try {
           const json = JSON.parse(order.reportSummary.content);
-          // We only care about abnormal results for the hash
           const abnormal = json.results?.filter((r: any) => r.status !== 'Normal') || [];
           if (abnormal.length > 0) {
             combinedContext += `|${date}:${JSON.stringify(abnormal)}`;
@@ -56,30 +53,24 @@ export async function POST(req: Request) {
       }
     });
 
-    // 🔒 4. THE SMART LOCK (Hashing)
-    // This string represents the exact state of the patient's health right now
+    // 4. THE SMART LOCK (Hashing)
     const currentDataHash = crypto.createHash('md5').update(combinedContext || "empty").digest('hex');
 
-    // Fetch what we saved last time
     const existingSummaryRaw = await prisma.orderReportSummary.findUnique({
       where: { orderId: currentOrder.id }
     });
 
-    // 🛑 STOP: If Data Hasn't Changed, Return Cache
+    // If Data Hasn't Changed, Return Cache
     if (existingSummaryRaw) {
        try {
          const existingJson = JSON.parse(existingSummaryRaw.content);
-         
-         // If the fingerprint matches, it means NO new reports have been added/changed.
-         // We return the existing analysis immediately. Zero AI Cost. Zero Variation.
          if (existingJson.dataHash === currentDataHash && existingJson.healthScore) {
-            console.log("🔒 Data unchanged (Hash Match). Returning cached result.");
-            return NextResponse.json({ ...existingJson, cached: true });
+           return NextResponse.json({ ...existingJson, cached: true });
          }
        } catch(e) {}
     }
 
-    // --- IF WE REACH HERE, DATA HAS CHANGED. RUN AI. --- //
+    // --- RUN AI --- //
 
     // 5. Fetch Inventory
     const [tests, packages] = await Promise.all([
@@ -102,27 +93,33 @@ export async function POST(req: Request) {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       response_format: { type: "json_object" },
-      temperature: 0, // Zero Creativity = Consistent Results
-      seed: 12345,
+      temperature: 0.2,
       messages: [
         {
           role: "system",
           content: `
 You are a Medical Analysis Engine. 
-Input: ${reportCount} lab reports (Last 30 Days).
+Input: ${reportCount} lab reports.
 Inventory: ${JSON.stringify(inventory)}
 
-**OUTPUT SCHEMA:**
+**OUTPUT SCHEMA (JSON):**
 {
   "healthScore": 75,
-  "summaryHeadline": "Analysis shows...",
-  "lifestyle": [ { "icon": "hydration", "title": "...", "desc": "..." } ],
+  "summaryHeadline": "Short, punchy summary of health status",
+  "lifestyle": [ 
+     { "icon": "hydration", "title": "Hydration", "desc": "Drink 3L water daily" },
+     { "icon": "sleep", "title": "Sleep", "desc": "Aim for 8 hours" },
+     { "icon": "activity", "title": "Exercise", "desc": "30 mins cardio" }
+  ],
   "dietPlan": { 
-    "include": ["..."], "avoid": ["..."], 
-    "plan": [ { "day": "Day 1", "breakfast": "...", "lunch": "...", "dinner": "..." } ] 
+    "include": ["Spinach", "Almonds"], "avoid": ["Sugar", "Fried Food"], 
+    "plan": [ { "day": "Day 1", "breakfast": "Oats", "lunch": "Salad", "dinner": "Soup" } ] 
   },
-  "recommendations": [ { "type": "test", "id": 12, "reason": "..." } ]
+  "recommendations": [ 
+     { "type": "test", "name": "Vitamin D", "reason": "Levels are low" } 
+  ]
 }
+Note: For recommendations, try to pick exact names from Inventory. If not found, suggest a generic test name.
           `
         },
         { role: "user", content: `Data Hash: ${currentDataHash}\nMedical Data:${combinedContext}` }
@@ -131,19 +128,25 @@ Inventory: ${JSON.stringify(inventory)}
 
     const aiResult = JSON.parse(completion.choices[0].message.content || "{}");
 
-    // 7. Enrich Recommendations
+    // 7. Enrich Recommendations (FIXED LOGIC)
     const enrichedRecs = (aiResult.recommendations || []).map((rec: any) => {
-      if (!rec || (!rec.id && !rec.name)) return null;
-      const targetId = Number(rec.id); 
-      const targetType = (rec.type || '').toLowerCase(); 
-
-      let dbItem = inventory.find(i => i.id === targetId && i.type.toLowerCase() === targetType);
+      if (!rec || !rec.name) return null;
       
-      if (!dbItem && rec.name) {
+      // Try to find in DB
+      let dbItem = inventory.find(i => i.name.toLowerCase() === rec.name.toLowerCase());
+      
+      // Fuzzy search if exact match fails
+      if (!dbItem) {
          dbItem = inventory.find(i => i.name.toLowerCase().includes(rec.name.toLowerCase()));
       }
       
-      return dbItem ? { ...rec, ...dbItem } : null;
+      if (dbItem) {
+        // Found in DB: Return full details including Price and ID
+        return { ...rec, ...dbItem, isBookable: true };
+      } else {
+        // Not in DB: Return AI suggestion but mark as generic (User can search for it)
+        return { ...rec, price: 0, isBookable: false };
+      }
     }).filter(Boolean);
 
     // 8. Define Final Data
@@ -152,7 +155,7 @@ Inventory: ${JSON.stringify(inventory)}
       recommendations: enrichedRecs,
       reportCount,
       analyzedCount,
-      dataHash: currentDataHash, // Save the new fingerprint
+      dataHash: currentDataHash,
       lastUpdated: new Date().toISOString()
     };
 

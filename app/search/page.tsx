@@ -353,7 +353,7 @@ function SearchContent() {
                         <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase font-bold">{r.type}</span>
                     </div>
                     <div className="text-right">
-                        <p className="font-bold text-slate-900 text-sm">₹{r.price}</p>
+                        {/* <p className="font-bold text-slate-900 text-sm">₹{r.price}</p> */}
                     </div>
                   </div>
                 ))}

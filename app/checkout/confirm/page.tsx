@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
-// ❌ REMOVED: import Cookies from 'js-cookie'; 
 
 import { useCartStore } from '@/store/useCartStore';
 import { useBookingStore } from '@/store/useBookingStore';
@@ -78,7 +77,6 @@ export default function ConfirmOrderPage() {
   useEffect(() => {
     const load = async () => {
       try {
-        // ❌ REMOVED: const token = Cookies.get('token');
         
         // 1. Fetch User (This acts as the Auth Check)
         const meRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`);
@@ -174,7 +172,6 @@ export default function ConfirmOrderPage() {
     setLoading(true);
 
     try {
-      // ❌ REMOVED: const token = Cookies.get('token');
 
       const payload = {
         labId: items[0].labId,
@@ -218,8 +215,7 @@ export default function ConfirmOrderPage() {
       );
 
       if (res.data.success) {
-        clearCart();
-        router.push(`/order-success?id=${res.data.orderNumber}`);
+        router.push(`/order-success?id=${res.data.orderId}`);
       }
     } catch (e: any) {
       if (e.response?.status === 401) {
