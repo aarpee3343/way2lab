@@ -3,39 +3,49 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import { uploadCorporateEmployees } from '@/app/actions/adminCorporateActions';
-import { Upload, FileText, Loader2, CheckCircle2, Download, Settings } from 'lucide-react';
+import { Upload, FileText, Loader2, CheckCircle2, Download } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 
-// Available fields mapped to Prisma Model
+// 1. Define Fields Configuration
 const AVAILABLE_FIELDS = [
-  { label: 'Full Name', key: 'name', required: true },
-  { label: 'Email', key: 'email', required: true },
-  { label: 'Phone', key: 'phone', required: true },
-  { label: 'Employee ID', key: 'employeeId', required: true },
-  { label: 'Department', key: 'department', required: false },
-  { label: 'Location', key: 'location', required: false },
-  { label: 'Date of Birth (YYYY-MM-DD)', key: 'dob', required: false },
-  { label: 'Gender', key: 'gender', required: false },
+  { key: 'name', label: 'Full Name', required: true, sample: 'John Doe' },
+  { key: 'email', label: 'Email', required: true, sample: 'john.doe@company.com' },
+  { key: 'phone', label: 'Phone', required: true, sample: '9876543210' },
+  { key: 'employeeId', label: 'Employee ID', required: true, sample: 'EMP-001' },
+  { key: 'department', label: 'Department', required: false, sample: 'Engineering' },
+  { key: 'location', label: 'Location', required: false, sample: 'Mumbai' },
+  { key: 'dob', label: 'Date of Birth (YYYY-MM-DD)', required: false, sample: '1990-12-31' },
+  { key: 'gender', label: 'Gender', required: false, sample: 'Male' },
 ];
 
 export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corporateId: number, onSuccess: () => void }) {
   const [uploading, setUploading] = useState(false);
   const [stats, setStats] = useState<{ success: number; fail: number } | null>(null);
-  
-  // Template State
   const [showTemplateOptions, setShowTemplateOptions] = useState(false);
   const [selectedFields, setSelectedFields] = useState<string[]>(AVAILABLE_FIELDS.map(f => f.key));
 
-  // --- DOWNLOAD TEMPLATE FUNCTION ---
+  // --- 2. UPDATED DOWNLOAD FUNCTION ---
   const handleDownloadTemplate = () => {
-    // 1. Create a dummy row with empty values for selected keys
-    const headers = selectedFields;
-    const dummyData = [headers.reduce((acc, key) => ({ ...acc, [key]: '' }), {})];
-
-    // 2. Convert to CSV
-    const csv = Papa.unparse(dummyData);
+    // Filter fields based on user selection
+    const activeFields = AVAILABLE_FIELDS.filter(f => selectedFields.includes(f.key));
     
-    // 3. Trigger Download
+    // Create Headers Object (Key -> Label)
+    // Actually, usually CSVs just need the Keys as headers, but let's stick to keys for mapping
+    const headers = activeFields.map(f => f.key);
+
+    // Create Sample Row Object
+    const sampleRow: any = {};
+    activeFields.forEach(f => {
+        sampleRow[f.key] = f.sample;
+    });
+
+    // Generate CSV with PapaParse
+    const csv = Papa.unparse({
+        fields: headers,
+        data: [sampleRow] // Add the sample row
+    });
+    
+    // Trigger Download
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -59,19 +69,20 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
       header: true,
       skipEmptyLines: true,
       complete: async (results) => {
-        // Normalize keys to lowercase to match logic
         const cleanData = results.data.map((row: any) => {
+          // Normalize keys (case insensitive matching)
           const normalized: any = {};
           Object.keys(row).forEach(k => {
-            // Simple key matching (e.g., "Employee ID" -> "employeeId")
-            if(k.toLowerCase().includes('name')) normalized.name = row[k];
-            else if(k.toLowerCase().includes('email')) normalized.email = row[k];
-            else if(k.toLowerCase().includes('phone')) normalized.phone = row[k];
-            else if(k.toLowerCase().includes('id')) normalized.employeeId = row[k];
-            else if(k.toLowerCase().includes('dept')) normalized.department = row[k];
-            else if(k.toLowerCase().includes('loc')) normalized.location = row[k];
-            else if(k.toLowerCase().includes('dob') || k.toLowerCase().includes('birth')) normalized.dob = row[k];
-            else if(k.toLowerCase().includes('gender')) normalized.gender = row[k];
+            const key = k.toLowerCase().trim();
+            // Map common variations to our schema
+            if(key.includes('name')) normalized.name = row[k];
+            else if(key.includes('email')) normalized.email = row[k];
+            else if(key.includes('phone') || key.includes('contact')) normalized.phone = row[k];
+            else if(key.includes('id') && key.includes('emp')) normalized.employeeId = row[k];
+            else if(key.includes('dept')) normalized.department = row[k];
+            else if(key.includes('loc')) normalized.location = row[k];
+            else if(key.includes('dob') || key.includes('birth')) normalized.dob = row[k];
+            else if(key.includes('gender') || key.includes('sex')) normalized.gender = row[k];
           });
           return normalized;
         }).filter((row: any) => (row.email || row.phone));
@@ -86,11 +97,11 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
         setUploading(false);
         
         if (res.success) {
-          setStats({ success: res.stats.created + res.stats.mapped, fail: 0 }); // Simplified stats
+          setStats({ success: res.stats.created + res.stats.mapped, fail: 0 });
           toast.success(`Processed: ${res.stats.created} Created, ${res.stats.mapped} Mapped`);
           onSuccess();
         } else {
-          toast.error("Upload failed");
+          toast.error(res.error || "Upload failed");
         }
       },
       error: (error) => {
@@ -105,14 +116,19 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
       {/* Template Download Section */}
       <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
         <div className="flex justify-between items-center">
-            <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <FileText size={16}/> CSV Template
-            </h4>
+            <div>
+                <h4 className="text-sm font-bold text-slate-700 flex items-center gap-2">
+                    <FileText size={16}/> CSV Template
+                </h4>
+                <p className="text-[10px] text-slate-500 mt-1">
+                    Download sample file with correct formats.
+                </p>
+            </div>
             <button 
                 onClick={() => setShowTemplateOptions(!showTemplateOptions)}
                 className="text-xs text-blue-600 font-bold hover:underline"
             >
-                {showTemplateOptions ? 'Close Options' : 'Customize Template'}
+                {showTemplateOptions ? 'Close Options' : 'Customize'}
             </button>
         </div>
 
@@ -130,7 +146,8 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
                             }}
                             className="rounded text-blue-600 focus:ring-blue-500"
                         />
-                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                        <span>{field.label}</span>
+                        {field.required && <span className="text-red-500">*</span>}
                     </label>
                 ))}
             </div>
@@ -138,9 +155,9 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
 
         <button 
             onClick={handleDownloadTemplate}
-            className="w-full mt-2 flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 py-2 rounded-lg text-xs font-bold transition-all"
+            className="w-full mt-3 flex items-center justify-center gap-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 py-2 rounded-lg text-xs font-bold transition-all shadow-sm"
         >
-            <Download size={14} /> Download Template CSV
+            <Download size={14} /> Download Sample CSV
         </button>
       </div>
 

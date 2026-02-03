@@ -55,9 +55,9 @@ export async function getLabFormData() {
 
 
 // 2. Create Lab (Wizard Logic)
-export async function createLabAction(data: any) {
+ export async function createLabAction(data: any) {
   try {
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
       // A. CREATE LAB
       const lab = await tx.lab.create({
         data: {
@@ -101,42 +101,48 @@ export async function createLabAction(data: any) {
       }
 
       // C. ASSIGN PACKAGES
-      const selectedPackages = data.packages
-        .filter((p: any) => p.selected)
-        .map((p: any) => ({
-          labId: lab.id,
-          packageId: p.id,
-          price: Number(p.price) || 0,
-          discount: Number(p.discount) || 0,
-        }));
-
-      if (selectedPackages.length > 0) {
-        await tx.labPackage.createMany({ data: selectedPackages });
-      }
-
-      // D. ASSIGN TESTS
-      for (const test of data.tests || []) {
-        if (!test.selected) continue;
-
-        await tx.labTest.create({
-          data: {
+      if (Array.isArray(data.packages)) {
+        const packageRows = data.packages
+          .filter((p: any) => p.selected)
+          .map((p: any) => ({
             labId: lab.id,
-            testId: test.id,
-            price: Number(test.price) || 0,
-            discount: Number(test.discount) || 0,
-            available: true,
-          },
-        });
+            packageId: p.id,
+            price: Number(p.price) || 0,
+            discount: Number(p.discount) || 0,
+          }));
+
+        if (packageRows.length > 0) {
+          await tx.labPackage.createMany({ data: packageRows });
+        }
       }
-    });
+
+      // D. ASSIGN TESTS (OPTIMIZED)
+      if (Array.isArray(data.tests)) {
+        const testRows = data.tests
+          .filter((t: any) => t.selected)
+          .map((t: any) => ({
+            labId: lab.id,
+            testId: t.id,
+            price: Number(t.price) || 0,
+            discount: Number(t.discount) || 0,
+            available: true,
+          }));
+
+        if (testRows.length > 0) {
+          await tx.labTest.createMany({ data: testRows });
+        }
+      }
+    }); // ✅ THIS CLOSING WAS MISSING OR MISPLACED
 
     revalidatePath('/admin/labs');
     return { success: true };
+
   } catch (error: any) {
     console.error('Create Lab Error:', error);
     return { success: false, error: error.message };
   }
 }
+
 
 
 // 3. Get Lab by ID (FIXED: Converts Decimals to Numbers)
@@ -210,7 +216,8 @@ export async function getLabById(id: number) {
 // 4. Update Lab
 export async function updateLabAction(id: number, data: any) {
   try {
-    await prisma.$transaction(async tx => {
+    // 1️⃣ TRANSACTION (FAST)
+    await prisma.$transaction(async (tx) => {
       await tx.lab.update({
         where: { id },
         data: {
@@ -229,62 +236,72 @@ export async function updateLabAction(id: number, data: any) {
           timings: data.timings ?? null,
           panNo: data.panNo ?? undefined,
           gstNo: data.gstNo ?? undefined,
-          activeStatus: data.activeStatus, // 🔥 FIX
+          activeStatus: data.activeStatus,
           homeCollectionCharges: Number(data.homeCollectionCharges) || 0,
         },
       });
+    });
 
-      if (Array.isArray(data.pincodes)) {
-        await tx.labPincode.deleteMany({ where: { labId: id } });
-        await tx.labPincode.createMany({
+    // 2️⃣ PINCODES (OUTSIDE TX)
+    if (Array.isArray(data.pincodes)) {
+      await prisma.labPincode.deleteMany({ where: { labId: id } });
+
+      if (data.pincodes.length > 0) {
+        await prisma.labPincode.createMany({
           data: data.pincodes.map((pin: string) => ({
             labId: id,
             pincode: pin,
           })),
         });
       }
+    }
 
-      if (Array.isArray(data.packages)) {
-        await tx.labPackage.deleteMany({ where: { labId: id } });
+    // 3️⃣ PACKAGES (OUTSIDE TX)
+    if (Array.isArray(data.packages)) {
+      await prisma.labPackage.deleteMany({ where: { labId: id } });
 
-        const packageRows = data.packages
-          .filter((p: any) => p.selected)
-          .map((p: any) => ({
-            labId: id,
-            packageId: p.id,
-            price: Number(p.price) || 0,
-            discount: Number(p.discount) || 0,
-          }));
+      const packageRows = data.packages
+        .filter((p: any) => p.selected)
+        .map((p: any) => ({
+          labId: id,
+          packageId: p.id,
+          price: Number(p.price) || 0,
+          discount: Number(p.discount) || 0,
+        }));
 
-        if (packageRows.length > 0) {
-          await tx.labPackage.createMany({ data: packageRows });
-        }
+      if (packageRows.length > 0) {
+        await prisma.labPackage.createMany({ data: packageRows });
       }
+    }
 
-      if (Array.isArray(data.tests)) {
-        await tx.labTest.deleteMany({ where: { labId: id } });
-        for (const test of data.tests) {
-          if (!test.selected) continue;
-          await tx.labTest.create({
-            data: {
-              labId: id,
-              testId: test.id,
-              price: Number(test.price) || 0,
-              discount: Number(test.discount) || 0,
-              available: true,
-            },
-          });
-        }
+    // 4️⃣ TESTS (OUTSIDE TX)
+    if (Array.isArray(data.tests)) {
+      await prisma.labTest.deleteMany({ where: { labId: id } });
+
+      const testRows = data.tests
+        .filter((t: any) => t.selected)
+        .map((t: any) => ({
+          labId: id,
+          testId: t.id,
+          price: Number(t.price) || 0,
+          discount: Number(t.discount) || 0,
+          available: true,
+        }));
+
+      if (testRows.length > 0) {
+        await prisma.labTest.createMany({ data: testRows });
       }
-    });
+    }
 
     revalidatePath('/admin/labs');
     return { success: true };
+
   } catch (error: any) {
     console.error('Update Lab Error:', error);
     return { success: false, error: error.message };
   }
 }
+
 
 
 

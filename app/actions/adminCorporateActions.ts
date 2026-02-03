@@ -18,6 +18,7 @@ export async function getCorporateDashboardStats() {
   return { total, recent };
 }
 
+// --- 2. CREATE CORPORATE ---
 export async function createCorporateAction(data: any) {
   try {
     const corporate = await prisma.corporate.create({
@@ -43,57 +44,11 @@ export async function createCorporateAction(data: any) {
   }
 }
 
-// --- 2. CREATE CORPORATE User---
-export async function createCorporateUserAction(data: {
-  corporateId: number;
-  name: string;
-  email: string;
-  password: string;
-  role: 'SUPER_ADMIN' | 'DEPT_HEAD' | 'LOCATION_MANAGER';
-  canEdit: boolean;
-  maskContactInfo: boolean;
-  accessDept?: string;
-  accessLocation?: string;
-}) {
-  try {
-    // 1. Check if email already exists
-    const existing = await prisma.corporateUser.findUnique({
-      where: { email: data.email }
-    });
-
-    if (existing) return { success: false, error: "Email already registered to another user." };
-
-    // 2. Hash Password
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-
-    // 3. Create User with specific permissions
-    await prisma.corporateUser.create({
-      data: {
-        corporateId: data.corporateId,
-        name: data.name,
-        email: data.email,
-        password: hashedPassword,
-        role: data.role,
-        canEdit: data.canEdit,
-        maskContactInfo: data.maskContactInfo,
-        accessDept: data.accessDept || null,
-        accessLocation: data.accessLocation || null,
-      }
-    });
-
-    revalidatePath(`/admin/corporates/${data.corporateId}`); // Refresh Admin View
-    revalidatePath('/corporate/users'); // Refresh Corporate View
-    
-    return { success: true };
-  } catch (error: any) {
-    console.error("Create Corporate User Error:", error);
-    return { success: false, error: "Failed to create access user." };
-  }
-}
-
 // --- 3. FETCH SINGLE CORPORATE DETAILS ---
 export async function getCorporateDetails(id: number) {
-  return prisma.corporate.findUnique({
+  if (!id) return null;
+
+  const corp = await prisma.corporate.findUnique({
     where: { id },
     include: {
       _count: { select: { employees: true } },
@@ -104,9 +59,31 @@ export async function getCorporateDetails(id: number) {
       }
     }
   });
+
+  if (!corp) return null;
+
+  return {
+    ...corp,
+    services: corp.services.map(s => ({
+      ...s,
+      validFrom: s.validFrom.toISOString(),
+      validTill: s.validTill.toISOString(),
+      package: s.package
+        ? {
+            ...s.package,
+            price: Number(s.package.price),
+            discount: s.package.discount !== null
+              ? Number(s.package.discount)
+              : null,
+            createdAt: s.package.createdAt.toISOString()
+          }
+        : null
+    }))
+  };
 }
 
-// --- 4. MAP DOMAIN & UPDATE USERS ---
+
+// --- 4. MAP DOMAIN ---
 export async function mapDomainAction(corporateId: number, domain: string) {
   try {
     if (!domain.startsWith('@')) domain = '@' + domain;
@@ -140,7 +117,7 @@ export async function mapDomainAction(corporateId: number, domain: string) {
   }
 }
 
-// --- 5. BULK UPLOAD EMPLOYEES ---
+// --- 5. BULK UPLOAD EMPLOYEES (OPTIMIZED) ---
 export async function uploadCorporateEmployees(
   corporateId: number,
   employees: any[]
@@ -148,22 +125,23 @@ export async function uploadCorporateEmployees(
   try {
     let mapped = 0;
     let created = 0;
+    
+    // OPTIMIZATION: Hash once, use for all new users
+    const defaultPasswordHash = await bcrypt.hash('Welcome123', 10);
 
     for (const emp of employees) {
-      if (!emp.phone && !emp.email) continue; // Skip empty rows
+      if (!emp.phone && !emp.email) continue; 
 
-      // Logic: Check if user exists by Phone OR Email
       const existing = await prisma.customer.findFirst({
         where: {
           OR: [
-            { phone: emp.phone }, // Priority match
+            { phone: emp.phone }, 
             { email: emp.email }
           ]
         }
       });
 
       if (existing) {
-        // Map existing user to corporate
         await prisma.customer.update({
           where: { id: existing.id },
           data: {
@@ -175,21 +153,19 @@ export async function uploadCorporateEmployees(
         });
         mapped++;
       } else {
-        // Create new account
-        const hashedPassword = await bcrypt.hash('Welcome123', 10); // Default password
         await prisma.customer.create({
           data: {
             name: emp.name,
             email: emp.email,
             phone: emp.phone,
-            password: hashedPassword,
+            password: defaultPasswordHash, // Used pre-hashed password
             dateOfBirth: emp.dob ? new Date(emp.dob) : null,
             gender: emp.gender,
             employeeId: emp.employeeId,
             department: emp.department,
             location: emp.location,
             corporateId,
-            isActive: true, // Auto-activate
+            isActive: true,
             loginMethod: 'email'
           }
         });
@@ -205,7 +181,46 @@ export async function uploadCorporateEmployees(
   }
 }
 
-// --- 6. ASSIGN SERVICES (UPDATED WITH PAYMENT RULES) ---
+// --- GET INVENTORY (For Dropdown) ---
+export async function getAdminInventory(searchQuery: string = '') {
+  try {
+    const [packages, coupons] = await Promise.all([
+        prisma.package.findMany({
+        where: {
+            // ✅ UPDATED LOGIC:
+            // 1. Must be marked as a Corporate Package
+            // 2. Must NOT be assigned to any corporate yet (fresh inventory)
+            isCorporate: true,
+            corporateId: null,
+
+            // Apply search filter if typed
+            AND: [
+                searchQuery ? { packageName: { contains: searchQuery, mode: 'insensitive' } } : {}
+            ]
+        },
+        select: { id: true, packageName: true, price: true }
+        }),
+        prisma.coupon.findMany({
+            where: { isActive: true },
+            select: { id: true, code: true }
+        })
+    ]);
+
+    // Format for client
+    const safePackages = packages.map(p => ({
+        ...p,
+        packageName: p.packageName, // No need for "(Ready for Corp)" suffix since ALL are corporate now
+        price: Number(p.price)
+    }));
+
+    return { packages: safePackages, coupons };
+  } catch (e) {
+      console.error(e);
+      return { packages: [], coupons: [] };
+  }
+}
+
+// --- ASSIGN SERVICE (Activate & Link) ---
 export async function assignCorporateService(data: {
   corporateId: number;
   itemId: number;
@@ -218,7 +233,7 @@ export async function assignCorporateService(data: {
   familyLimit: number;
 }) {
   try {
-    // 1. Create the Link
+    // 1. Create the Service Link
     await prisma.corporateService.create({
       data: {
         corporateId: data.corporateId,
@@ -234,16 +249,15 @@ export async function assignCorporateService(data: {
       }
     });
 
-    // 2. Logic: Make Package Active & Corporate Owned
-    // NOTE: This assumes strict ownership. If this package is used by others, you should CLONE it instead of updating it.
+    // 2. LOGIC: If Package, Activate and Assign Ownership
     if (data.type === 'PACKAGE') {
       await prisma.package.update({
         where: { id: Number(data.itemId) },
         data: {
-          isCorporate: true,
-          corporateId: data.corporateId,
-          isActive: true, // REQUIRED: Make it active as requested
-          showOnHomepage: false // Ensure it's hidden from public
+          isActive: true,       // ACTIVATE
+          isCorporate: true,    // Ensure flag
+          corporateId: data.corporateId, // LOCK to Corporate
+          showOnHomepage: false // Hidden from public
         }
       });
     }
@@ -256,39 +270,9 @@ export async function assignCorporateService(data: {
   }
 }
 
-// --- 7. GET ALL PACKAGES & COUPONS ---
-export async function getAdminInventory(searchQuery: string = '') {
-  const [packages, coupons] = await Promise.all([
-    prisma.package.findMany({
-      where: {
-        // Filter logic:
-        // 1. Must match search (if any)
-        // 2. We assume 'Corporate' packages might have a specific category OR 
-        //    you want to select from ANY package to assign.
-        //    User request: "only packages that are for corporate"
-        AND: [
-          { isActive: true }, // Only show active templates
-          { 
-            OR: [
-              { category: 'CORPORATE' }, // If you label them via category
-              { isCorporate: true },     // Or if they are already flagged
-              // { tag: { contains: 'B2B' } } // Optional tag check
-            ]
-          },
-          searchQuery ? { packageName: { contains: searchQuery, mode: 'insensitive' } } : {}
-        ]
-      },
-      select: { id: true, packageName: true, price: true }
-    }),
-    prisma.coupon.findMany({
-      where: { isActive: true },
-      select: { id: true, code: true }
-    })
-  ]);
 
-  return { packages, coupons };
-}
 
+// --- 8. TOGGLE STATUS (Helper) ---
 export async function bulkUpdateEmployeeStatus(emails: string[], status: boolean) {
   try {
     await prisma.customer.updateMany({
@@ -302,25 +286,84 @@ export async function bulkUpdateEmployeeStatus(emails: string[], status: boolean
 }
 
 
-export async function getCorporateFinanceStats(corpId: number) {
-  // Aggregate all orders where the corporate is responsible for payment
-  const utilizationStats = await prisma.order.aggregate({
-    where: { 
-      userId: {
-        in: await prisma.customer.findMany({
-          where: { corporateId: corpId },
-          select: { id: true }
-        }).then(users => users.map(u => u.id))
-      },
-      // Filters for orders that were booked under 'CORPORATE_PAYS' logic
-      paymentStatus: "CORPORATE_BILLING" 
-    },
-    _sum: { finalAmount: true },
-    _count: { id: true }
-  });
+// --- 8. UPDATE CORPORATE DETAILS ---
+export async function updateCorporateAction(id: number, data: any) {
+  try {
+    // Optional: If password is provided, hash it. If empty, remove it from update data.
+    const updateData: any = {
+      companyName: data.companyName,
+      contactPerson: data.contactPerson,
+      phone: data.phone,
+      email: data.email,
+      address: data.address,
+      city: data.city,
+      state: data.state,
+      pincode: data.pincode,
+      panNumber: data.panNumber,
+      gstin: data.gstin,
+      employeeCount: parseInt(data.employeeCount || '0'),
+    };
 
-  const dues = utilizationStats._sum.finalAmount || 0;
-  const totalBookings = utilizationStats._count.id || 0;
+    if (data.password && data.password.trim() !== "") {
+      updateData.password = await bcrypt.hash(data.password, 10);
+    }
 
-  return { dues, totalBookings };
+    await prisma.corporate.update({
+      where: { id },
+      data: updateData
+    });
+
+    revalidatePath(`/admin/corporates/${id}`);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: "Update failed: " + error.message };
+  }
+}
+
+// --- 9. DELETE CORPORATE ---
+export async function deleteCorporateAction(id: number) {
+  try {
+    // 1. Release all packages owned by this corporate back to inventory
+    await prisma.package.updateMany({
+      where: { corporateId: id },
+      data: { isCorporate: false, corporateId: null, isActive: false }
+    });
+
+    // 2. Delete the corporate (Cascade will likely handle relations if configured, but let's be safe)
+    await prisma.corporate.delete({ where: { id } });
+
+    revalidatePath('/admin/corporates');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: "Delete failed. Ensure no active orders exist." };
+  }
+}
+
+// --- 10. REMOVE SERVICE (Release Package) ---
+export async function deleteCorporateServiceAction(serviceId: number, packageId: number | null) {
+  try {
+    // 1. Delete the Service Link
+    await prisma.corporateService.delete({
+      where: { id: serviceId }
+    });
+
+    // 2. If it was a Package, release it back to the general inventory
+    // (Since you want 1-to-1, removing it means it's free to be assigned to someone else)
+    if (packageId) {
+      await prisma.package.update({
+        where: { id: packageId },
+        data: { 
+            isCorporate: false, 
+            corporateId: null, 
+            isActive: false // Deactivate until assigned again
+        }
+      });
+    }
+
+    revalidatePath('/admin/corporates'); // Refresh generic path
+    return { success: true };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: "Failed to remove service" };
+  }
 }

@@ -44,7 +44,6 @@ export async function getPackageFormData() {
   }));
 }
 
-// --- 4. CREATE PACKAGE ---
 export async function createPackageAction(formData: FormData) {
   try {
     const packageName = formData.get('package_name') as string;
@@ -52,8 +51,20 @@ export async function createPackageAction(formData: FormData) {
     const preparation = formData.get('preparation') as string;
     const price = parseFloat(formData.get('price') as string);
     const discount = parseFloat(formData.get('discount') as string || '0');
-    const isActive = formData.get('is_active') === 'on';
     
+    // Capture Corporate Fields
+    const isCorporate = formData.get('isCorporate') === 'on'; 
+    const category = formData.get('category') as string;
+    const isPreEmployment = formData.get('isPreEmployment') === 'on';
+
+    // LOGIC: Set Status
+    // If Corporate -> Force Inactive (wait for assignment)
+    // If Standard  -> Use Form Value (Default Active)
+    let isActive = formData.get('is_active') === 'on';
+    if (isCorporate) {
+        isActive = false; 
+    }
+
     // Get Selected Test IDs
     const testIds = formData.getAll('test_ids').map(id => parseInt(id as string));
 
@@ -68,8 +79,16 @@ export async function createPackageAction(formData: FormData) {
         preparation,
         price,
         discount,
-        isActive,
-        // Link Tests using the relation (PackageTest)
+        isActive, // Applied Logic
+        showOnHomepage: isCorporate ? false : true, // Corporate packages hidden from home
+        
+        // Corporate Data
+        isCorporate,
+        corporateId: null, // Explicitly unassigned
+        category: isCorporate ? category : null, 
+        isPreEmployment: isCorporate ? isPreEmployment : false,
+
+        // Link Tests
         tests: {
           create: testIds.map(tid => ({
             testId: tid
@@ -82,7 +101,60 @@ export async function createPackageAction(formData: FormData) {
     return { success: true };
   } catch (error: any) {
     console.error("Create Package Error:", error);
-    return { success: false, error: "Failed to create package" };
+    return { success: false, error: "Failed to create package: " + error.message };
+  }
+}
+
+// --- UPDATE PACKAGE ---
+export async function updatePackageAction(id: number, formData: FormData) {
+  try {
+    const packageName = formData.get('package_name') as string;
+    const description = formData.get('description') as string;
+    const preparation = formData.get('preparation') as string;
+    const price = parseFloat(formData.get('price') as string);
+    const discount = parseFloat(formData.get('discount') as string || '0');
+    
+    // Capture Corporate Fields
+    const isCorporate = formData.get('isCorporate') === 'on'; 
+    const category = formData.get('category') as string;
+    const isPreEmployment = formData.get('isPreEmployment') === 'on';
+
+    // Logic: If switching to corporate, we might want to deactivate, but usually
+    // on update we respect the user's manual "isActive" toggle.
+    const isActive = formData.get('is_active') === 'on';
+
+    const testIds = formData.getAll('test_ids').map(tid => parseInt(tid as string));
+
+    if (!packageName || isNaN(price)) {
+      return { success: false, error: "Name and Valid Price are required" };
+    }
+
+    await prisma.package.update({
+      where: { id },
+      data: {
+        packageName,
+        description,
+        preparation,
+        price,
+        discount,
+        isActive,
+        
+        isCorporate,
+        category: isCorporate ? category : null,
+        isPreEmployment: isCorporate ? isPreEmployment : false,
+
+        tests: {
+          deleteMany: {}, 
+          create: testIds.map(tid => ({ testId: tid })) 
+        }
+      }
+    });
+
+    revalidatePath('/admin/packages');
+    return { success: true };
+  } catch (error: any) {
+    console.error("Update Package Error:", error);
+    return { success: false, error: "Failed to update package" };
   }
 }
 
@@ -120,56 +192,3 @@ export async function getPackageById(id: number) {
   };
 }
 
-// --- 7. UPDATE PACKAGE ---
-export async function updatePackageAction(id: number, formData: FormData) {
-  try {
-    const packageName = formData.get('package_name') as string;
-    const description = formData.get('description') as string;
-    const preparation = formData.get('preparation') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const discount = parseFloat(formData.get('discount') as string || '0');
-    
-    // Checkbox handling: form sends 'on' if checked, null if not
-    const isActive = formData.get('is_active') === 'on';
-    
-    // Corporate Fields
-    const category = formData.get('category') as string;
-    const isPreEmployment = formData.get('isPreEmployment') === 'on';
-
-    // Get Selected Test IDs
-    const testIds = formData.getAll('test_ids').map(tid => parseInt(tid as string));
-
-    if (!packageName || isNaN(price)) {
-      return { success: false, error: "Name and Valid Price are required" };
-    }
-
-    // ✅ Update Transaction
-    await prisma.package.update({
-      where: { id },
-      data: {
-        packageName,
-        description,
-        preparation,
-        price,
-        discount,
-        isActive,
-        
-        // Only update these if your Schema has them
-        category: category || 'ANNUAL', 
-        // isPreEmployment, // Uncomment if your schema has this field
-
-        // ✅ Relation Logic: Wipe old links, create new ones
-        tests: {
-          deleteMany: {}, // 1. Remove all existing links
-          create: testIds.map(tid => ({ testId: tid })) // 2. Add new selected IDs
-        }
-      }
-    });
-
-    revalidatePath('/admin/packages');
-    return { success: true };
-  } catch (error: any) {
-    console.error("Update Package Error:", error);
-    return { success: false, error: "Failed to update package" };
-  }
-}

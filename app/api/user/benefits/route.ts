@@ -5,18 +5,32 @@ import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
 export async function GET(req: Request) {
-  const user = await getAuthUser(req);
-  if (!user || !user.corporateId) {
-    return NextResponse.json({ message: 'Unauthorized or not a corporate employee' }, { status: 401 });
+  // 1. Get the logged-in user's basic info (ID)
+  const sessionUser = await getAuthUser(req);
+  
+  if (!sessionUser || !sessionUser.id) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
   try {
+    // 2. FETCH FRESH DATA FROM DB
+    // We re-fetch the user to ensure we have the latest corporateId
+    // (This fixes the issue where the session might be stale or missing the field)
+    const dbUser = await prisma.customer.findUnique({
+        where: { id: Number(sessionUser.id) },
+        select: { corporateId: true }
+    });
+
+    if (!dbUser || !dbUser.corporateId) {
+        return NextResponse.json({ message: 'Not a corporate employee' }, { status: 401 });
+    }
+
     const now = new Date();
 
-    // Fetch services assigned to this user's corporate
+    // 3. Fetch services assigned to this corporate
     const benefits = await prisma.corporateService.findMany({
       where: {
-        corporateId: user.corporateId,
+        corporateId: dbUser.corporateId, // Use the ID from DB
         isActive: true,
         validTill: { gte: now }, // Not expired
         validFrom: { lte: now }, // Already started
@@ -34,7 +48,7 @@ export async function GET(req: Request) {
       }
     });
 
-    // Format for the frontend
+    // 4. Format for the frontend
     const formatted = benefits.map(b => ({
       id: b.package?.id,
       packageName: b.package?.packageName,

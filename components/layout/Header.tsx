@@ -10,7 +10,7 @@ import {
   Menu, X, ShoppingCart, User, LogOut, 
   LayoutDashboard, ClipboardList, FileText, Settings,
   Home, Search, Package, Info, Phone, ArrowRight, ChevronDown, 
-  Heart, ShieldCheck, Stethoscope
+  Heart, ShieldCheck, Stethoscope, MapPin, Users, Briefcase
 } from 'lucide-react';
 
 export default function Header() {
@@ -94,11 +94,20 @@ export default function Header() {
   ];
 
   const dashboardLinks = [
-    { name: 'Health Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Orders', href: '/dashboard/orders', icon: ClipboardList },
-    { name: 'Health Reports', href: '/dashboard/reports', icon: FileText },
-    { name: 'My Profile', href: '/dashboard/profile', icon: Settings },
-  ];
+  { name: 'Health Dashboard', href: '/dashboard', icon: LayoutDashboard },
+
+  { name: 'Corporate Benefits', href: '/dashboard/benefits', icon: Briefcase },
+
+  { name: 'My Orders', href: '/dashboard/orders', icon: ClipboardList },
+
+  { name: 'Health Reports', href: '/dashboard/reports', icon: FileText },
+
+  { name: 'My Profile', href: '/dashboard/profile', icon: User },
+
+  { name: 'My Address', href: '/dashboard/addresses', icon: MapPin },
+
+  { name: 'My Family', href: '/dashboard/family', icon: Users },
+];
 
   const currentLinks = isDashboard ? dashboardLinks : publicLinks;
 
