@@ -9,6 +9,7 @@ type Camp = {
   title: string;
   status: string;
   expectedHeadcount?: number | null;
+  labName?: string | null;
   createdAt: string;
   startedAt?: string | null;
   endedAt?: string | null;
@@ -53,7 +54,7 @@ export default function CorporateOnsitePage() {
           </p>
         </div>
         <div className="text-xs text-slate-400">
-          Auto-refreshing every 15s{lastUpdated ? ` • Updated ${lastUpdated.toLocaleTimeString()}` : ''}
+          Auto-refreshing every 15s{lastUpdated ? ` - Updated ${lastUpdated.toLocaleTimeString()}` : ''}
         </div>
       </div>
 
@@ -81,11 +82,14 @@ function Section({ title, items }: { title: string; items: Camp[] }) {
               <div className="text-sm font-bold text-slate-800">{camp.title}</div>
               <div className="text-xs text-slate-500 flex items-center gap-2">
                 <Calendar size={14} /> Started{' '}
-                {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '—'}
+                {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '-'}
               </div>
               <div className="text-xs text-slate-500 flex items-center gap-2">
-                <Users size={14} /> Expected: {camp.expectedHeadcount ?? '—'} • Booked:{' '}
+                <Users size={14} /> Expected: {camp.expectedHeadcount ?? '-'} - Booked:{' '}
                 {camp._count?.entries ?? 0}
+              </div>
+              <div className="text-xs text-slate-500 flex items-center gap-2">
+                <Users size={14} /> Lab: {camp.labName || '-'}
               </div>
               <span className="text-[10px] font-bold uppercase px-2 py-1 rounded bg-slate-100 text-slate-600">
                 {camp.status}

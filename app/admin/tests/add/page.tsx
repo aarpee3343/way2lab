@@ -141,8 +141,8 @@ export default function AddTestPage() {
           <div className="admin-form-grid">
             <InputField name="test_name" label="Test Name *" required />
             <InputField name="slug" label="Slug" />
-            <SelectField name="category" label="Category *" options={['Pathology', 'Radiology', 'Cardiology']} />
-            <SelectField name="specialty" label="Specialty *" options={['General', 'Heart', 'Diabetes']} />
+            <SelectField name="category" label="Category *" options={['Allergy and Immunology', 'Cancer Markers', 'Cardiac and Diabetes', 'Genetic and Wellness', 'Hormonal and Endocrine', 'Infectious Dieseas', 'Routine Tests', 'Specialised Tests', 'Others']} />
+            <SelectField name="specialty" label="Specialty *" options={['Pathology', 'Radiology', 'Cardiology', 'Nuclear Imaging', 'Others']} />
             <div className="col-span-2">
               <TextareaField name="description" label="Short Description *" />
             </div>

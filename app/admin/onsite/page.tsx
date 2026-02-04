@@ -45,6 +45,7 @@ export default function AdminOnsitePage() {
 
   const [campTitle, setCampTitle] = useState('');
   const [expectedHeadcount, setExpectedHeadcount] = useState('');
+  const [campLabName, setCampLabName] = useState('');
 
   const [employeeSearch, setEmployeeSearch] = useState('');
   const [employees, setEmployees] = useState<any[]>([]);
@@ -53,7 +54,9 @@ export default function AdminOnsitePage() {
     name: '',
     phone: '',
     email: '',
-    employeeId: ''
+    employeeId: '',
+    dateOfBirth: '',
+    gender: ''
   });
 
   const [selectedPackageId, setSelectedPackageId] = useState<number | null>(null);
@@ -90,6 +93,8 @@ export default function AdminOnsitePage() {
     setEmployees([]);
     setSelectedEmployee(null);
     setEmployeeSearch('');
+    setLabName('');
+    setCampLabName('');
   }, [selectedCorporateId]);
 
   useEffect(() => {
@@ -129,17 +134,36 @@ export default function AdminOnsitePage() {
       }));
   }, [packages]);
 
+  const selectedCamp = useMemo(
+    () => camps.find((c) => c.id === selectedCampId) || null,
+    [camps, selectedCampId]
+  );
+
+  useEffect(() => {
+    if (!selectedCamp) {
+      setLabName('');
+      return;
+    }
+    if (selectedCamp.labName) {
+      setLabName(selectedCamp.labName);
+    } else {
+      setLabName('');
+    }
+  }, [selectedCampId, selectedCamp?.labName]);
+
   const handleStartCamp = async () => {
     if (!selectedCorporateId) return toast.error('Select a corporate first');
     const res = await createOnsiteCamp({
       corporateId: selectedCorporateId,
       title: campTitle,
-      expectedHeadcount: expectedHeadcount ? Number(expectedHeadcount) : undefined
+      expectedHeadcount: expectedHeadcount ? Number(expectedHeadcount) : undefined,
+      labName: campLabName
     });
     if (res.success && res.camp) {
       toast.success('Onsite camp started');
       setCampTitle('');
       setExpectedHeadcount('');
+      setCampLabName('');
       const updated = await getOnsiteCamps(selectedCorporateId);
       setCamps(updated as any);
       setSelectedCampId(res.camp.id);
@@ -170,7 +194,14 @@ export default function AdminOnsitePage() {
       toast.success('Employee created');
       setSelectedEmployee(res.customer);
       setEmployees((prev) => [res.customer, ...prev]);
-      setNewEmployee({ name: '', phone: '', email: '', employeeId: '' });
+      setNewEmployee({
+        name: '',
+        phone: '',
+        email: '',
+        employeeId: '',
+        dateOfBirth: '',
+        gender: ''
+      });
     } else {
       toast.error(res.error || 'Failed to create employee');
     }
@@ -203,7 +234,8 @@ export default function AdminOnsitePage() {
     if (!selectedCampId) return toast.error('Start or select an onsite camp');
     if (!selectedPackageId) return toast.error('Select a package');
     if (!selectedEmployee?.id) return toast.error('Select an employee');
-    if (!labName.trim()) return toast.error('Enter lab name');
+    const effectiveLabName = selectedCamp?.labName || labName;
+    if (!effectiveLabName.trim()) return toast.error('Enter lab name');
 
     setBookingLoading(true);
     const res = await createOnsiteBooking({
@@ -211,7 +243,7 @@ export default function AdminOnsitePage() {
       corporateId: selectedCorporateId,
       packageId: selectedPackageId,
       customerId: selectedEmployee.id,
-      labName,
+      labName: effectiveLabName,
       templateId: activeTemplate?.id || null,
       templateData: null
     });
@@ -219,9 +251,15 @@ export default function AdminOnsitePage() {
 
     if (res.success) {
       toast.success('Onsite order booked');
-      setLabName('');
+      if (!selectedCamp?.labName) {
+        setLabName('');
+      }
       const updatedEntries = await getOnsiteEntries(selectedCampId);
       setEntries(updatedEntries as any);
+      if (!selectedCamp?.labName && effectiveLabName.trim()) {
+        const updatedCamps = await getOnsiteCamps(selectedCorporateId);
+        setCamps(updatedCamps as any);
+      }
 
       if (captureTemplate && activeTemplate?.fields?.length) {
         setEntryFormTemplate(activeTemplate);
@@ -311,6 +349,12 @@ export default function AdminOnsitePage() {
             value={expectedHeadcount}
             onChange={(e) => setExpectedHeadcount(e.target.value)}
           />
+          <input
+            className="admin-form-input"
+            placeholder="Lab name for this camp"
+            value={campLabName}
+            onChange={(e) => setCampLabName(e.target.value)}
+          />
           <button className="admin-btn-primary w-full" onClick={handleStartCamp}>
             Start Camp
           </button>
@@ -330,10 +374,13 @@ export default function AdminOnsitePage() {
                   <div>
                     <div className="text-sm font-bold text-slate-800">{camp.title}</div>
                     <div className="text-xs text-slate-400">
-                      {camp.status} • Started {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '—'}
+                      {camp.status} - Started {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '-'}
                     </div>
                     <div className="text-xs text-slate-400">
-                      Expected {camp.expectedHeadcount ?? '—'} • Booked {camp._count?.entries ?? 0}
+                      Expected {camp.expectedHeadcount ?? '-'} - Booked {camp._count?.entries ?? 0}
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Lab {camp.labName || '-'}
                     </div>
                   </div>
                   <div className="flex gap-2">
@@ -470,15 +517,27 @@ export default function AdminOnsitePage() {
                 ))}
               </select>
             </div>
-            <div>
-              <label className="admin-form-label">Lab Name (Onsite)</label>
-              <input
-                className="admin-form-input"
-                placeholder="Enter lab name"
-                value={labName}
-                onChange={(e) => setLabName(e.target.value)}
-              />
-            </div>
+            {selectedCamp?.labName ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                <div className="text-xs font-bold text-slate-500 uppercase">Lab Name (Camp)</div>
+                <div className="text-sm font-semibold text-slate-800 mt-1">
+                  {selectedCamp.labName}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <label className="admin-form-label">Lab Name (Onsite)</label>
+                <input
+                  className="admin-form-input"
+                  placeholder="Enter lab name"
+                  value={labName}
+                  onChange={(e) => setLabName(e.target.value)}
+                />
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Saved for this camp after the first booking.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -538,6 +597,22 @@ export default function AdminOnsitePage() {
                 value={newEmployee.employeeId}
                 onChange={(e) => setNewEmployee({ ...newEmployee, employeeId: e.target.value })}
               />
+              <input
+                className="admin-form-input"
+                type="date"
+                value={newEmployee.dateOfBirth}
+                onChange={(e) => setNewEmployee({ ...newEmployee, dateOfBirth: e.target.value })}
+              />
+              <select
+                className="admin-form-input"
+                value={newEmployee.gender}
+                onChange={(e) => setNewEmployee({ ...newEmployee, gender: e.target.value })}
+              >
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
               <button onClick={handleCreateEmployee} className="admin-btn-secondary text-xs w-full flex items-center gap-2">
                 <Users size={14} /> Add Employee
               </button>
@@ -568,7 +643,7 @@ export default function AdminOnsitePage() {
               <div key={entry.id} className="border border-slate-200 rounded-xl p-4 space-y-2">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div className="text-sm font-semibold text-slate-800">
-                    {entry.customer?.name} • {entry.package?.packageName}
+                    {entry.customer?.name} - {entry.package?.packageName}
                   </div>
                   <div className="text-xs text-slate-400">
                     {entry.order?.orderNumber ? `Order #${entry.order.orderNumber}` : 'No Order'}
@@ -591,7 +666,7 @@ export default function AdminOnsitePage() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-4">
             <h3 className="text-lg font-bold text-slate-800">
-              {entryFormTemplate.title} • Custom Data
+              {entryFormTemplate.title} - Custom Data
             </h3>
             <div className="space-y-3">
               {(entryFormTemplate.fields || []).map((field: any, idx: number) => (

@@ -106,6 +106,8 @@ export async function createOnsiteEmployee(data: {
   phone?: string;
   email?: string;
   employeeId?: string;
+  dateOfBirth?: string;
+  gender?: string;
 }) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
 
@@ -116,9 +118,20 @@ export async function createOnsiteEmployee(data: {
   const phone = String(data.phone || '').trim();
   const email = String(data.email || '').trim();
   const employeeId = String(data.employeeId || '').trim();
+  const dateOfBirth = String(data.dateOfBirth || '').trim();
+  const gender = String(data.gender || '').trim();
 
   if (!name) return { success: false, error: 'Name is required' };
   if (!phone && !email) return { success: false, error: 'Phone or email is required' };
+
+  let parsedDob: Date | null = null;
+  if (dateOfBirth) {
+    const candidate = new Date(dateOfBirth);
+    if (Number.isNaN(candidate.getTime())) {
+      return { success: false, error: 'Invalid date of birth' };
+    }
+    parsedDob = candidate;
+  }
 
   const existing = await prisma.customer.findFirst({
     where: {
@@ -126,18 +139,29 @@ export async function createOnsiteEmployee(data: {
         phone ? { phone } : undefined,
         email ? { email } : undefined
       ].filter(Boolean) as any
+    },
+    select: {
+      id: true,
+      name: true,
+      employeeId: true,
+      dateOfBirth: true,
+      gender: true
     }
   });
 
   if (existing) {
+    const updateData: Prisma.CustomerUpdateInput = {
+      corporateId,
+      name: existing.name || name,
+      employeeId: employeeId || existing.employeeId || null,
+      isActive: true
+    };
+    if (parsedDob) updateData.dateOfBirth = parsedDob;
+    if (gender) updateData.gender = gender;
+
     const updated = await prisma.customer.update({
       where: { id: existing.id },
-      data: {
-        corporateId,
-        name: existing.name || name,
-        employeeId: employeeId || existing.employeeId || null,
-        isActive: true
-      }
+      data: updateData
     });
     return { success: true, customer: updated };
   }
@@ -152,6 +176,8 @@ export async function createOnsiteEmployee(data: {
       phone: phone || null,
       email: email || null,
       employeeId: employeeId || null,
+      dateOfBirth: parsedDob,
+      gender: gender || null,
       corporateId,
       uhid,
       password: hashedPassword,
@@ -207,6 +233,7 @@ export async function createOnsiteCamp(data: {
   corporateId: number;
   title: string;
   expectedHeadcount?: number;
+  labName?: string;
 }) {
   const admin = await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const corporateId = Number(data.corporateId);
@@ -214,6 +241,7 @@ export async function createOnsiteCamp(data: {
 
   const title = String(data.title || '').trim();
   if (!title) return { success: false, error: 'Camp title is required' };
+  const labName = String(data.labName || '').trim();
 
   const expectedHeadcount = Number.isFinite(Number(data.expectedHeadcount))
     ? Number(data.expectedHeadcount)
@@ -223,6 +251,7 @@ export async function createOnsiteCamp(data: {
     data: {
       corporateId,
       title,
+      labName: labName || null,
       expectedHeadcount,
       status: 'ACTIVE',
       startedAt: new Date(),
@@ -297,7 +326,7 @@ export async function createOnsiteBooking(data: {
   corporateId: number;
   packageId: number;
   customerId: number;
-  labName: string;
+  labName?: string;
   templateId?: number | null;
   templateData?: Record<string, any> | null;
 }) {
@@ -311,9 +340,12 @@ export async function createOnsiteBooking(data: {
   if (!campId || !corporateId || !packageId || !customerId) {
     return { success: false, error: 'Missing booking details' };
   }
-  if (!labName) return { success: false, error: 'Lab name is required' };
 
-  const [corpService, pkg, customer] = await Promise.all([
+  const [camp, corpService, pkg, customer] = await Promise.all([
+    prisma.onsiteCamp.findUnique({
+      where: { id: campId },
+      select: { id: true, corporateId: true, labName: true }
+    }),
     prisma.corporateService.findFirst({
       where: {
         corporateId,
@@ -333,9 +365,16 @@ export async function createOnsiteBooking(data: {
     }),
     prisma.customer.findUnique({
       where: { id: customerId },
-      select: { name: true, phone: true }
+      select: { name: true, phone: true, dateOfBirth: true, gender: true }
     })
   ]);
+
+  if (!camp || camp.corporateId !== corporateId) {
+    return { success: false, error: 'Invalid camp for this corporate' };
+  }
+
+  const resolvedLabName = labName || camp.labName || '';
+  if (!resolvedLabName) return { success: false, error: 'Lab name is required' };
 
   if (!corpService || !pkg || !customer) {
     return { success: false, error: 'Package is not active for this corporate' };
@@ -383,6 +422,13 @@ export async function createOnsiteBooking(data: {
   const orderNumber = await generateOrderNumber();
 
   const order = await prisma.$transaction(async (tx) => {
+    if (!camp.labName && resolvedLabName) {
+      await tx.onsiteCamp.update({
+        where: { id: campId },
+        data: { labName: resolvedLabName }
+      });
+    }
+
     const createdOrder = await tx.order.create({
       data: {
         orderNumber,
@@ -390,6 +436,8 @@ export async function createOnsiteBooking(data: {
         packageId,
         patientName: customer.name || 'Employee',
         patientPhone: customer.phone || null,
+        patientDob: customer.dateOfBirth || null,
+        patientGender: customer.gender || null,
         patientType: 'self',
         patientRelation: 'Self',
         totalAmount: subtotal,
@@ -403,7 +451,7 @@ export async function createOnsiteBooking(data: {
         collectionType: 'onsite',
         preferredDate: new Date(),
         preferredTimeSlot: 'Onsite',
-        onsiteLabName: labName,
+        onsiteLabName: resolvedLabName,
         items: {
           create: [
             {

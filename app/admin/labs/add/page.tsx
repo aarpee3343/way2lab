@@ -77,7 +77,15 @@ export default function AddLabWizard() {
         setForm(prev => ({
           ...prev,
           packages: formData.packages.map(p => ({ ...p, selected: false, price: 0, discount: 0 })),
-          tests: formData.tests.map(t => ({ ...t, selected: false, price: 0, discount: 0 }))
+          tests: formData.tests.map(t => ({
+            id: t.id,
+            testName: t.testName,
+            basePrice: Number(t.price) || 0,
+            baseDiscount: Number(t.discount) || 0,
+            selected: false,
+            price: 0,
+            discount: 0
+          }))
         }));
       } catch (err) {
         toast.error("Error loading initial data");
@@ -204,6 +212,39 @@ export default function AddLabWizard() {
       [type]: prev[type].map((item: any) => 
         item.id === id ? { ...item, [field]: val } : item
       )
+    }));
+  };
+
+  const setAllTestsSelected = (selected: boolean) => {
+    setForm(prev => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => ({ ...t, selected }))
+    }));
+  };
+
+  const applyBasePricingToTests = (onlySelected: boolean) => {
+    setForm(prev => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => {
+        if (onlySelected && !t.selected) return t;
+        return {
+          ...t,
+          price: Number(t.basePrice) || 0,
+          discount: Number(t.baseDiscount) || 0
+        };
+      })
+    }));
+  };
+
+  const selectAllAndUseBasePricing = () => {
+    setForm(prev => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => ({
+        ...t,
+        selected: true,
+        price: Number(t.basePrice) || 0,
+        discount: Number(t.baseDiscount) || 0
+      }))
     }));
   };
 
@@ -561,7 +602,7 @@ export default function AddLabWizard() {
               </div>
 
               <div className="admin-table-container">
-                <div className="admin-table-toolbar">
+                <div className="admin-table-toolbar flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="admin-search-container">
                     <Search className="admin-search-icon" size={18} />
                     <input
@@ -571,6 +612,38 @@ export default function AddLabWizard() {
                       placeholder={`Search ${step === 3 ? 'packages' : 'tests'}...`}
                     />
                   </div>
+                  {step === 4 && (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAllTestsSelected(true)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAllTestsSelected(false)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Clear Selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyBasePricingToTests(true)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Use Base Price and Discount
+                      </button>
+                      <button
+                        type="button"
+                        onClick={selectAllAndUseBasePricing}
+                        className="admin-btn-primary text-xs"
+                      >
+                        Select All and Apply Base
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="admin-table-wrapper admin-scrollbar">

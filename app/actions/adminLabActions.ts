@@ -36,6 +36,7 @@ export async function getLabFormData() {
         id: true,
         testName: true,
         price: true,
+        discount: true,
       },
       orderBy: { testName: 'asc' },
     }),
@@ -52,6 +53,7 @@ export async function getLabFormData() {
       id: t.id,
       testName: t.testName,
       price: Number(t.price),
+      discount: Number(t.discount || 0),
     })),
   };
 }

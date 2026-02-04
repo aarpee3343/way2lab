@@ -8,17 +8,17 @@ datasource db {
 }
 
 model Admin {
-  id          Int       @id @default(autoincrement())
-  name        String    @db.VarChar(100)
-  email       String    @unique @db.VarChar(100)
-  password    String    @db.VarChar(255)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  isActive    Boolean   @default(true) @map("is_active")
-  lastLoginAt DateTime? @map("last_login_at")
-  phone       String?   @unique @db.VarChar(20)
-  role        AdminRole @default(SUPER_ADMIN)
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  onsiteCamps  OnsiteCamp[]
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(100)
+  email         String        @unique @db.VarChar(100)
+  password      String        @db.VarChar(255)
+  createdAt     DateTime      @default(now()) @map("created_at")
+  isActive      Boolean       @default(true) @map("is_active")
+  lastLoginAt   DateTime?     @map("last_login_at")
+  phone         String?       @unique @db.VarChar(20)
+  role          AdminRole     @default(SUPER_ADMIN)
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  onsiteCamps   OnsiteCamp[]
   onsiteEntries OnsiteEntry[]
 
   @@map("admins")
@@ -95,8 +95,8 @@ model Customer {
   corporate           Corporate?        @relation("CorporateEmployees", fields: [corporateId], references: [id])
   assignedPackages    EmployeePackage[]
   familyMembers       FamilyMember[]
-  orders              Order[]
   onsiteEntries       OnsiteEntry[]
+  orders              Order[]
 
   @@map("customers")
 }
@@ -231,35 +231,35 @@ model Test {
 }
 
 model Package {
-  id                  Int                @id @default(autoincrement())
-  packageName         String             @map("package_name")
+  id                  Int                 @id @default(autoincrement())
+  packageName         String              @map("package_name")
   description         String?
   preparation         String?
-  specialInstruction  String?            @map("special_instruction")
-  price               Decimal            @default(0.00) @db.Decimal(10, 2)
-  discount            Decimal?           @db.Decimal(5, 2)
-  isActive            Boolean            @default(true) @map("is_active")
-  createdAt           DateTime           @default(now()) @map("created_at")
+  specialInstruction  String?             @map("special_instruction")
+  price               Decimal             @default(0.00) @db.Decimal(10, 2)
+  discount            Decimal?            @db.Decimal(5, 2)
+  isActive            Boolean             @default(true) @map("is_active")
+  createdAt           DateTime            @default(now()) @map("created_at")
   category            String?
-  corporateId         Int?               @map("corporate_id")
-  isCorporate         Boolean            @default(false) @map("is_corporate")
-  isPreEmployment     Boolean            @default(false) @map("is_pre_employment")
-  paymentType         PaymentType?       @default(USER_PAYS) @map("payment_type")
-  showOnHomepage      Boolean            @default(false) @map("show_on_homepage")
+  corporateId         Int?                @map("corporate_id")
+  isCorporate         Boolean             @default(false) @map("is_corporate")
+  isPreEmployment     Boolean             @default(false) @map("is_pre_employment")
+  paymentType         PaymentType?        @default(USER_PAYS) @map("payment_type")
+  showOnHomepage      Boolean             @default(false) @map("show_on_homepage")
   tag                 String?
   corporateServices   CorporateService[]
   employeeAssignments EmployeePackage[]
   labs                LabPackage[]
+  onsiteCampPackages  OnsiteCampPackage[]
+  onsiteEntries       OnsiteEntry[]
+  onsiteTemplates     OnsiteTemplate[]
   orderItems          OrderItem[]
   orders              Order[]
-  relatedPackages     PackageRelation[]  @relation("SourcePackage")
-  recommendedIn       PackageRelation[]  @relation("TargetPackage")
+  relatedPackages     PackageRelation[]   @relation("SourcePackage")
+  recommendedIn       PackageRelation[]   @relation("TargetPackage")
   tests               PackageTest[]
-  corporate           Corporate?         @relation(fields: [corporateId], references: [id])
-  coupons             Coupon[]           @relation("PackageCoupons")
-  onsiteTemplates     OnsiteTemplate[]
-  onsiteEntries       OnsiteEntry[]
-  onsiteCampPackages  OnsiteCampPackage[]
+  corporate           Corporate?          @relation(fields: [corporateId], references: [id])
+  coupons             Coupon[]            @relation("PackageCoupons")
 
   @@map("packages")
 }
@@ -359,7 +359,6 @@ model Order {
   patientRelation        String?             @map("patient_relation")
   userId                 Int                 @map("user_id")
   labId                  Int?                @map("lab_id")
-  onsiteLabName          String?             @map("onsite_lab_name")
   addressId              Int?                @map("address_id")
   associateId            Int?                @map("associate_id")
   collectionType         String?             @map("collection_type")
@@ -383,6 +382,8 @@ model Order {
   patientName            String              @map("patient_name")
   patientPhone           String?             @map("patient_phone")
   technicianId           Int?                @map("technician_id")
+  onsiteLabName          String?             @map("onsite_lab_name")
+  onsiteEntry            OnsiteEntry?
   activities             OrderActivity[]
   items                  OrderItem[]
   reportSummary          OrderReportSummary?
@@ -395,7 +396,6 @@ model Order {
   technician             Technician?         @relation(fields: [technicianId], references: [id])
   customer               Customer            @relation(fields: [userId], references: [id])
   payments               Payment[]
-  onsiteEntry            OnsiteEntry?
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -488,35 +488,35 @@ model Corporate {
   panNumber     String?
   gstin         String?
   employeeCount Int                 @default(0)
-  logoUrl       String?             @map("logo_url")
   domains       String[]
   isActive      Boolean             @default(true)
   createdAt     DateTime            @default(now())
+  logoUrl       String?             @map("logo_url")
   activities    CorporateActivity[]
   tickets       CorporateTicket[]
   services      CorporateService[]
   users         CorporateUser[]
   employees     Customer[]          @relation("CorporateEmployees")
-  packages      Package[]
   onsiteCamps   OnsiteCamp[]
+  packages      Package[]
 
   @@map("corporates")
 }
 
 model OnsiteCamp {
-  id                 Int              @id @default(autoincrement())
-  corporateId        Int              @map("corporate_id")
-  title              String
-  status             OnsiteCampStatus @default(PLANNED)
-  expectedHeadcount  Int?             @map("expected_headcount")
-  startedAt          DateTime?        @map("started_at")
-  endedAt            DateTime?        @map("ended_at")
-  createdAt          DateTime         @default(now()) @map("created_at")
-  createdByAdminId   Int?             @map("created_by_admin_id")
-  corporate          Corporate        @relation(fields: [corporateId], references: [id], onDelete: Cascade)
-  createdBy          Admin?           @relation(fields: [createdByAdminId], references: [id])
-  entries            OnsiteEntry[]
-  packages           OnsiteCampPackage[]
+  id                Int                 @id @default(autoincrement())
+  corporateId       Int                 @map("corporate_id")
+  title             String
+  status            OnsiteCampStatus    @default(PLANNED)
+  expectedHeadcount Int?                @map("expected_headcount")
+  startedAt         DateTime?           @map("started_at")
+  endedAt           DateTime?           @map("ended_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  createdByAdminId  Int?                @map("created_by_admin_id")
+  packages          OnsiteCampPackage[]
+  corporate         Corporate           @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  createdBy         Admin?              @relation(fields: [createdByAdminId], references: [id])
+  entries           OnsiteEntry[]
 
   @@map("onsite_camps")
 }
@@ -533,34 +533,34 @@ model OnsiteCampPackage {
 }
 
 model OnsiteTemplate {
-  id        Int      @id @default(autoincrement())
-  packageId Int      @map("package_id")
+  id        Int           @id @default(autoincrement())
+  packageId Int           @map("package_id")
   title     String
   fields    Json
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  isActive  Boolean       @default(true) @map("is_active")
+  createdAt DateTime      @default(now()) @map("created_at")
   entries   OnsiteEntry[]
+  package   Package       @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@map("onsite_templates")
 }
 
 model OnsiteEntry {
-  id               Int        @id @default(autoincrement())
-  campId           Int        @map("camp_id")
-  customerId       Int        @map("customer_id")
-  packageId        Int        @map("package_id")
-  orderId          Int?       @unique @map("order_id")
-  templateId       Int?       @map("template_id")
+  id               Int             @id @default(autoincrement())
+  campId           Int             @map("camp_id")
+  customerId       Int             @map("customer_id")
+  packageId        Int             @map("package_id")
+  orderId          Int?            @unique @map("order_id")
+  templateId       Int?            @map("template_id")
   data             Json?
-  createdAt        DateTime   @default(now()) @map("created_at")
-  createdByAdminId Int?       @map("created_by_admin_id")
-  camp             OnsiteCamp @relation(fields: [campId], references: [id], onDelete: Cascade)
-  customer         Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  package          Package    @relation(fields: [packageId], references: [id])
-  order            Order?     @relation(fields: [orderId], references: [id])
+  createdAt        DateTime        @default(now()) @map("created_at")
+  createdByAdminId Int?            @map("created_by_admin_id")
+  camp             OnsiteCamp      @relation(fields: [campId], references: [id], onDelete: Cascade)
+  createdBy        Admin?          @relation(fields: [createdByAdminId], references: [id])
+  customer         Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order            Order?          @relation(fields: [orderId], references: [id])
+  package          Package         @relation(fields: [packageId], references: [id])
   template         OnsiteTemplate? @relation(fields: [templateId], references: [id])
-  createdBy        Admin?     @relation(fields: [createdByAdminId], references: [id])
 
   @@map("onsite_entries")
 }

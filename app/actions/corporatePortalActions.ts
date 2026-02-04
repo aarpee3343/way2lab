@@ -181,13 +181,19 @@ export async function getCorporateOverview(filter?: {
     reportsReady,
     services,
     departmentRows,
-    locationRows
+    locationRows,
+    activeCamp
   ] = await Promise.all([
     prisma.customer.count({ where: employeeWhere }),
     prisma.customer.count({ where: { ...employeeWhere, isActive: true } }),
     prisma.order.count({ where: orderBaseWhere }),
     prisma.order.count({ where: { ...orderBaseWhere, status: 'COMPLETED' } }),
-    prisma.order.count({ where: { ...orderBaseWhere, status: 'PENDING' } }),
+    prisma.order.count({
+      where: {
+        ...orderBaseWhere,
+        status: { in: ['PENDING', 'ACCEPTED', 'PROCESSING', 'PARTIAL_COMPLETED'] }
+      }
+    }),
     prisma.orderReport.count({
       where: {
         order: { ...visibleOrderWhere, status: 'COMPLETED' }
@@ -211,6 +217,18 @@ export async function getCorporateOverview(filter?: {
       where: baseEmployeeWhere,
       distinct: ['location'],
       select: { location: true }
+    }),
+    prisma.onsiteCamp.findFirst({
+      where: { corporateId: session.corporateId, status: 'ACTIVE' },
+      orderBy: { startedAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        expectedHeadcount: true,
+        startedAt: true,
+        labName: true,
+        _count: { select: { entries: true } }
+      }
     })
   ]);
 
@@ -267,6 +285,15 @@ export async function getCorporateOverview(filter?: {
     }
   });
 
+  const onsiteExpected = activeCamp?.expectedHeadcount ?? null;
+  const onsiteReached = activeCamp?._count?.entries ?? 0;
+  const onsiteRemaining =
+    onsiteExpected !== null ? Math.max(onsiteExpected - onsiteReached, 0) : null;
+  const onsiteProgress =
+    onsiteExpected && onsiteExpected > 0
+      ? Math.min(100, Math.round((onsiteReached / onsiteExpected) * 100))
+      : null;
+
   return {
     corp,
     user: {
@@ -286,6 +313,18 @@ export async function getCorporateOverview(filter?: {
       pendingOrders,
       reportsReady
     },
+    onsite: activeCamp
+      ? {
+          campId: activeCamp.id,
+          title: activeCamp.title,
+          labName: activeCamp.labName,
+          startedAt: activeCamp.startedAt ? activeCamp.startedAt.toISOString() : null,
+          expectedHeadcount: onsiteExpected,
+          reached: onsiteReached,
+          remaining: onsiteRemaining,
+          progress: onsiteProgress
+        }
+      : null,
     services: serviceStats,
     recentReports: recentReports.map(r => ({
       id: r.id,

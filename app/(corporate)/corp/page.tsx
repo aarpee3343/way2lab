@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import CorpStatsGrid from '@/components/corporate/CorpStatsGrid';
+import OnsiteActivityCard from '@/components/corporate/OnsiteActivityCard';
 import { 
   BarChart3, Filter, Download, 
   ChevronRight, ArrowUpRight, ShieldCheck 
@@ -174,6 +175,8 @@ export default function CorporateDashboardPage() {
 
         {/* 4. Side Info Card: Pre-Employment Privacy */}
         <div className="lg:col-span-1 space-y-6">
+          <OnsiteActivityCard activity={overview?.onsite} />
+
           <div className="bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-8 text-white shadow-xl shadow-blue-100 relative overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl" />
             <ShieldCheck size={40} className="mb-6 opacity-80" />
