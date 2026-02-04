@@ -1,7 +1,3 @@
-////////////////////////////////////////////////////////////////////////////////
-// 1. CONFIGURATION
-////////////////////////////////////////////////////////////////////////////////
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -11,9 +7,631 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// 2. ENUMS
-////////////////////////////////////////////////////////////////////////////////
+model Admin {
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(100)
+  email       String    @unique @db.VarChar(100)
+  password    String    @db.VarChar(255)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  isActive    Boolean   @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
+  phone       String?   @unique @db.VarChar(20)
+  role        AdminRole @default(SUPER_ADMIN)
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("admins")
+}
+
+model Associate {
+  id                Int      @id @default(autoincrement())
+  name              String
+  phone             String
+  email             String?
+  commissionPercent Float    @map("commission_percent")
+  isActive          Boolean  @default(true) @map("is_active")
+  orders            Order[]
+  payouts           Payout[]
+
+  @@map("associates")
+}
+
+model Payout {
+  id             Int       @id @default(autoincrement())
+  amount         Float
+  associateId    Int       @map("associate_id")
+  payoutDate     DateTime  @default(now()) @map("payout_date")
+  transactionRef String?   @map("transaction_ref")
+  associate      Associate @relation(fields: [associateId], references: [id])
+
+  @@map("payouts")
+}
+
+model VerificationCode {
+  id        Int      @id @default(autoincrement())
+  phone     String   @unique
+  code      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("verification_codes")
+}
+
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
+}
+
+model Customer {
+  id                  Int               @id @default(autoincrement())
+  uhid                String?           @unique @db.VarChar(20)
+  name                String?
+  email               String?           @unique
+  phone               String?           @unique
+  password            String?
+  dateOfBirth         DateTime?         @map("date_of_birth")
+  gender              String?
+  isActive            Boolean           @default(false) @map("is_active")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  activationToken     String?           @map("activation_token")
+  resetTokenHash      String?           @map("reset_token_hash")
+  resetTokenExpiresAt DateTime?         @map("reset_token_expires_at")
+  googleId            String?           @unique @map("google_id")
+  avatar              String?
+  loginMethod         LoginMethod       @default(email) @map("login_method")
+  corporateId         Int?              @map("corporate_id")
+  department          String?
+  employeeId          String?           @map("employee_id")
+  location            String?
+  role                Role              @default(USER)
+  couponUsage         CouponUsage[]
+  addresses           CustomerAddress[]
+  corporate           Corporate?        @relation("CorporateEmployees", fields: [corporateId], references: [id])
+  assignedPackages    EmployeePackage[]
+  familyMembers       FamilyMember[]
+  orders              Order[]
+
+  @@map("customers")
+}
+
+model CustomerAddress {
+  id           Int      @id @default(autoincrement())
+  addressLine1 String?  @map("address_line1")
+  addressLine2 String?  @map("address_line2")
+  city         String?
+  state        String?
+  pincode      String?
+  type         String?  @default("Home")
+  customerId   Int      @map("customer_id")
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@map("customer_addresses")
+}
+
+model FamilyMember {
+  id           Int       @id @default(autoincrement())
+  uhid         String?   @unique
+  name         String
+  relationship String
+  gender       String?
+  dateOfBirth  DateTime? @map("date_of_birth")
+  phone        String?
+  email        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+  customerId   Int       @map("customer_id")
+  customer     Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@map("family_members")
+}
+
+model Lab {
+  id                    Int             @id @default(autoincrement())
+  labName               String          @map("lab_name")
+  city                  String?
+  pincode               String?
+  address               String?
+  contactNo             String?         @map("contact_no")
+  email                 String?
+  activeStatus          Boolean         @default(true) @map("active_status")
+  createdAt             DateTime        @default(now()) @map("created_at")
+  homeCollectionCharges Decimal         @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
+  state                 String?         @default("HARYANA")
+  panNo                 String?         @default("AALCR3173P") @map("pan_no")
+  gstNo                 String?         @default("06AALCR3173P1ZR") @map("gst_no")
+  status                LabStatus       @default(Pending)
+  password              String?         @default("password123")
+  latitude              Float?
+  longitude             Float?
+  rating                Decimal         @default(4.5) @db.Decimal(2, 1)
+  reviewCount           Int             @default(0) @map("review_count")
+  features              Json?           @default("[]")
+  timings               Json?
+  packages              LabPackage[]
+  pincodes              LabPincode[]
+  tests                 LabTest[]
+  orders                Order[]
+  technicians           TechnicianLab[]
+  coupons               Coupon[]        @relation("LabCoupons")
+
+  @@map("labs")
+}
+
+model LabPincode {
+  id      Int    @id @default(autoincrement())
+  labId   Int    @map("lab_id")
+  pincode String @db.VarChar(10)
+  lab     Lab    @relation(fields: [labId], references: [id], onDelete: Cascade)
+
+  @@map("lab_pincodes")
+}
+
+model Technician {
+  id       Int             @id @default(autoincrement())
+  name     String
+  phone    String
+  email    String?
+  username String          @unique
+  password String
+  address  String?
+  isActive Boolean         @default(true) @map("is_active")
+  orders   Order[]
+  labs     TechnicianLab[]
+
+  @@map("technicians")
+}
+
+model TechnicianLab {
+  labId        Int        @map("lab_id")
+  technicianId Int        @map("technician_id")
+  lab          Lab        @relation(fields: [labId], references: [id])
+  technician   Technician @relation(fields: [technicianId], references: [id])
+
+  @@id([technicianId, labId])
+  @@map("technician_labs")
+}
+
+model Specialty {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  coupons     Coupon[] @relation("SpecialtyCoupons")
+
+  @@map("specialties")
+}
+
+model Test {
+  id                 Int           @id @default(autoincrement())
+  testName           String        @map("test_name")
+  slug               String?
+  category           String?
+  specialty          String?
+  description        String?
+  price              Decimal       @default(0.00) @db.Decimal(10, 2)
+  discount           Decimal       @default(0.00) @db.Decimal(5, 2)
+  scheduleReporting  String?       @map("schedule_reporting")
+  preparation        String?
+  specialInstruction String?       @map("special_instruction")
+  isActive           Boolean       @default(true) @map("is_active")
+  showOnHomepage     Boolean       @default(false) @map("show_on_homepage")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  labTests           LabTest[]
+  orderItems         OrderItem[]
+  packageTests       PackageTest[]
+  coupons            Coupon[]      @relation("TestCoupons")
+
+  @@map("tests")
+}
+
+model Package {
+  id                  Int                @id @default(autoincrement())
+  packageName         String             @map("package_name")
+  description         String?
+  preparation         String?
+  specialInstruction  String?            @map("special_instruction")
+  price               Decimal            @default(0.00) @db.Decimal(10, 2)
+  discount            Decimal?           @db.Decimal(5, 2)
+  isActive            Boolean            @default(true) @map("is_active")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  category            String?
+  corporateId         Int?               @map("corporate_id")
+  isCorporate         Boolean            @default(false) @map("is_corporate")
+  isPreEmployment     Boolean            @default(false) @map("is_pre_employment")
+  paymentType         PaymentType?       @default(USER_PAYS) @map("payment_type")
+  showOnHomepage      Boolean            @default(false) @map("show_on_homepage")
+  tag                 String?
+  corporateServices   CorporateService[]
+  employeeAssignments EmployeePackage[]
+  labs                LabPackage[]
+  orderItems          OrderItem[]
+  orders              Order[]
+  relatedPackages     PackageRelation[]  @relation("SourcePackage")
+  recommendedIn       PackageRelation[]  @relation("TargetPackage")
+  tests               PackageTest[]
+  corporate           Corporate?         @relation(fields: [corporateId], references: [id])
+  coupons             Coupon[]           @relation("PackageCoupons")
+
+  @@map("packages")
+}
+
+model PackageTest {
+  id        Int     @id @default(autoincrement())
+  packageId Int     @map("package_id")
+  testId    Int     @map("test_id")
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  test      Test    @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@map("package_tests")
+}
+
+model PackageRelation {
+  id               Int     @id @default(autoincrement())
+  packageId        Int     @map("package_id")
+  relatedPackageId Int     @map("related_package_id")
+  package          Package @relation("SourcePackage", fields: [packageId], references: [id], onDelete: Cascade)
+  relatedPackage   Package @relation("TargetPackage", fields: [relatedPackageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, relatedPackageId])
+  @@map("package_relations")
+}
+
+model LabTest {
+  id        Int     @id @default(autoincrement())
+  price     Decimal @db.Decimal(10, 2)
+  discount  Decimal @default(0.00) @db.Decimal(5, 2)
+  available Boolean @default(true)
+  labId     Int     @map("lab_id")
+  testId    Int     @map("test_id")
+  lab       Lab     @relation(fields: [labId], references: [id], onDelete: Cascade)
+  test      Test    @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@map("lab_tests")
+}
+
+model LabPackage {
+  id        Int     @id @default(autoincrement())
+  labId     Int     @map("lab_id")
+  packageId Int     @map("package_id")
+  price     Decimal @db.Decimal(10, 2)
+  discount  Decimal @default(0.00) @db.Decimal(5, 2)
+  available Boolean @default(true)
+  lab       Lab     @relation(fields: [labId], references: [id], onDelete: Cascade)
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("lab_packages")
+}
+
+model Coupon {
+  id                Int                @id @default(autoincrement())
+  code              String             @unique
+  description       String?
+  couponScope       String             @map("coupon_scope")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  discountType      String             @map("discount_type")
+  discountValue     Decimal            @map("discount_value") @db.Decimal(10, 2)
+  expiryDate        DateTime?          @map("expiry_date")
+  isActive          Boolean            @default(true) @map("is_active")
+  maxDiscountAmount Decimal?           @map("max_discount_amount") @db.Decimal(10, 2)
+  minOrderValue     Decimal            @default(0) @map("min_order_value") @db.Decimal(10, 2)
+  startDate         DateTime           @default(now()) @map("start_date")
+  usageLimit        Int?               @map("usage_limit")
+  usedCount         Int                @default(0) @map("used_count")
+  userLimit         Int                @default(1) @map("user_limit")
+  corporateServices CorporateService[]
+  couponUsage       CouponUsage[]
+  orders            Order[]
+  labs              Lab[]              @relation("LabCoupons")
+  packages          Package[]          @relation("PackageCoupons")
+  specialties       Specialty[]        @relation("SpecialtyCoupons")
+  tests             Test[]             @relation("TestCoupons")
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id         Int      @id @default(autoincrement())
+  couponId   Int      @map("coupon_id")
+  customerId Int      @map("customer_id")
+  orderId    Int?     @map("order_id")
+  usedAt     DateTime @default(now()) @map("used_at")
+  coupon     Coupon   @relation(fields: [couponId], references: [id])
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  @@map("coupon_usage")
+}
+
+model Order {
+  id                     Int                 @id @default(autoincrement())
+  orderNumber            String?             @unique @map("order_number")
+  patientDob             DateTime?           @map("patient_dob")
+  patientUHID            String?             @map("patient_uhid")
+  patientType            String?             @map("patient_type")
+  patientRelation        String?             @map("patient_relation")
+  userId                 Int                 @map("user_id")
+  labId                  Int?                @map("lab_id")
+  addressId              Int?                @map("address_id")
+  associateId            Int?                @map("associate_id")
+  collectionType         String?             @map("collection_type")
+  preferredDate          DateTime?           @map("preferred_date")
+  preferredTimeSlot      String?             @map("preferred_time_slot")
+  totalAmount            Decimal?            @map("total_amount") @db.Decimal(10, 2)
+  discountAmount         Decimal             @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
+  homeCollectionCharges  Decimal             @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
+  finalAmount            Decimal?            @map("final_amount") @db.Decimal(10, 2)
+  paymentMode            String?             @map("payment_mode")
+  paymentStatus          String?             @map("payment_status")
+  bookingDate            DateTime            @default(now()) @map("booking_date")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  bookingSource          OrderBookingSource  @default(Customer) @map("booking_source")
+  status                 OrderStatus         @default(PENDING)
+  collectionInstructions String?             @map("collection_instructions")
+  couponId               Int?                @map("coupon_id")
+  isReportSharedWithCorp Boolean             @default(false) @map("is_report_shared_with_corp")
+  packageId              Int?                @map("package_id")
+  patientGender          String?             @map("patient_gender")
+  patientName            String              @map("patient_name")
+  patientPhone           String?             @map("patient_phone")
+  technicianId           Int?                @map("technician_id")
+  activities             OrderActivity[]
+  items                  OrderItem[]
+  reportSummary          OrderReportSummary?
+  reports                OrderReport[]
+  address                CustomerAddress?    @relation(fields: [addressId], references: [id])
+  associate              Associate?          @relation(fields: [associateId], references: [id])
+  coupon                 Coupon?             @relation(fields: [couponId], references: [id])
+  lab                    Lab?                @relation(fields: [labId], references: [id])
+  package                Package?            @relation(fields: [packageId], references: [id])
+  technician             Technician?         @relation(fields: [technicianId], references: [id])
+  customer               Customer            @relation(fields: [userId], references: [id])
+  payments               Payment[]
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+  @@index([status])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int      @id @default(autoincrement())
+  itemType  String   @map("item_type")
+  itemName  String?  @map("item_name")
+  basePrice Decimal? @map("base_price") @db.Decimal(10, 2)
+  price     Decimal? @db.Decimal(10, 2)
+  discount  Decimal  @default(0.00) @db.Decimal(5, 2)
+  isPackage Boolean  @default(false) @map("is_package")
+  orderId   Int      @map("order_id")
+  testId    Int?     @map("test_id")
+  packageId Int?     @map("package_id")
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  package   Package? @relation(fields: [packageId], references: [id])
+  test      Test?    @relation(fields: [testId], references: [id])
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            Int      @id @default(autoincrement())
+  orderId       Int      @map("order_id")
+  method        String
+  transactionId String?  @map("transaction_id")
+  amount        Decimal  @db.Decimal(10, 2)
+  status        String   @default("verified")
+  notes         String?
+  paymentDate   DateTime @default(now()) @map("payment_date")
+  createdAt     DateTime @default(now()) @map("created_at")
+  order         Order    @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model OrderReport {
+  id          Int      @id @default(autoincrement())
+  encrypted   Boolean  @default(true)
+  iv          Bytes?
+  authTag     Bytes?   @map("auth_tag")
+  createdAt   DateTime @default(now()) @map("created_at")
+  orderId     Int      @map("order_id")
+  reportType  String?  @map("report_type")
+  storagePath String?  @map("storage_path")
+  uploadedBy  String?  @map("uploaded_by")
+  order       Order    @relation(fields: [orderId], references: [id])
+
+  @@map("order_reports")
+}
+
+model OrderReportSummary {
+  id        Int      @id @default(autoincrement())
+  orderId   Int      @unique @map("order_id")
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  order     Order    @relation(fields: [orderId], references: [id])
+
+  @@map("order_report_summaries")
+}
+
+model OrderActivity {
+  id          Int      @id @default(autoincrement())
+  action      String
+  createdAt   DateTime @default(now()) @map("created_at")
+  newValue    String?  @map("new_value")
+  oldValue    String?  @map("old_value")
+  orderId     Int      @map("order_id")
+  performedBy String   @map("performed_by")
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("order_activities")
+}
+
+model Corporate {
+  id            Int                 @id @default(autoincrement())
+  companyName   String
+  contactPerson String
+  email         String              @unique
+  phone         String
+  password      String
+  address       String?
+  city          String?
+  state         String?
+  pincode       String?
+  panNumber     String?
+  gstin         String?
+  employeeCount Int                 @default(0)
+  domains       String[]
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  activities    CorporateActivity[]
+  tickets       CorporateTicket[]
+  services      CorporateService[]
+  users         CorporateUser[]
+  employees     Customer[]          @relation("CorporateEmployees")
+  packages      Package[]
+
+  @@map("corporates")
+}
+
+model CorporateService {
+  id                Int         @id @default(autoincrement())
+  corporateId       Int         @map("corporate_id")
+  packageId         Int?        @map("package_id")
+  couponId          Int?        @map("coupon_id")
+  validFrom         DateTime    @map("valid_from")
+  validTill         DateTime    @map("valid_till")
+  selfPaymentType   PaymentType @default(CORPORATE_PAYS) @map("self_payment_type")
+  familyPaymentType PaymentType @default(USER_PAYS) @map("family_payment_type")
+  selfUsageLimit    Int         @default(1) @map("self_usage_limit")
+  familyUsageLimit  Int         @default(0) @map("family_usage_limit")
+  isActive          Boolean     @default(true) @map("is_active")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  corporate         Corporate   @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  coupon            Coupon?     @relation(fields: [couponId], references: [id])
+  package           Package?    @relation(fields: [packageId], references: [id])
+
+  @@map("corporate_services")
+}
+
+model CorporateUser {
+  id              Int           @id @default(autoincrement())
+  corporateId     Int
+  name            String
+  email           String        @unique
+  password        String
+  role            CorporateRole @default(SUPER_ADMIN)
+  canEdit         Boolean       @default(false)
+  maskContactInfo Boolean       @default(true)
+  accessDept      String?
+  accessLocation  String?
+  isActive        Boolean       @default(true)
+  createdAt       DateTime      @default(now())
+  corporate       Corporate     @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+
+  @@map("corporate_users")
+}
+
+model EmployeePackage {
+  id         Int         @id @default(autoincrement())
+  customerId Int         @map("customer_id")
+  packageId  Int         @map("package_id")
+  status     String      @default("ASSIGNED")
+  assignedAt DateTime    @default(now()) @map("assigned_at")
+  availedAt  DateTime?   @map("availed_at")
+  paidBy     PaymentType @map("paid_by")
+  customer   Customer    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  package    Package     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("employee_packages")
+}
+
+model CorporateTicket {
+  id          Int             @id @default(autoincrement())
+  corporateId Int
+  subject     String
+  status      String          @default("OPEN")
+  priority    String          @default("NORMAL")
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  corporate   Corporate       @relation(fields: [corporateId], references: [id])
+  messages    TicketMessage[]
+}
+
+model ContactRequest {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  subject   String
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("contact_requests")
+}
+
+model CorporateActivity {
+  id          Int       @id @default(autoincrement())
+  corporateId Int
+  performedBy String
+  action      String
+  details     String
+  ipAddress   String?
+  createdAt   DateTime  @default(now())
+  corporate   Corporate @relation(fields: [corporateId], references: [id])
+}
+
+model TicketMessage {
+  id         Int             @id @default(autoincrement())
+  ticketId   Int
+  senderType String
+  senderName String
+  message    String
+  createdAt  DateTime        @default(now())
+  ticket     CorporateTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model BlogPost {
+  id         Int      @id @default(autoincrement())
+  title      String
+  slug       String   @unique
+  content    String
+  excerpt    String
+  authorName String   @map("author_name")
+  category   String
+  coverImage String?  @map("cover_image")
+  seoTitle   String?  @map("seo_title")
+  seoDesc    String?  @map("seo_desc")
+  status     String   @default("APPROVED")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("blog_posts")
+}
+
+model State {
+  id     Int    @id @default(autoincrement())
+  name   String @unique
+  cities City[]
+}
+
+model City {
+  id       Int       @id @default(autoincrement())
+  name     String
+  stateId  Int
+  state    State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  pincodes Pincode[]
+
+  @@unique([name, stateId])
+}
+
+model Pincode {
+  id     Int    @id @default(autoincrement())
+  code   String
+  cityId Int
+  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+}
 
 enum DiscountType {
   PERCENTAGE
@@ -35,8 +653,8 @@ enum Role {
   ADMIN
   LAB
   TECHNICIAN
-  CORP_ADMIN // Super Admin for Corporate
-  CORP_SUB_ADMIN // Dept/Location Admin
+  CORP_ADMIN
+  CORP_SUB_ADMIN
 }
 
 enum CorporateRole {
@@ -78,836 +696,4 @@ enum OrderStatus {
   COMPLETED
   REJECTED
   CANCELLED
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 3. CORE ACCESS & ADMIN
-////////////////////////////////////////////////////////////////////////////////
-
-model Admin {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(100)
-  email     String   @unique @db.VarChar(100)
-  phone     String?  @unique @db.VarChar(20)
-  password  String   @db.VarChar(255)
-  role      AdminRole @default(SUPER_ADMIN)
-  isActive  Boolean  @default(true) @map("is_active")
-  lastLoginAt DateTime? @map("last_login_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("admins")
-}
-
-model Associate {
-  id                Int     @id @default(autoincrement())
-  name              String
-  phone             String
-  email             String?
-  commissionPercent Float   @map("commission_percent")
-  isActive          Boolean @default(true) @map("is_active")
-
-  // Relations
-  payouts Payout[]
-  orders  Order[]
-
-  @@map("associates")
-}
-
-model Payout {
-  id             Int      @id @default(autoincrement())
-  associateId    Int      @map("associate_id")
-  amount         Float
-  payoutDate     DateTime @default(now()) @map("payout_date")
-  transactionRef String?  @map("transaction_ref")
-
-  // Relations
-  associate Associate @relation(fields: [associateId], references: [id])
-
-  @@map("payouts")
-}
-
-model VerificationCode {
-  id        Int      @id @default(autoincrement())
-  phone     String   @unique
-  code      String
-  expiresAt DateTime @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("verification_codes")
-}
-
-model AppSetting {
-  id        Int      @id @default(autoincrement())
-  key       String   @unique
-  value     Json
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("app_settings")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 4. CUSTOMERS & PATIENTS
-////////////////////////////////////////////////////////////////////////////////
-
-model Customer {
-  id          Int       @id @default(autoincrement())
-  uhid        String?   @unique @db.VarChar(20)
-  name        String?
-  email       String?   @unique
-  phone       String?   @unique
-  password    String?
-  dateOfBirth DateTime? @map("date_of_birth")
-  gender      String?
-  isActive    Boolean   @default(false) @map("is_active")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  // Auth & Tokens
-  activationToken     String?     @map("activation_token")
-  resetTokenHash      String?     @map("reset_token_hash")
-  resetTokenExpiresAt DateTime?   @map("reset_token_expires_at")
-  googleId            String?     @unique @map("google_id")
-  avatar              String?
-  loginMethod         LoginMethod @default(email) @map("login_method")
-
-  // Corporate Details
-  employeeId  String? @map("employee_id") // e.g. EMP001
-  department  String?
-  location    String?
-  corporateId Int?    @map("corporate_id")
-  role        Role    @default(USER)
-
-  // Relations
-  corporate        Corporate?        @relation("CorporateEmployees", fields: [corporateId], references: [id])
-  assignedPackages EmployeePackage[]
-  orders           Order[]
-  couponUsage      CouponUsage[]
-  addresses        CustomerAddress[]
-  familyMembers    FamilyMember[]
-
-  @@map("customers")
-}
-
-model CustomerAddress {
-  id           Int     @id @default(autoincrement())
-  addressLine1 String? @map("address_line1")
-  addressLine2 String? @map("address_line2")
-  city         String?
-  state        String?
-  pincode      String?
-  type         String? @default("Home")
-  customerId   Int     @map("customer_id")
-
-  // Relations
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  orders   Order[]
-
-  @@map("customer_addresses")
-}
-
-model FamilyMember {
-  id           Int       @id @default(autoincrement())
-  uhid         String?   @unique
-  name         String
-  relationship String
-  gender       String?
-  dateOfBirth  DateTime? @map("date_of_birth")
-  phone        String?
-  email        String?
-  createdAt    DateTime  @default(now()) @map("created_at")
-  customerId   Int       @map("customer_id")
-
-  // Relations
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-
-  @@map("family_members")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 5. LABS, TECHNICIANS & SERVICE PROVIDERS
-////////////////////////////////////////////////////////////////////////////////
-
-model Lab {
-  id           Int       @id @default(autoincrement())
-  labName      String    @map("lab_name")
-  city         String?
-  pincode      String?
-  address      String?
-  contactNo    String?   @map("contact_no")
-  email        String?
-  password     String?   @default("password123") // Security Note: Ideally hash this
-  activeStatus Boolean   @default(true) @map("active_status")
-  status       LabStatus @default(Pending)
-  createdAt    DateTime  @default(now()) @map("created_at")
-
-  // Financials & Legal
-  homeCollectionCharges Decimal @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
-  state                 String? @default("HARYANA")
-  panNo                 String? @default("AALCR3173P") @map("pan_no")
-  gstNo                 String? @default("06AALCR3173P1ZR") @map("gst_no")
-
-  // Meta & Rating
-  latitude    Float?
-  longitude   Float?
-  rating      Decimal @default(4.5) @db.Decimal(2, 1)
-  reviewCount Int     @default(0) @map("review_count")
-  features    Json?   @default("[]")
-  timings     Json?
-
-  // Relations
-  tests       LabTest[]
-  packages    LabPackage[]
-  pincodes    LabPincode[]
-  orders      Order[]
-  technicians TechnicianLab[]
-  coupons     Coupon[]        @relation("LabCoupons")
-
-  @@map("labs")
-}
-
-model LabPincode {
-  id      Int    @id @default(autoincrement())
-  labId   Int    @map("lab_id")
-  pincode String @db.VarChar(10)
-
-  // Relations
-  lab Lab @relation(fields: [labId], references: [id], onDelete: Cascade)
-
-  @@map("lab_pincodes")
-}
-
-model Technician {
-  id       Int     @id @default(autoincrement())
-  name     String
-  phone    String
-  email    String?
-  username String  @unique
-  password String
-  address  String?
-  isActive Boolean @default(true) @map("is_active")
-
-  // Relations
-  labs   TechnicianLab[]
-  orders Order[]
-
-  @@map("technicians")
-}
-
-model TechnicianLab {
-  technicianId Int @map("technician_id")
-  labId        Int @map("lab_id")
-
-  // Relations
-  technician Technician @relation(fields: [technicianId], references: [id])
-  lab        Lab        @relation(fields: [labId], references: [id])
-
-  @@id([technicianId, labId])
-  @@map("technician_labs")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 6. INVENTORY (TESTS, PACKAGES, SPECIALTIES)
-////////////////////////////////////////////////////////////////////////////////
-
-model Specialty {
-  id          Int     @id @default(autoincrement())
-  name        String  @unique
-  description String?
-
-  // Relations
-  coupons Coupon[] @relation("SpecialtyCoupons")
-
-  @@map("specialties")
-}
-
-model Test {
-  id                 Int      @id @default(autoincrement())
-  testName           String   @map("test_name")
-  slug               String?
-  category           String?
-  specialty          String?
-  description        String?
-  price              Decimal  @default(0.00) @db.Decimal(10, 2)
-  discount           Decimal  @default(0.00) @db.Decimal(5, 2)
-  scheduleReporting  String?  @map("schedule_reporting")
-  preparation        String?
-  specialInstruction String?  @map("special_instruction")
-  isActive           Boolean  @default(true) @map("is_active")
-  showOnHomepage     Boolean  @default(false) @map("show_on_homepage")
-  createdAt          DateTime @default(now()) @map("created_at")
-
-  // Relations
-  labTests     LabTest[]
-  packageTests PackageTest[]
-  orderItems   OrderItem[]
-  coupons      Coupon[]      @relation("TestCoupons")
-
-  @@map("tests")
-}
-
-model Package {
-  id                 Int     @id @default(autoincrement())
-  packageName        String  @map("package_name")
-  description        String?
-  preparation        String?
-  specialInstruction String? @map("special_instruction")
-
-  // Pricing
-  price    Decimal  @default(0.00) @db.Decimal(10, 2)
-  discount Decimal? @db.Decimal(5, 2)
-
-  // Status & Visibility
-  isActive       Boolean  @default(true) @map("is_active")
-  showOnHomepage Boolean  @default(false) @map("show_on_homepage")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  // ===============================
-  // Corporate & Business Logic
-  // ===============================
-
-  // Package category (Business-facing)
-  // Examples: ANNUAL, PRE_EMPLOYMENT, EXECUTIVE, BLUE_COLLAR
-  category String?
-
-  // Corporate-specific package
-  isCorporate Boolean @default(false) @map("is_corporate")
-  corporateId Int?    @map("corporate_id")
-
-  // Who pays for this package
-  paymentType PaymentType? @default(USER_PAYS) @map("payment_type")
-
-  // Privacy flag for pre-employment reports
-  // true = reports visible only to corporate admin, not employee
-  isPreEmployment Boolean @default(false) @map("is_pre_employment")
-
-  // Optional tagging
-  tag String?
-
-  // ===============================
-  // Relations
-  // ===============================
-
-  corporate           Corporate?         @relation(fields: [corporateId], references: [id])
-  corporateServices   CorporateService[]
-  employeeAssignments EmployeePackage[]
-
-  orders Order[]
-
-  tests      PackageTest[]
-  labs       LabPackage[]
-  orderItems OrderItem[]
-  coupons    Coupon[]      @relation("PackageCoupons")
-
-  relatedPackages PackageRelation[] @relation("SourcePackage")
-  recommendedIn   PackageRelation[] @relation("TargetPackage")
-
-  @@map("packages")
-}
-
-model PackageTest {
-  id        Int @id @default(autoincrement())
-  packageId Int @map("package_id")
-  testId    Int @map("test_id")
-
-  // Relations
-  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  test    Test    @relation(fields: [testId], references: [id], onDelete: Cascade)
-
-  @@map("package_tests")
-}
-
-model PackageRelation {
-  id               Int @id @default(autoincrement())
-  packageId        Int @map("package_id")
-  relatedPackageId Int @map("related_package_id")
-
-  // Relationships
-  package        Package @relation("SourcePackage", fields: [packageId], references: [id], onDelete: Cascade)
-  relatedPackage Package @relation("TargetPackage", fields: [relatedPackageId], references: [id], onDelete: Cascade)
-
-  @@unique([packageId, relatedPackageId]) // Prevent duplicate links
-  @@map("package_relations")
-}
-
-model LabTest {
-  id        Int     @id @default(autoincrement())
-  labId     Int     @map("lab_id")
-  testId    Int     @map("test_id")
-  price     Decimal @db.Decimal(10, 2)
-  discount  Decimal @default(0.00) @db.Decimal(5, 2)
-  available Boolean @default(true)
-
-  // Relations
-  lab  Lab  @relation(fields: [labId], references: [id], onDelete: Cascade)
-  test Test @relation(fields: [testId], references: [id], onDelete: Cascade)
-
-  @@map("lab_tests")
-}
-
-model LabPackage {
-  id        Int     @id @default(autoincrement())
-  labId     Int     @map("lab_id")
-  packageId Int     @map("package_id")
-  price     Decimal @db.Decimal(10, 2)
-  discount  Decimal @default(0.00) @db.Decimal(5, 2)
-  available Boolean @default(true)
-
-  // Relations
-  lab     Lab     @relation(fields: [labId], references: [id], onDelete: Cascade)
-  package Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
-
-  @@map("lab_packages")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 7. COUPONS & DISCOUNTS
-////////////////////////////////////////////////////////////////////////////////
-
-model Coupon {
-  id                Int      @id @default(autoincrement())
-  code              String   @unique
-  description       String?
-  discountType      String   @map("discount_type") // 'PERCENTAGE' or 'FIXED'
-  discountValue     Decimal  @map("discount_value") @db.Decimal(10, 2)
-  minOrderValue     Decimal  @default(0) @map("min_order_value") @db.Decimal(10, 2)
-  maxDiscountAmount Decimal? @map("max_discount_amount") @db.Decimal(10, 2)
-
-  usageLimit Int? @map("usage_limit")
-  userLimit  Int  @default(1) @map("user_limit")
-  usedCount  Int  @default(0) @map("used_count")
-
-  startDate  DateTime  @default(now()) @map("start_date")
-  expiryDate DateTime? @map("expiry_date")
-
-  couponScope String   @map("coupon_scope") // GLOBAL, LAB, TEST, PACKAGE, SPECIALTY
-  isActive    Boolean  @default(true) @map("is_active")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  labs              Lab[]              @relation("LabCoupons")
-  tests             Test[]             @relation("TestCoupons")
-  packages          Package[]          @relation("PackageCoupons")
-  specialties       Specialty[]        @relation("SpecialtyCoupons")
-  orders            Order[]
-  couponUsage       CouponUsage[]
-  corporateServices CorporateService[]
-
-  @@map("coupons")
-}
-
-model CouponUsage {
-  id         Int      @id @default(autoincrement())
-  couponId   Int      @map("coupon_id")
-  customerId Int      @map("customer_id")
-  orderId    Int?     @map("order_id")
-  usedAt     DateTime @default(now()) @map("used_at")
-
-  // Relations
-  coupon   Coupon   @relation(fields: [couponId], references: [id])
-  customer Customer @relation(fields: [customerId], references: [id])
-
-  @@map("coupon_usage")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 8. ORDERS & PAYMENTS
-////////////////////////////////////////////////////////////////////////////////
-
-model Order {
-  id                     Int     @id @default(autoincrement())
-  orderNumber            String? @unique @map("order_number")
-  collectionInstructions String? @map("collection_instructions") @db.Text
-
-  // ===============================
-  // Patient Snapshot
-  // ===============================
-  patientName     String    @map("patient_name")
-  patientDob      DateTime? @map("patient_dob")
-  patientGender   String?   @map("patient_gender")
-  patientPhone    String?   @map("patient_phone")
-  patientUHID     String?   @map("patient_uhid")
-  patientType     String?   @map("patient_type") // self | family
-  patientRelation String?   @map("patient_relation") // Parent / Child / etc
-
-  // ===============================
-  // IDs & Relations
-  // ===============================
-  userId       Int  @map("user_id") // Links to Customer table
-  labId        Int? @map("lab_id")
-  addressId    Int? @map("address_id")
-  associateId  Int? @map("associate_id")
-  technicianId Int? @map("technician_id")
-  couponId     Int? @map("coupon_id")
-  packageId    Int? @map("package_id") // Needed to check pre-employment
-
-  // ===============================
-  // Schedule
-  // ===============================
-  collectionType    String?   @map("collection_type")
-  preferredDate     DateTime? @map("preferred_date")
-  preferredTimeSlot String?   @map("preferred_time_slot")
-
-  // ===============================
-  // Financials
-  // ===============================
-  totalAmount           Decimal? @map("total_amount") @db.Decimal(10, 2)
-  discountAmount        Decimal  @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
-  homeCollectionCharges Decimal  @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
-  finalAmount           Decimal? @map("final_amount") @db.Decimal(10, 2)
-  paymentMode           String?  @map("payment_mode")
-  paymentStatus         String?  @map("payment_status")
-
-  // ===============================
-  // Status
-  // ===============================
-  status        OrderStatus        @default(PENDING)
-  bookingSource OrderBookingSource @default(Customer) @map("booking_source")
-
-  // ===============================
-  // Timestamps
-  // ===============================
-  bookingDate DateTime @default(now()) @map("booking_date")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // ===============================
-  // Corporate Report Sharing
-  // ===============================
-  isReportSharedWithCorp Boolean @default(false) @map("is_report_shared_with_corp")
-  // Logic:
-  // - If package.isPreEmployment == true → only corporate can see.
-  // - Otherwise → visible to corporate only if isReportSharedWithCorp == true
-
-  // ===============================
-  // Relations
-  // ===============================
-  customer   Customer         @relation(fields: [userId], references: [id])
-  lab        Lab?             @relation(fields: [labId], references: [id])
-  address    CustomerAddress? @relation(fields: [addressId], references: [id])
-  associate  Associate?       @relation(fields: [associateId], references: [id])
-  technician Technician?      @relation(fields: [technicianId], references: [id])
-  coupon     Coupon?          @relation(fields: [couponId], references: [id])
-  package    Package?         @relation(fields: [packageId], references: [id])
-
-  items         OrderItem[]
-  payments      Payment[]
-  reports       OrderReport[]
-  activities    OrderActivity[]
-  reportSummary OrderReportSummary?
-
-  @@index([userId, status])
-  @@index([userId, createdAt])
-  @@index([status])
-  @@map("orders")
-}
-
-model OrderItem {
-  id       Int     @id @default(autoincrement())
-  orderId  Int     @map("order_id")
-  itemType String  @map("item_type") // 'test' or 'package'
-  itemName String? @map("item_name")
-
-  basePrice Decimal? @map("base_price") @db.Decimal(10, 2)
-  price     Decimal? @db.Decimal(10, 2)
-  discount  Decimal  @default(0.00) @db.Decimal(5, 2)
-
-  // Links
-  isPackage Boolean @default(false) @map("is_package")
-  testId    Int?    @map("test_id")
-  packageId Int?    @map("package_id")
-
-  // Relations
-  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  test    Test?    @relation(fields: [testId], references: [id])
-  package Package? @relation(fields: [packageId], references: [id])
-
-  @@map("order_items")
-}
-
-model Payment {
-  id            Int      @id @default(autoincrement())
-  orderId       Int      @map("order_id")
-  method        String
-  transactionId String?  @map("transaction_id")
-  amount        Decimal  @db.Decimal(10, 2)
-  status        String   @default("verified")
-  notes         String?
-  paymentDate   DateTime @default(now()) @map("payment_date")
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id])
-
-  @@map("payments")
-}
-
-model OrderReport {
-  id          Int     @id @default(autoincrement())
-  orderId     Int     @map("order_id")
-  storagePath String? @map("storage_path")
-  reportType  String? @map("report_type")
-
-  // Security
-  encrypted Boolean @default(true)
-  iv        Bytes?
-  authTag   Bytes?  @map("auth_tag")
-
-  uploadedBy String?  @map("uploaded_by")
-  createdAt  DateTime @default(now()) @map("created_at")
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id])
-
-  @@map("order_reports")
-}
-
-model OrderReportSummary {
-  id        Int      @id @default(autoincrement())
-  orderId   Int      @unique @map("order_id")
-  content   String
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id])
-
-  @@map("order_report_summaries")
-}
-
-model OrderActivity {
-  id          Int      @id @default(autoincrement())
-  orderId     Int      @map("order_id")
-  action      String
-  oldValue    String?  @map("old_value")
-  newValue    String?  @map("new_value")
-  performedBy String   @map("performed_by")
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  // Relations
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  @@map("order_activities")
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// 9. CORPORATE MANAGEMENT
-////////////////////////////////////////////////////////////////////////////////
-
-model Corporate {
-  id            Int    @id @default(autoincrement())
-  companyName   String
-  contactPerson String
-  email         String @unique
-  phone         String
-  password      String
-
-  // Address Fields
-  address String?
-  city    String?
-  state   String?
-  pincode String?
-
-  // Legal & Stats
-  panNumber     String?
-  gstin         String?
-  employeeCount Int     @default(0)
-
-  // Logic
-  domains   String[]
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-
-  // Relations
-  employees  Customer[]          @relation("CorporateEmployees")
-  tickets    CorporateTicket[]
-  activities CorporateActivity[]
-  users      CorporateUser[]
-  packages   Package[]
-  services   CorporateService[]
-
-  @@map("corporates")
-}
-
-model CorporateService {
-  id Int @id @default(autoincrement())
-
-  // ===============================
-  // Ownership
-  // ===============================
-  corporateId Int @map("corporate_id")
-
-  // Can link to either a Package OR a Coupon
-  packageId Int? @map("package_id")
-  couponId  Int? @map("coupon_id")
-
-  // ===============================
-  // Validity
-  // ===============================
-  validFrom DateTime @map("valid_from")
-  validTill DateTime @map("valid_till")
-
-  // ===============================
-  // Payment Rules
-  // ===============================
-  // Who pays when employee uses it
-  selfPaymentType PaymentType @default(CORPORATE_PAYS) @map("self_payment_type")
-
-  // Who pays when family member uses it
-  familyPaymentType PaymentType @default(USER_PAYS) @map("family_payment_type")
-
-  // ===============================
-  // Usage Rules
-  // ===============================
-  // How many times employee can use
-  selfUsageLimit Int @default(1) @map("self_usage_limit")
-
-  // How many times family can use
-  // 0 = family not allowed
-  familyUsageLimit Int @default(0) @map("family_usage_limit")
-
-  // ===============================
-  // Status & Audit
-  // ===============================
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // ===============================
-  // Relations
-  // ===============================
-  corporate Corporate @relation(fields: [corporateId], references: [id], onDelete: Cascade)
-  package   Package?  @relation(fields: [packageId], references: [id])
-  coupon    Coupon?   @relation(fields: [couponId], references: [id])
-
-  @@map("corporate_services")
-}
-
-model CorporateUser {
-  id          Int       @id @default(autoincrement())
-  corporateId Int
-  corporate   Corporate @relation(fields: [corporateId], references: [id], onDelete: Cascade)
-
-  name     String
-  email    String        @unique
-  password String
-  role     CorporateRole @default(SUPER_ADMIN)
-
-  // 🔐 Permissions & Data Masking
-  canEdit         Boolean @default(false) // false = View Only
-  maskContactInfo Boolean @default(true) // true = mask phone/email
-
-  accessDept     String?
-  accessLocation String?
-  isActive       Boolean @default(true)
-
-  createdAt DateTime @default(now())
-
-  @@map("corporate_users")
-}
-
-model EmployeePackage {
-  id         Int @id @default(autoincrement())
-  customerId Int @map("customer_id")
-  packageId  Int @map("package_id")
-
-  status     String      @default("ASSIGNED") // ASSIGNED, SCHEDULED, COMPLETED, EXPIRED
-  assignedAt DateTime    @default(now()) @map("assigned_at")
-  availedAt  DateTime?   @map("availed_at")
-  paidBy     PaymentType @map("paid_by")
-
-  // Relations
-  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  package  Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
-
-  @@map("employee_packages")
-}
-
-model CorporateTicket {
-  id          Int      @id @default(autoincrement())
-  corporateId Int
-  subject     String
-  status      String   @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED
-  priority    String   @default("NORMAL") // LOW, NORMAL, HIGH, URGENT
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  corporate Corporate       @relation(fields: [corporateId], references: [id])
-  messages  TicketMessage[]
-}
-
-model ContactRequest {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
-  subject   String
-  message   String
-  status    String   @default("NEW") // NEW, READ, REPLIED
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("contact_requests")
-}
-
-model CorporateActivity {
-  id          Int      @id @default(autoincrement())
-  corporateId Int
-  performedBy String // Name of the Corporate User
-  action      String // e.g., "DEACTIVATED_EMPLOYEE", "DOWNLOADED_REPORT"
-  details     String // e.g., "Deactivated Vikram Mehta (AC-102)"
-  ipAddress   String?
-  createdAt   DateTime @default(now())
-
-  corporate Corporate @relation(fields: [corporateId], references: [id])
-}
-
-model TicketMessage {
-  id         Int      @id @default(autoincrement())
-  ticketId   Int
-  senderType String // "CORPORATE" or "ADMIN"
-  senderName String
-  message    String   @db.Text
-  createdAt  DateTime @default(now())
-
-  ticket CorporateTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-}
-
-model BlogPost {
-  id         Int      @id @default(autoincrement())
-  title      String
-  slug       String   @unique
-  content    String   @db.Text
-  excerpt    String   @db.Text
-  authorName String   @map("author_name")
-  category   String
-  coverImage String?  @map("cover_image")
-  seoTitle   String?  @map("seo_title")
-  seoDesc    String?  @map("seo_desc")
-  status     String   @default("APPROVED")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@map("blog_posts")
-}
-
-
-model State {
-  id     Int    @id @default(autoincrement())
-  name   String @unique
-  cities City[]
-}
-
-model City {
-  id       Int       @id @default(autoincrement())
-  name     String
-  stateId  Int
-  state    State     @relation(fields: [stateId], references: [id], onDelete: Cascade)
-  pincodes Pincode[]
-
-  @@unique([name, stateId])
-}
-
-model Pincode {
-  id     Int    @id @default(autoincrement())
-  code   String
-  cityId Int
-  city   City   @relation(fields: [cityId], references: [id], onDelete: Cascade)
-
-  @@index([code])
 }

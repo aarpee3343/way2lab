@@ -21,7 +21,15 @@ type BenefitItem = {
   packageName: string;
   category: string;
   validTill: string;
-  paymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
+  serviceId?: number;
+  selfPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
+  familyPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
+  selfUsageLimit: number;
+  familyUsageLimit: number;
+  selfRemaining: number;
+  familyRemaining: number;
+  eligibleSelf: boolean;
+  eligibleFamily: boolean;
   originalPrice?: number;
 };
 
@@ -72,10 +80,10 @@ export default function EmployeeBenefits() {
 
     setLoadingBenefitId(benefit.id);
     try {
-      const payload = {
-        items: [{ id: benefit.id, name: benefit.packageName, type: 'package' }],
-        pincode
-      };
+    const payload = {
+      items: [{ id: benefit.id, name: benefit.packageName, type: 'package' }],
+      pincode
+    };
       const res = await axios.post('/api/search/labs/search', payload, { withCredentials: true });
       setLabResults(prev => ({ ...prev, [benefit.id]: res.data || [] }));
       setExpandedBenefitId(benefit.id);
@@ -109,7 +117,6 @@ export default function EmployeeBenefits() {
 
     const basePrice = Number(item.labItemMRP || benefit.originalPrice || 0);
     const sellingPrice = Number(item.labItemPrice || basePrice);
-    const finalPrice = benefit.paymentType === 'CORPORATE_PAYS' ? 0 : sellingPrice;
 
     clearCart();
     setLabCart(
@@ -124,9 +131,12 @@ export default function EmployeeBenefits() {
           id: benefit.id,
           name: benefit.packageName,
           type: 'package',
-          price: finalPrice,
+          price: sellingPrice,
           basePrice,
           isCorporate: true,
+          corporatePaymentSelf: benefit.selfPaymentType,
+          corporatePaymentFamily: benefit.familyPaymentType,
+          corporateServiceId: benefit.serviceId,
           labId: labData.lab.id,
           labName: labData.lab.labName
         }
@@ -208,6 +218,9 @@ export default function EmployeeBenefits() {
           {benefits.map((b) => {
             const labs = labResults[b.id] || [];
             const isExpanded = expandedBenefitId === b.id;
+            const canUse = b.eligibleSelf || b.eligibleFamily;
+            const selfPayLabel = b.selfPaymentType === 'CORPORATE_PAYS' ? 'Covered' : 'Self Pay';
+            const familyPayLabel = b.familyPaymentType === 'CORPORATE_PAYS' ? 'Covered' : 'Self Pay';
             return (
               <div key={b.id} className="space-y-3">
                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200 shadow-sm hover:shadow-xl hover:border-blue-200 transition-all group flex flex-col md:flex-row justify-between items-center gap-6">
@@ -225,15 +238,29 @@ export default function EmployeeBenefits() {
                           <Calendar size={12} /> Valid till {new Date(b.validTill).toLocaleDateString()}
                         </p>
                         <p className="text-emerald-600 uppercase">
-                          {b.paymentType === 'CORPORATE_PAYS' ? 'Covered by corporate' : 'Self pay'}
+                          Self: {selfPayLabel} â€¢ Family: {familyPayLabel}
+                        </p>
+                        <p className="text-slate-400 uppercase">
+                          Self Remaining: {b.selfRemaining} â€¢ Family Remaining: {b.familyRemaining}
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => toggleLabs(b)}
-                    className="w-full md:w-auto px-8 py-3 bg-slate-900 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200 transition-all flex items-center justify-center gap-2"
+                    onClick={() => {
+                      if (!canUse) {
+                        toast.error('Usage limit reached for both self and family.');
+                        return;
+                      }
+                      toggleLabs(b);
+                    }}
+                    disabled={!canUse}
+                    className={`w-full md:w-auto px-8 py-3 rounded-2xl font-black text-sm uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                      canUse
+                        ? 'bg-slate-900 text-white hover:bg-blue-600 hover:shadow-lg hover:shadow-blue-200'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                    }`}
                   >
                     {loadingBenefitId === b.id ? (
                       <>
@@ -258,8 +285,10 @@ export default function EmployeeBenefits() {
                         const item = labData.foundItems?.[0];
                         const basePrice = Number(item?.labItemMRP || 0);
                         const sellingPrice = Number(item?.labItemPrice || 0);
-                        const payable =
-                          b.paymentType === 'CORPORATE_PAYS' ? 0 : sellingPrice;
+                        const payableSelf =
+                          b.selfPaymentType === 'CORPORATE_PAYS' ? 0 : sellingPrice;
+                        const payableFamily =
+                          b.familyPaymentType === 'CORPORATE_PAYS' ? 0 : sellingPrice;
 
                         return (
                           <div
@@ -277,11 +306,19 @@ export default function EmployeeBenefits() {
                             </div>
                             <div className="flex flex-col md:items-end gap-2">
                               <div className="text-sm font-bold text-slate-900">
-                                Payable: INR {payable.toLocaleString()}
+                                Self Payable: INR {payableSelf.toLocaleString()}
+                              </div>
+                              <div className="text-xs font-semibold text-slate-500">
+                                Family Payable: INR {payableFamily.toLocaleString()}
                               </div>
                               <button
                                 onClick={() => handleBook(b, labData)}
-                                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700"
+                                disabled={!canUse}
+                                className={`px-5 py-2.5 rounded-xl font-semibold text-sm ${
+                                  canUse
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                                }`}
                               >
                                 Book with this lab
                               </button>

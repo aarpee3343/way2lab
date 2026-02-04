@@ -44,12 +44,108 @@ export async function checkCustomerAction(phone: string) {
 }
 
 /* ---------------------------------------------------
+   1b. Corporate Helpers (Admin Booking)
+--------------------------------------------------- */
+export async function getActiveCorporatesForOrder() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  const corporates = await prisma.corporate.findMany({
+    where: { isActive: true },
+    orderBy: { companyName: 'asc' },
+    select: {
+      id: true,
+      companyName: true,
+      contactPerson: true
+    }
+  });
+
+  return corporates;
+}
+
+export async function getCorporateEmployeesForOrder(
+  corporateId: number,
+  search?: string
+) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  if (!corporateId) return [];
+
+  const where: any = { corporateId, isActive: true };
+  const trimmed = search?.trim();
+  if (trimmed) {
+    where.OR = [
+      { name: { contains: trimmed, mode: 'insensitive' } },
+      { email: { contains: trimmed, mode: 'insensitive' } },
+      { phone: { contains: trimmed, mode: 'insensitive' } },
+      { employeeId: { contains: trimmed, mode: 'insensitive' } }
+    ];
+  }
+
+  const employees = await prisma.customer.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      employeeId: true,
+      department: true,
+      location: true,
+      isActive: true
+    }
+  });
+
+  return employees;
+}
+
+export async function getCorporateEmployeeDetailsForOrder(
+  customerId: number,
+  corporateId?: number
+) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  if (!customerId) return { found: false };
+
+  const customer = await prisma.customer.findFirst({
+    where: {
+      id: customerId,
+      ...(corporateId ? { corporateId } : {})
+    },
+    include: { addresses: true }
+  });
+
+  if (!customer) return { found: false };
+
+  let age = 0;
+  if (customer.dateOfBirth) {
+    const diff = Date.now() - new Date(customer.dateOfBirth).getTime();
+    age = Math.abs(new Date(diff).getUTCFullYear() - 1970);
+  }
+
+  return {
+    found: true,
+    data: {
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      gender: customer.gender,
+      dob: customer.dateOfBirth?.toISOString().split('T')[0],
+      age,
+      addresses: customer.addresses,
+      employeeId: customer.employeeId,
+      department: customer.department,
+      location: customer.location
+    }
+  };
+}
+
+/* ---------------------------------------------------
    2. Search Tests (Pincode + Optional Lab Lock)
 --------------------------------------------------- */
 export async function searchAdminTestsAction(
   query: string,
   pincode: string,
-  lockedLabId?: number
+  lockedLabId?: number,
+  corporateId?: number
 ) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   if (query.length < 2) return [];
@@ -93,18 +189,51 @@ export async function searchAdminTestsAction(
     take: 10
   });
 
-  const packages = await prisma.labPackage.findMany({
-    where: {
-      labId: { in: targetLabIds },
-      available: true,
-      package: {
-        packageName: { contains: query, mode: 'insensitive' },
-        isActive: true
-      },
-      lab: { activeStatus: true }
+  const now = new Date();
+  const packageWhere: any = {
+    labId: { in: targetLabIds },
+    available: true,
+    package: {
+      packageName: { contains: query, mode: 'insensitive' },
+      isActive: true
     },
+    lab: { activeStatus: true }
+  };
+
+  if (corporateId) {
+    packageWhere.package = {
+      ...packageWhere.package,
+      isCorporate: true,
+      corporateId,
+      corporateServices: {
+        some: {
+          corporateId,
+          isActive: true,
+          validFrom: { lte: now },
+          validTill: { gte: now }
+        }
+      }
+    };
+  }
+
+  const packages = await prisma.labPackage.findMany({
+    where: packageWhere,
     include: {
-      package: true,
+      package: corporateId
+        ? {
+            include: {
+              corporateServices: {
+                where: {
+                  corporateId,
+                  isActive: true,
+                  validFrom: { lte: now },
+                  validTill: { gte: now }
+                },
+                take: 1
+              }
+            }
+          }
+        : true,
       lab: true
     },
     take: 10
@@ -125,15 +254,24 @@ export async function searchAdminTestsAction(
   const mappedPackages = packages.map(p => {
     const mrp = Number(p.price);
     const discount = Number(p.discount || 0);
+    const sellingPrice = mrp - (mrp * (discount / 100));
+    const pkg: any = p.package as any;
+    const service = corporateId ? pkg?.corporateServices?.[0] : null;
+    const paymentType = service?.selfPaymentType || null;
+    const corporateCovered = paymentType === 'CORPORATE_PAYS';
+
     return {
       id: p.packageId,
-      name: p.package.packageName,
+      name: pkg?.packageName,
       type: 'package',
       labId: p.labId,
       labName: p.lab.labName,
       mrp,
       discount,
-      price: mrp - (mrp * (discount / 100)),
+      price: corporateCovered ? 0 : sellingPrice,
+      sellingPrice,
+      paymentType,
+      corporateCovered,
       homeCollectionCharges: Number(p.lab.homeCollectionCharges || 0)
     };
   });
@@ -238,6 +376,9 @@ export async function placeAdminOrderAction(data: any) {
           userId: customerId,
           labId: data.labId,
           addressId,
+          packageId: Number.isFinite(Number(data.packageId))
+            ? Number(data.packageId)
+            : null,
 
           // Financials
           totalAmount: subtotal,

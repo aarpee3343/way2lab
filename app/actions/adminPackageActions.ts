@@ -6,9 +6,19 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 // --- 1. GET PACKAGES LIST (For Admin Table) ---
-export async function getPackages() {
+export async function getPackages(search?: string) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  const query = (search || '').trim();
   const packages = await prisma.package.findMany({
+    where: query
+      ? {
+          OR: [
+            { packageName: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } },
+            { category: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      : undefined,
     orderBy: { id: 'desc' },
     include: {
       _count: { select: { tests: true } } // Count included tests (relation name: 'tests')

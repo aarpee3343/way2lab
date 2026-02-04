@@ -35,7 +35,16 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
   const [editForm, setEditForm] = useState<any>({});
 
   // Service Form State
-  const [serviceForm, setServiceForm] = useState({ 
+  const [serviceForm, setServiceForm] = useState<{
+    type: 'PACKAGE' | 'COUPON';
+    itemId: string;
+    validFrom: string;
+    validTill: string;
+    selfPaymentType: 'CORPORATE_PAYS' | 'USER_PAYS';
+    familyPaymentType: 'CORPORATE_PAYS' | 'USER_PAYS';
+    selfLimit: number;
+    familyLimit: number;
+  }>({ 
     type: 'PACKAGE', 
     itemId: '', 
     validFrom: '', 
@@ -101,9 +110,9 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     }
   };
 
-  const handleRemoveService = async (serviceId: number, packageId: number | null) => {
+  const handleRemoveService = async (serviceId: number) => {
     if(!confirm("Remove this service? The package will be released back to inventory.")) return;
-    const res = await deleteCorporateServiceAction(serviceId, packageId);
+    const res = await deleteCorporateServiceAction(serviceId);
     if(res.success) {
       toast.success("Service removed successfully");
       refresh();
@@ -146,7 +155,11 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       toast.error("Please select validity dates");
       return;
     }
-    const res = await assignCorporateService({ ...serviceForm, corporateId: corpId });
+    const res = await assignCorporateService({
+      ...serviceForm,
+      corporateId: corpId,
+      itemId: Number(serviceForm.itemId)
+    });
     if(res.success) { 
       toast.success("Service assigned successfully!"); 
       refresh(); 
@@ -478,7 +491,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                 <div>
                   <label className="text-sm font-semibold text-slate-700 mb-2 block">Service Type</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {['PACKAGE', 'COUPON'].map(t => (
+                    {(['PACKAGE', 'COUPON'] as const).map(t => (
                       <button 
                         key={t} 
                         onClick={() => setServiceForm({...serviceForm, type: t, itemId: ''})} 
@@ -626,7 +639,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                             </div>
                             
                             <button 
-                              onClick={() => handleRemoveService(s.id, s.package?.id || null)}
+                              onClick={() => handleRemoveService(s.id)}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                               title="Remove Service"
                             >

@@ -672,3 +672,105 @@ export async function deleteCorporateServiceAction(serviceId: number) {
     return { success: false, error: "Failed to remove service" };
   }
 }
+
+// --- 11. ASSIGN PACKAGE TO SPECIFIC EMPLOYEES ---
+export async function assignEmployeesToPackageAction(data: {
+  corporateId: number;
+  packageId: number;
+  identifiers: string[]; // emails / employeeIds / phones
+}) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  try {
+    const corporateId = Number(data.corporateId);
+    const packageId = Number(data.packageId);
+    if (!corporateId || !packageId) {
+      return { success: false, error: 'Invalid corporate or package' };
+    }
+
+    const cleaned = Array.from(new Set((data.identifiers || [])
+      .map(i => String(i || '').trim())
+      .filter(Boolean)));
+
+    if (!cleaned.length) {
+      return { success: false, error: 'No employee identifiers provided' };
+    }
+
+    const employees = await prisma.customer.findMany({
+      where: {
+        corporateId,
+        OR: [
+          { email: { in: cleaned } },
+          { employeeId: { in: cleaned } },
+          { phone: { in: cleaned } }
+        ]
+      },
+      select: { id: true }
+    });
+
+    if (!employees.length) {
+      return { success: false, error: 'No matching employees found' };
+    }
+
+    const existing = await prisma.employeePackage.findMany({
+      where: {
+        packageId,
+        customerId: { in: employees.map(e => e.id) }
+      },
+      select: { customerId: true }
+    });
+    const existingSet = new Set(existing.map(e => e.customerId));
+
+    const service = await prisma.corporateService.findFirst({
+      where: { corporateId, packageId, isActive: true },
+      select: { selfPaymentType: true }
+    });
+
+    const paidBy = service?.selfPaymentType || 'USER_PAYS';
+
+    const toCreate = employees
+      .filter(e => !existingSet.has(e.id))
+      .map(e => ({
+        customerId: e.id,
+        packageId,
+        paidBy
+      }));
+
+    if (toCreate.length) {
+      await prisma.employeePackage.createMany({ data: toCreate });
+    }
+
+    revalidatePath(`/admin/corporates/${corporateId}`);
+    return { success: true, assigned: toCreate.length, totalFound: employees.length };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Assignment failed' };
+  }
+}
+
+// --- 12. CLEAR PACKAGE ASSIGNMENTS (Make available to all employees) ---
+export async function clearPackageAssignmentsAction(data: {
+  corporateId: number;
+  packageId: number;
+}) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  try {
+    const corporateId = Number(data.corporateId);
+    const packageId = Number(data.packageId);
+    if (!corporateId || !packageId) {
+      return { success: false, error: 'Invalid corporate or package' };
+    }
+
+    const result = await prisma.employeePackage.deleteMany({
+      where: {
+        packageId,
+        customer: { corporateId }
+      }
+    });
+
+    revalidatePath(`/admin/corporates/${corporateId}`);
+    return { success: true, removed: result.count };
+  } catch (error: any) {
+    console.error(error);
+    return { success: false, error: error.message || 'Failed to clear assignments' };
+  }
+}

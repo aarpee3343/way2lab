@@ -23,14 +23,23 @@ export async function bulkCreateTestsAction(testsData: any[]) {
       return Number.isFinite(num) ? num : fallback;
     };
 
-    const cleanText = (value: unknown) => {
-      if (typeof value !== 'string') return value;
-      return value.replace(/\r?\n/g, ' ').trim();
+    const cleanOptional = (value: unknown) => {
+      if (value === null || value === undefined) return null;
+      const cleaned = String(value).replace(/\r?\n/g, ' ').trim();
+      return cleaned.length > 0 ? cleaned : null;
     };
 
-    const formattedTests = testsData.map((t) => {
+    const cleanRequired = (value: unknown) => {
+      const cleaned = cleanOptional(value);
+      return cleaned ?? '';
+    };
+
+    const formattedTests = testsData
+      .map((t) => {
       // 1. Auto-generate Slug if missing (Clean & Readable)
-      const baseSlug = (cleanText(t.slug) as string | undefined) || (cleanText(t.testName) as string | undefined) || '';
+      const testName = cleanRequired(t.testName);
+      if (!testName) return null;
+      const baseSlug = cleanOptional(t.slug) || testName;
       const slug = baseSlug
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -38,14 +47,14 @@ export async function bulkCreateTestsAction(testsData: any[]) {
 
       // 2. Direct Mapping (Types Converted)
       return {
-        testName: cleanText(t.testName),
+        testName,
         slug: slug,
-        category: cleanText(t.category),
-        specialty: cleanText(t.specialty),
-        description: cleanText(t.description),
-        scheduleReporting: cleanText(t.scheduleReporting),
-        preparation: cleanText(t.preparation),
-        specialInstruction: cleanText(t.specialInstruction),
+        category: cleanOptional(t.category),
+        specialty: cleanOptional(t.specialty),
+        description: cleanOptional(t.description),
+        scheduleReporting: cleanOptional(t.scheduleReporting),
+        preparation: cleanOptional(t.preparation),
+        specialInstruction: cleanOptional(t.specialInstruction),
         
         // Type Conversions (CSV strings -> Prisma types)
         price: toNumber(t.price, 0),
@@ -53,7 +62,8 @@ export async function bulkCreateTestsAction(testsData: any[]) {
         isActive: t.isActive == '1' || t.isActive === 'true' || t.isActive === true,
         showOnHomepage: t.showOnHomepage == '1' || t.showOnHomepage === 'true' || t.showOnHomepage === true,
       };
-    });
+    })
+    .filter((t): t is NonNullable<typeof t> => Boolean(t));
 
     // 3. Bulk Insert
     const result = await prisma.test.createMany({

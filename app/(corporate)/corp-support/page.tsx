@@ -57,8 +57,9 @@ export default function CorporateSupportPage() {
     setLoading(true);
     const list = await getCorporateTickets();
     setTickets(list || []);
-    if (!activeTicketId && list && list.length > 0) {
-      setActiveTicketId(list[0].id);
+    const firstId = list?.[0]?.id;
+    if (!activeTicketId && typeof firstId === 'number') {
+      setActiveTicketId(firstId);
     }
     setLoading(false);
   }, [activeTicketId]);
@@ -124,7 +125,9 @@ export default function CorporateSupportPage() {
       setShowCreate(false);
       setNewSubject('');
       setNewMessage('');
-      setActiveTicketId(res.ticketId);
+      if (res.ticketId) {
+        setActiveTicketId(res.ticketId);
+      }
       loadTickets();
       if (res.ticketId) loadMessages(res.ticketId);
     } else {

@@ -30,7 +30,8 @@ export async function GET(req: Request) {
     }
 
     // Determine Order By object
-    const orderBy = sort === 'price' ? { price: order } : { testName: order };
+    const sortOrder: 'asc' | 'desc' = order === 'desc' ? 'desc' : 'asc';
+    const orderBy = sort === 'price' ? { price: sortOrder } : { testName: sortOrder };
 
     const [tests, total] = await Promise.all([
       prisma.test.findMany({

@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 import { sendSMS } from '@/lib/sms';
+import { OrderStatus } from '@prisma/client';
 
 const normalizeGender = (input?: string | null): string => {
   if (!input) return 'Other';
@@ -70,6 +71,98 @@ export async function POST(req: Request) {
     if (!items?.length) return NextResponse.json({ success: false, message: 'No items' }, { status: 400 });
     if (!patientDetails?.name) return NextResponse.json({ success: false, message: 'Invalid patient' }, { status: 400 });
 
+    // Fetch corporate context (if any)
+    const dbUser = await prisma.customer.findUnique({
+      where: { id: user.id },
+      select: { corporateId: true }
+    });
+    const corporateId = dbUser?.corporateId ?? null;
+
+    const patientTypeKey = patientDetails?.type === 'family' ? 'family' : 'self';
+
+    // Corporate usage/eligibility checks for package benefits
+    const packageItems = (items || []).filter((i: any) => i.type === 'package');
+    if (corporateId && packageItems.length > 0) {
+      const packageIds = packageItems.map((i: any) => Number(i.id)).filter((id: number) => Number.isFinite(id));
+      const packages = await prisma.package.findMany({
+        where: { id: { in: packageIds } },
+        select: { id: true, isCorporate: true, corporateId: true }
+      });
+      const packageMap = new Map(packages.map(p => [p.id, p]));
+      const now = new Date();
+
+      for (const item of packageItems) {
+        const packageId = Number(item.id);
+        const pkg = packageMap.get(packageId);
+        if (!pkg || !pkg.isCorporate || pkg.corporateId !== corporateId) continue;
+
+        const service = await prisma.corporateService.findFirst({
+          where: {
+            corporateId,
+            packageId,
+            isActive: true,
+            validFrom: { lte: now },
+            validTill: { gte: now }
+          },
+          select: {
+            selfUsageLimit: true,
+            familyUsageLimit: true
+          }
+        });
+
+        if (!service) {
+          return NextResponse.json(
+            { success: false, message: 'This package is not active for your corporate plan.' },
+            { status: 403 }
+          );
+        }
+
+        // If specific assignments exist, ensure this employee is assigned
+        const assignmentCount = await prisma.employeePackage.count({
+          where: { packageId, customer: { corporateId } }
+        });
+        if (assignmentCount > 0) {
+          const assigned = await prisma.employeePackage.findFirst({
+            where: { packageId, customerId: user.id }
+          });
+          if (!assigned) {
+            return NextResponse.json(
+              { success: false, message: 'This package is not assigned to your profile.' },
+              { status: 403 }
+            );
+          }
+        }
+
+        const limit =
+          patientTypeKey === 'self'
+            ? Number(service.selfUsageLimit || 0)
+            : Number(service.familyUsageLimit || 0);
+
+        if (limit <= 0) {
+          return NextResponse.json(
+            { success: false, message: 'This benefit is not available for the selected patient type.' },
+            { status: 403 }
+          );
+        }
+
+        const usedCount = await prisma.order.count({
+          where: {
+            userId: user.id,
+            packageId,
+            patientType: patientTypeKey,
+            status: { notIn: [OrderStatus.CANCELLED, OrderStatus.REJECTED] }
+          }
+        });
+
+        if (usedCount >= limit) {
+          return NextResponse.json(
+            { success: false, message: 'Usage limit reached for this benefit.' },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
     // Coupon Lookup
     let couponId: number | null = null;
     if (couponCode) {
@@ -83,6 +176,9 @@ export async function POST(req: Request) {
     const orderNumber = `${prefix}${String(count + 1).padStart(6, '0')}`;
 
     // Transaction
+    const primaryPackageId =
+      packageItems.length === 1 ? Number(packageItems[0].id) : null;
+
     const order = await prisma.$transaction(async (tx) => {
       // Backfill Self Data
       let { dob: patientDob, gender: patientGender, uhid: patientUHID } = patientDetails;
@@ -100,6 +196,7 @@ export async function POST(req: Request) {
           userId: user.id,
           labId: labId ? Number(labId) : null,
           addressId: addressId ? Number(addressId) : null,
+          packageId: Number.isFinite(primaryPackageId) ? primaryPackageId : null,
           
           patientName: patientDetails.name,
           patientDob: patientDob ? new Date(patientDob) : null,

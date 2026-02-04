@@ -36,6 +36,25 @@ const getAgeLabel = (age: number | null) => {
   return 'Adult';
 };
 
+const getCorporatePaymentType = (
+  item: any,
+  patientType: 'self' | 'family'
+) => {
+  if (!item?.isCorporate) return null;
+  return patientType === 'self'
+    ? item.corporatePaymentSelf
+    : item.corporatePaymentFamily;
+};
+
+const getEffectivePrice = (
+  item: any,
+  patientType: 'self' | 'family'
+) => {
+  const paymentType = getCorporatePaymentType(item, patientType);
+  if (paymentType === 'CORPORATE_PAYS') return 0;
+  return Number(item.price || 0);
+};
+
 /* ==================================
    PAGE
 ================================== */
@@ -150,26 +169,37 @@ export default function ConfirmOrderPage() {
   /* ---------- CALCULATIONS ---------- */
   const age = getAgeFromDob(patient.dob);
 
+  const patientTypeKey: 'self' | 'family' =
+    patient.type === 'family' ? 'family' : 'self';
+
   const mrpTotal = items.reduce(
     (sum, i) => sum + (Number(i.basePrice) || Number(i.price)),
     0
   );
 
-  const discountedTotal = items.reduce(
-    (sum, i) => sum + Number(i.price),
+  const sellingTotal = items.reduce(
+    (sum, i) => sum + Number(i.price || 0),
     0
   );
 
-  const testDiscount = mrpTotal - discountedTotal;
+  const payableTotal = items.reduce(
+    (sum, i) => sum + getEffectivePrice(i, patientTypeKey),
+    0
+  );
+
+  const testDiscount = mrpTotal - sellingTotal;
   const couponDiscount = totals.couponDiscount || 0;
 
-  const finalTotal = discountedTotal - couponDiscount + homeCharge;
+  const finalTotal = Math.max(0, payableTotal - couponDiscount + homeCharge);
 
   /* ---------- CORPORATE BILLING CHECK ---------- */
   const isCorporateCovered =
-    patient.type === 'self' &&
     !!user.corporateId &&
-    items.some(i => i.isCorporate === true);
+    items.some(
+      (i) =>
+        i.isCorporate === true &&
+        getCorporatePaymentType(i, patientTypeKey) === 'CORPORATE_PAYS'
+    );
 
   /* ---------- PLACE ORDER ---------- */
   const placeOrder = async () => {
@@ -196,19 +226,21 @@ export default function ConfirmOrderPage() {
           type: collectionType
         },
 
-        paymentMode: isCorporateCovered
-          ? 'Corporate Credit'
-          : 'Pay Upon Service',
+        paymentMode:
+          isCorporateCovered && finalTotal === 0
+            ? 'Corporate Credit'
+            : 'Pay Upon Service',
 
-        paymentStatus: isCorporateCovered
-          ? 'CORPORATE_BILLING'
-          : 'PENDING',
+        paymentStatus:
+          isCorporateCovered && finalTotal === 0
+            ? 'CORPORATE_BILLING'
+            : 'PENDING',
 
         totals: {
           subtotal: mrpTotal,
           discount: testDiscount + couponDiscount,
           homeCollection: homeCharge,
-          final: isCorporateCovered ? 0 : finalTotal
+          final: finalTotal
         },
         couponCode: coupon?.code || null
       };
@@ -310,9 +342,9 @@ export default function ConfirmOrderPage() {
 
           <hr className="my-3" />
 
-          <Row label="Amount Payable" value={isCorporateCovered ? 0 : finalTotal} bold />
+          <Row label="Amount Payable" value={finalTotal} bold />
 
-          {isCorporateCovered && (
+          {isCorporateCovered && finalTotal === 0 && (
             <p className="text-xs text-green-600 font-bold mt-2 bg-green-50 p-2 rounded border border-green-200 text-center">
               Covered by Corporate Account
             </p>

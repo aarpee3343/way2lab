@@ -12,6 +12,9 @@ export interface CartItem {
   labId: number;
   labName: string;
   isCorporate?: boolean;
+  corporatePaymentSelf?: 'USER_PAYS' | 'CORPORATE_PAYS';
+  corporatePaymentFamily?: 'USER_PAYS' | 'CORPORATE_PAYS';
+  corporateServiceId?: number;
 }
 
 export interface CartLab {

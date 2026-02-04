@@ -23,6 +23,7 @@ export default async function OrdersPage({
   const status = (params.status as string) || 'all';
   const search = (params.search as string) || '';
   const page = Number(params.page) || 1;
+  const corp = (params.corp as string) || 'all';
 
   const {
   orders,
@@ -32,7 +33,8 @@ export default async function OrdersPage({
 } = await getAdminOrders({
   status,
   search,
-  page
+  page,
+  corporate: corp
 });
 
   return (
@@ -109,6 +111,19 @@ export default async function OrdersPage({
               <option value="Cancelled">Cancelled</option>
             </select>
 
+            <select
+              name="corp"
+              defaultValue={corp}
+              className="admin-form-select"
+            >
+              <option value="all">All Types</option>
+              <option value="general">General</option>
+              <option value="corporate">Corporate</option>
+              <option value="corporate_admin">Admin / Corporate</option>
+              <option value="corporate_employee">Employee / Corporate</option>
+              <option value="admin_general">Admin / General</option>
+            </select>
+
             <button
               type="submit"
               className="admin-btn-primary"
@@ -127,6 +142,7 @@ export default async function OrdersPage({
               <th>Order</th>
               <th>Customer / Patient</th>
               <th>Lab & Type</th>
+              <th>Type</th>
               <th>Status</th>
               <th>Payment</th>
               <th className="text-right">Total</th>
@@ -181,6 +197,14 @@ export default async function OrdersPage({
                     </span>
                   </td>
 
+                  {/* TYPE */}
+                  <td>
+                    <OrderTypeBadge
+                      isCorporate={Boolean(order.customer?.corporateId)}
+                      bookingSource={order.bookingSource}
+                    />
+                  </td>
+
                   {/* STATUS */}
                   <td>
                     <StatusBadge status={order.status} />
@@ -211,7 +235,7 @@ export default async function OrdersPage({
             ) : (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="text-center py-12 text-slate-400"
                 >
                   No orders found matching your filters.
@@ -308,6 +332,45 @@ function PaymentBadge({ status }: { status?: string | null }) {
     <Badge color="rose" icon={<Clock size={14} />}>
       {status || 'Pending'}
     </Badge>
+  );
+}
+
+function OrderTypeBadge({
+  isCorporate,
+  bookingSource
+}: {
+  isCorporate: boolean;
+  bookingSource?: string | null;
+}) {
+  const isAdmin = bookingSource === 'Admin';
+  let label = 'General';
+  let color = 'default';
+
+  if (isAdmin && isCorporate) {
+    label = 'Admin / Corporate';
+    color = 'info';
+  } else if (isAdmin) {
+    label = 'Admin / General';
+    color = 'warning';
+  } else if (isCorporate) {
+    label = 'Corporate';
+    color = 'success';
+  }
+
+  return (
+    <span
+      className={`admin-status-indicator admin-badge-${
+        color === 'success'
+          ? 'success'
+          : color === 'warning'
+            ? 'warning'
+            : color === 'info'
+              ? 'info'
+              : 'default'
+      }`}
+    >
+      {label}
+    </span>
   );
 }
 

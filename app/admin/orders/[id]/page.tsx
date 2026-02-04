@@ -49,6 +49,18 @@ const getPaymentColor = (status?: string | null) =>
     ? 'admin-badge-success'
     : 'admin-badge-warning';
 
+/* ================= SERVER ACTION WRAPPERS ================= */
+
+async function handleUpdateStatus(formData: FormData) {
+  'use server';
+  await updateOrderStatusAction(formData);
+}
+
+async function handleAssignTechnician(formData: FormData) {
+  'use server';
+  await assignTechnicianAction(formData);
+}
+
 /* ================= PAGE ================= */
 
 export default async function OrderDetailsPage({
@@ -300,9 +312,7 @@ export default async function OrderDetailsPage({
           {/* STATUS */}
           <Card title="Update Status" icon={Edit}>
             <form
-              action={async (formData) => {
-                await updateOrderStatusAction(formData);
-              }}
+              action={handleUpdateStatus}
               className="space-y-4"
             >
               <input type="hidden" name="orderId" value={order.id} />
@@ -333,9 +343,7 @@ export default async function OrderDetailsPage({
           
           <Card title="Technician Assignment" icon={UserCog}>
             <form
-              action={async (formData) => {
-                await assignTechnicianAction(formData);
-              }}
+              action={handleAssignTechnician}
               className="space-y-4"
             >
               <input type="hidden" name="orderId" value={order.id} />

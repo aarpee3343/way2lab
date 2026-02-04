@@ -22,6 +22,7 @@ export async function getAdminOrders(params: {
   search?: string;
   payment?: string;
   source?: string;
+  corporate?: string;
 }) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const page = Number(params.page) || 1;
@@ -42,6 +43,24 @@ export async function getAdminOrders(params: {
 
   if (params.source && params.source !== 'all') {
     where.bookingSource = params.source;
+  }
+
+  if (params.corporate && params.corporate !== 'all') {
+    const corporateFilter = params.corporate;
+    if (corporateFilter === 'corporate') {
+      where.customer = { ...(where.customer || {}), corporateId: { not: null } };
+    } else if (corporateFilter === 'general') {
+      where.customer = { ...(where.customer || {}), corporateId: null };
+    } else if (corporateFilter === 'admin_general') {
+      where.bookingSource = 'Admin';
+      where.customer = { ...(where.customer || {}), corporateId: null };
+    } else if (corporateFilter === 'corporate_admin') {
+      where.bookingSource = 'Admin';
+      where.customer = { ...(where.customer || {}), corporateId: { not: null } };
+    } else if (corporateFilter === 'corporate_employee') {
+      where.bookingSource = 'Customer';
+      where.customer = { ...(where.customer || {}), corporateId: { not: null } };
+    }
   }
 
   if (params.search) {
@@ -79,10 +98,12 @@ export async function getAdminOrders(params: {
         discountAmount: true,
         homeCollectionCharges: true,
         finalAmount: true,
+        bookingSource: true,
         customer: {
           select: {
             name: true,
-            phone: true
+            phone: true,
+            corporateId: true
           }
         },
         lab: {

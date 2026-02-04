@@ -29,11 +29,12 @@ export default function LabsPage() {
       setLabs(res.data);
       
       // Extract unique cities
-      const uniqueCities = Array.from(new Set(res.data
-        .filter((lab: any) => lab.city)
-        .map((lab: any) => lab.city)
+      const uniqueCities = Array.from(new Set(
+        res.data
+          .filter((lab: any) => lab.city)
+          .map((lab: any) => String(lab.city))
       ));
-      setCities(uniqueCities);
+      setCities(uniqueCities as string[]);
     } catch (error) {
       console.error('Failed to fetch labs:', error);
     } finally {

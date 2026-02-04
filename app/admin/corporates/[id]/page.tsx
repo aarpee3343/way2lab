@@ -4,6 +4,8 @@ import {
   getCorporateDetails, 
   mapDomainAction, 
   assignCorporateService, 
+  assignEmployeesToPackageAction,
+  clearPackageAssignmentsAction,
   getAdminInventory,
   updateCorporateEmployeeStatus,
   updateCorporateAction,      
@@ -48,6 +50,11 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     familyLimit: 0
   });
   const [domainInput, setDomainInput] = useState('');
+  const [employeeAssignForm, setEmployeeAssignForm] = useState({
+    packageId: '',
+    identifiers: ''
+  });
+  const [assigningEmployees, setAssigningEmployees] = useState(false);
 
   const refresh = useCallback(() => {
     return getCorporateDetails(corpId).then(data => {
@@ -155,6 +162,58 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     });
     if(res.success) { toast.success("Assigned!"); refresh(); }
     else { toast.error(res.error); }
+  };
+
+  const handleAssignEmployees = async () => {
+    if (!employeeAssignForm.packageId) {
+      toast.error('Select a package service');
+      return;
+    }
+
+    const identifiers = employeeAssignForm.identifiers
+      .split(/[\n,]/)
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (identifiers.length === 0) {
+      toast.error('Enter employee emails / IDs / phones');
+      return;
+    }
+
+    setAssigningEmployees(true);
+    const res = await assignEmployeesToPackageAction({
+      corporateId: corpId,
+      packageId: Number(employeeAssignForm.packageId),
+      identifiers
+    });
+    setAssigningEmployees(false);
+
+    if (res.success) {
+      toast.success(`Assigned to ${res.assigned} employees`);
+      setEmployeeAssignForm({ packageId: employeeAssignForm.packageId, identifiers: '' });
+      refresh();
+    } else {
+      toast.error(res.error || 'Assignment failed');
+    }
+  };
+
+  const handleClearAssignments = async () => {
+    if (!employeeAssignForm.packageId) {
+      toast.error('Select a package service');
+      return;
+    }
+    if (!confirm('Clear all employee assignments for this package?')) return;
+
+    const res = await clearPackageAssignmentsAction({
+      corporateId: corpId,
+      packageId: Number(employeeAssignForm.packageId)
+    });
+    if (res.success) {
+      toast.success(`Cleared ${res.removed} assignments`);
+      refresh();
+    } else {
+      toast.error(res.error || 'Failed to clear assignments');
+    }
   };
 
 
@@ -310,6 +369,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Add Service Form */}
+          <div className="space-y-6">
           <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
             <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Plus size={18}/> Assign Service</h3>
             
@@ -354,9 +414,45 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
               </div>
 
               <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-slate-500">Self Payment</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm mt-1"
+                    value={serviceForm.selfPaymentType}
+                    onChange={(e) =>
+                      setServiceForm({
+                        ...serviceForm,
+                        selfPaymentType: e.target.value as 'USER_PAYS' | 'CORPORATE_PAYS'
+                      })
+                    }
+                  >
+                    <option value="CORPORATE_PAYS">Corporate Pays</option>
+                    <option value="USER_PAYS">Self Pay</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-slate-500">Family Payment</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm mt-1"
+                    value={serviceForm.familyPaymentType}
+                    onChange={(e) =>
+                      setServiceForm({
+                        ...serviceForm,
+                        familyPaymentType: e.target.value as 'USER_PAYS' | 'CORPORATE_PAYS'
+                      })
+                    }
+                  >
+                    <option value="CORPORATE_PAYS">Corporate Pays</option>
+                    <option value="USER_PAYS">Self Pay</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                  <div>
                     <label className="text-xs font-bold text-slate-500">Limits (Self)</label>
-                    <input type="number" min="1" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm mt-1" value={serviceForm.selfLimit} onChange={e => setServiceForm({...serviceForm, selfLimit: parseInt(e.target.value)})}/>
+                    <input type="number" min="0" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm mt-1" value={serviceForm.selfLimit} 
+                    onChange={e => setServiceForm({...serviceForm, selfLimit: e.target.value === '' ? 0 : parseInt(e.target.value)})}/>
                  </div>
                  <div>
                     <label className="text-xs font-bold text-slate-500">Limits (Family)</label>
@@ -374,6 +470,53 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
               </button>
             </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm h-fit">
+            <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2"><Users size={18}/> Limit Package to Employees</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500">Select Package Service</label>
+                <select
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm mt-1"
+                  value={employeeAssignForm.packageId}
+                  onChange={(e) => setEmployeeAssignForm({ ...employeeAssignForm, packageId: e.target.value })}
+                >
+                  <option value="">Select...</option>
+                  {(corp?.services || [])
+                    .filter((s: any) => s.package)
+                    .map((s: any) => (
+                      <option key={s.id} value={s.package.id}>
+                        {s.package.packageName}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500">Employee Emails / IDs / Phones</label>
+                <textarea
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-sm mt-1 min-h-[120px]"
+                  placeholder="Paste emails, employee IDs, or phone numbers (comma or new line separated)"
+                  value={employeeAssignForm.identifiers}
+                  onChange={(e) => setEmployeeAssignForm({ ...employeeAssignForm, identifiers: e.target.value })}
+                />
+              </div>
+              <button
+                onClick={handleAssignEmployees}
+                disabled={isArchived || assigningEmployees}
+                className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-60"
+              >
+                {assigningEmployees ? 'Assigning...' : 'Assign to Selected Employees'}
+              </button>
+              <button
+                onClick={handleClearAssignments}
+                disabled={isArchived}
+                className="w-full bg-white text-slate-700 py-3 rounded-xl font-bold text-sm border border-slate-200 hover:bg-slate-50 disabled:opacity-60"
+              >
+                Clear Package Assignments (Make Available to All)
+              </button>
+            </div>
+          </div>
+        </div>
 
           {/* Active Services List (UPDATED WITH DELETE BUTTON) */}
           <div className="lg:col-span-2 space-y-4">

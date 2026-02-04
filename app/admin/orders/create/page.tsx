@@ -2,12 +2,20 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { checkCustomerAction, searchAdminTestsAction, placeAdminOrderAction } from '@/app/actions/adminOrderActions';
+import { 
+  checkCustomerAction, 
+  searchAdminTestsAction, 
+  placeAdminOrderAction,
+  getActiveCorporatesForOrder,
+  getCorporateEmployeesForOrder,
+  getCorporateEmployeeDetailsForOrder
+} from '@/app/actions/adminOrderActions';
 import { getAdminSettings } from '@/app/actions/adminSettingsActions';
 import { 
   Search, User, MapPin, Clock, CreditCard, 
   CheckCircle2, Printer, Plus, Trash2, Home,
-  AlertCircle, Calendar, Package
+  AlertCircle, Calendar, Package, Building2,
+  Briefcase, Users
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import Link from 'next/link';
@@ -17,20 +25,31 @@ import Autocomplete from "react-google-autocomplete";
 export default function AdminCreateOrder() {
   const [loading, setLoading] = useState(false);
   const [orderSuccessId, setOrderSuccessId] = useState<number | null>(null);
+
+  // Booking Type (Regular vs Corporate)
+  const [orderType, setOrderType] = useState<'regular' | 'corporate'>('regular');
+  const [corporates, setCorporates] = useState<any[]>([]);
+  const [corporatesLoading, setCorporatesLoading] = useState(false);
+  const [selectedCorporateId, setSelectedCorporateId] = useState<number | null>(null);
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   
   // Customer & Address State
-  const [phone, setPhone] = useState('');
-  const [customer, setCustomer] = useState({
-    id: null, name: '', email: '', dob: '', age: '', gender: ''
-  });
-  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
-  const [address, setAddress] = useState({
+  const emptyCustomer = { id: null, name: '', email: '', dob: '', age: '', gender: '' };
+  const emptyAddress = {
     id: null as number | null, 
     pincode: '', 
     city: '', 
     state: '', 
     line: '' // Street Address
-  });
+  };
+
+  const [phone, setPhone] = useState('');
+  const [customer, setCustomer] = useState(emptyCustomer);
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [address, setAddress] = useState(emptyAddress);
   const [showAddrSuggestions, setShowAddrSuggestions] = useState(false);
 
   // Search & Cart State
@@ -49,6 +68,23 @@ export default function AdminCreateOrder() {
   const [patientNotes, setPatientNotes] = useState('');
   const [paymentModes, setPaymentModes] = useState<string[]>(['Pay Upon Service']);
   const settingsAppliedRef = useRef(false);
+
+  const resetCustomerAndAddress = () => {
+    setPhone('');
+    setCustomer(emptyCustomer);
+    setSavedAddresses([]);
+    setShowAddrSuggestions(false);
+    setAddress(emptyAddress);
+  };
+
+  const resetCartAndDiscounts = () => {
+    setCart([]);
+    setQuery('');
+    setSearchResults([]);
+    setDiscountApplied(false);
+    setCouponDiscount(0);
+    setCouponCode('');
+  };
 
   useEffect(() => {
     setDiscountApplied(false);
@@ -98,6 +134,48 @@ export default function AdminCreateOrder() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    resetCustomerAndAddress();
+    resetCartAndDiscounts();
+    setSelectedCorporateId(null);
+    setSelectedEmployeeId(null);
+    setEmployees([]);
+    setEmployeeSearch('');
+  }, [orderType]);
+
+  useEffect(() => {
+    if (orderType !== 'corporate') return;
+    let active = true;
+    setCorporatesLoading(true);
+    getActiveCorporatesForOrder()
+      .then((data) => {
+        if (!active) return;
+        setCorporates(Array.isArray(data) ? data : []);
+      })
+      .finally(() => {
+        if (active) setCorporatesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [orderType]);
+
+  useEffect(() => {
+    if (orderType !== 'corporate' || !selectedCorporateId) {
+      setEmployees([]);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setEmployeesLoading(true);
+      getCorporateEmployeesForOrder(selectedCorporateId, employeeSearch)
+        .then((data) => {
+          setEmployees(Array.isArray(data) ? data : []);
+        })
+        .finally(() => setEmployeesLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [orderType, selectedCorporateId, employeeSearch]);
 
   // --- GOOGLE ADDRESS HANDLER ---
   const handleGoogleAddressSelect = (place: any) => {
@@ -155,8 +233,45 @@ export default function AdminCreateOrder() {
     }
   }, [address.pincode]);
 
+  const handleCorporateSelect = (value: string) => {
+    const corpId = value ? Number(value) : null;
+    setSelectedCorporateId(corpId);
+    setSelectedEmployeeId(null);
+    setEmployees([]);
+    setEmployeeSearch('');
+    resetCustomerAndAddress();
+    resetCartAndDiscounts();
+  };
+
+  const handleEmployeeSelect = async (value: string) => {
+    const empId = value ? Number(value) : null;
+    setSelectedEmployeeId(empId);
+    resetCustomerAndAddress();
+    resetCartAndDiscounts();
+
+    if (!empId) return;
+
+    setLoading(true);
+    try {
+      const res = await getCorporateEmployeeDetailsForOrder(empId, selectedCorporateId ?? undefined);
+      if (res.found && res.data) {
+        setCustomer({ ...res.data, id: res.data.id } as any);
+        setPhone(res.data.phone || '');
+        setSavedAddresses(res.data.addresses || []);
+        setShowAddrSuggestions(Boolean(res.data.addresses?.length));
+      } else {
+        toast.error('Employee not found');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // --- 2. CUSTOMER CHECK ---
   const handleCheckCustomer = async () => {
+    if (orderType === 'corporate') {
+      return toast.error('Select a corporate employee to load details');
+    }
     if (phone.length !== 10) return toast.error("Enter valid 10-digit phone");
     setLoading(true);
     try {
@@ -193,6 +308,10 @@ export default function AdminCreateOrder() {
         setSearchResults([]);
         return;
       }
+      if (orderType === 'corporate' && !selectedCorporateId) {
+        setSearchResults([]);
+        return;
+      }
       if (!address.pincode || address.pincode.length < 6) {
         // Don't toast error here to avoid spamming, just don't search
         return; 
@@ -201,12 +320,17 @@ export default function AdminCreateOrder() {
       setSearching(true);
       const lockedLabId = cart.length > 0 ? cart[0].labId : undefined;
       
-      const results = await searchAdminTestsAction(query, address.pincode, lockedLabId);
+      const results = await searchAdminTestsAction(
+        query, 
+        address.pincode, 
+        lockedLabId,
+        orderType === 'corporate' ? selectedCorporateId ?? undefined : undefined
+      );
       setSearchResults(results);
       setSearching(false);
     }, 400);
     return () => clearTimeout(timer);
-  }, [query, address.pincode, cart]);
+  }, [query, address.pincode, cart, orderType, selectedCorporateId]);
 
   // --- AGE / DOB HANDLERS ---
   const handleAgeChange = (ageVal: string) => {
@@ -228,16 +352,17 @@ export default function AdminCreateOrder() {
 
   // --- CART HANDLERS ---
   const addToCart = (item: any) => {
+    const normalizedItem = item?.corporateCovered ? { ...item, price: 0 } : item;
     if (cart.some(i => i.id === item.id && i.type === item.type)) {
       return toast.error("Item already in cart");
     }
-    if (cart.length > 0 && cart[0].labId !== item.labId) {
+    if (cart.length > 0 && cart[0].labId !== normalizedItem.labId) {
       return toast.error(`Lab Mismatch! Current cart is from ${cart[0].labName}`);
     }
-    setCart([...cart, item]);
+    setCart([...cart, normalizedItem]);
     // Auto-set home charges
     if (cart.length === 0 && logistics.collectionType === 'home_collection') {
-       setLogistics(prev => ({ ...prev, homeCharges: item.homeCollectionCharges }));
+       setLogistics(prev => ({ ...prev, homeCharges: normalizedItem.homeCollectionCharges }));
     }
     setQuery('');
     setSearchResults([]);
@@ -288,10 +413,15 @@ export default function AdminCreateOrder() {
   const handleSubmit = async () => {
     if (cart.length === 0) return toast.error("Cart is empty");
     if (!customer.name || !address.pincode || !address.line) return toast.error("Missing Customer or Address details");
+    if (orderType === 'corporate') {
+      if (!selectedCorporateId) return toast.error("Select a corporate");
+      if (!selectedEmployeeId || !customer.id) return toast.error("Select a corporate employee");
+    }
 
     setLoading(true);
     const subtotal = cart.reduce((acc, item) => acc + item.price, 0);
     const homeCharges = logistics.collectionType === 'home_collection' ? logistics.homeCharges : 0;
+    const packageItem = cart.length === 1 && cart[0].type === 'package' ? cart[0] : null;
 
     const payload = {
         customerId: customer.id,
@@ -311,7 +441,8 @@ export default function AdminCreateOrder() {
         associateId: associateId.trim() || null,
         urgentOrder,
         ...logistics,
-        instructions: patientNotes || logistics.instructions
+        instructions: patientNotes || logistics.instructions,
+        packageId: packageItem ? packageItem.id : null
     };
 
     const res = await placeAdminOrderAction(payload);
@@ -324,6 +455,15 @@ export default function AdminCreateOrder() {
       toast.error("Failed: " + ('error' in res ? res.error : 'Unknown error'));
     }
   };
+
+  const searchDisabled = address.pincode.length < 6 || (orderType === 'corporate' && !selectedCorporateId);
+  const corporateCoveredItems = cart.filter((item) => item?.corporateCovered);
+  const corporateCoveredCount = corporateCoveredItems.length;
+  const corporateCoveredTotal = corporateCoveredItems.reduce(
+    (acc, item) => acc + Number(item.sellingPrice ?? item.price ?? 0),
+    0
+  );
+  const selectedEmployee = employees.find((e) => e.id === selectedEmployeeId);
 
   // Success Screen
   if (orderSuccessId) {
@@ -369,21 +509,115 @@ export default function AdminCreateOrder() {
       
       {/* LEFT: FORM */}
       <div className="col-span-12 lg:col-span-7 space-y-6 overflow-y-auto pr-2 pb-20">
+
+        {/* Booking Type */}
+        <div className="admin-form-section">
+          <h3 className="admin-form-title mb-4">
+            <Briefcase size={20} className="text-slate-600"/> Booking Type
+          </h3>
+          <div className="flex gap-2 p-1 bg-slate-100 rounded-lg w-fit">
+            <button
+              onClick={() => setOrderType('regular')}
+              className={`px-4 py-2 text-sm font-bold rounded-md ${orderType === 'regular' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
+            >
+              <User size={14} className="inline mr-1" /> Regular
+            </button>
+            <button
+              onClick={() => setOrderType('corporate')}
+              className={`px-4 py-2 text-sm font-bold rounded-md ${orderType === 'corporate' ? 'bg-white shadow text-blue-600' : 'text-slate-500'}`}
+            >
+              <Building2 size={14} className="inline mr-1" /> Corporate
+            </button>
+          </div>
+        </div>
+
+        {orderType === 'corporate' && (
+          <div className="admin-form-section">
+            <h3 className="admin-form-title mb-4">
+              <Building2 size={20} className="text-blue-600"/> Corporate Booking
+            </h3>
+            <div className="admin-form-grid">
+              <div className="col-span-2 sm:col-span-1">
+                <label className="admin-form-label">Corporate</label>
+                <select
+                  className="w-full mt-1 admin-form-input"
+                  value={selectedCorporateId ?? ''}
+                  onChange={e => handleCorporateSelect(e.target.value)}
+                  disabled={corporatesLoading}
+                >
+                  <option value="">{corporatesLoading ? 'Loading...' : 'Select Corporate'}</option>
+                  {corporates.map((corp) => (
+                    <option key={corp.id} value={corp.id}>
+                      {corp.companyName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className="admin-form-label">Search Employee</label>
+                <div className="relative mt-1">
+                  <Search className="absolute left-3 top-3 text-slate-400" size={16} />
+                  <input
+                    className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 focus:border-blue-500 rounded-lg text-sm transition-all outline-none"
+                    placeholder="Name, email, phone, ID"
+                    value={employeeSearch}
+                    onChange={(e) => setEmployeeSearch(e.target.value)}
+                    disabled={!selectedCorporateId}
+                  />
+                </div>
+              </div>
+
+              <div className="col-span-2">
+                <label className="admin-form-label">Employee</label>
+                <select
+                  className="w-full mt-1 admin-form-input"
+                  value={selectedEmployeeId ?? ''}
+                  onChange={e => handleEmployeeSelect(e.target.value)}
+                  disabled={!selectedCorporateId || employeesLoading}
+                >
+                  <option value="">{employeesLoading ? 'Loading...' : 'Select Employee'}</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name} {emp.employeeId ? `(${emp.employeeId})` : emp.email ? `(${emp.email})` : emp.phone ? `(${emp.phone})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedCorporateId && !employeesLoading && employees.length === 0 && (
+                  <p className="text-xs text-slate-500 mt-1">No active employees found for this corporate.</p>
+                )}
+                {selectedEmployee && (
+                  <div className="mt-2 text-xs text-slate-500 flex items-center gap-2">
+                    <Users size={12} />
+                    <span>
+                      {selectedEmployee.department || 'No Department'} â€¢ {selectedEmployee.location || 'No Location'}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Customer */}
         <div className="admin-form-section">
           <h3 className="admin-form-title mb-4">
-            <User size={20} className="text-blue-600"/> Customer Details
+            <User size={20} className="text-blue-600"/> {orderType === 'corporate' ? 'Employee Details' : 'Customer Details'}
           </h3>
           <div className="admin-form-grid">
             <div className="col-span-2 sm:col-span-1">
               <label className="admin-form-label">Phone Number</label>
               <div className="flex gap-2 mt-1">
                 <input className="flex-1 admin-form-input" placeholder="9876543210" maxLength={10} value={phone} onChange={e => setPhone(e.target.value)} />
-                <button onClick={handleCheckCustomer} disabled={loading} className="admin-btn-primary bg-blue-600 px-3">
-                  {loading ? '...' : <Search size={16}/>}
-                </button>
+                {orderType === 'regular' && (
+                  <button onClick={handleCheckCustomer} disabled={loading} className="admin-btn-primary bg-blue-600 px-3">
+                    {loading ? '...' : <Search size={16}/>}
+                  </button>
+                )}
               </div>
+              {orderType === 'corporate' && (
+                <p className="text-[10px] text-slate-500 mt-1">Employee details are loaded from the corporate list.</p>
+              )}
             </div>
             <div className="col-span-2 sm:col-span-1">
               <label className="admin-form-label">Full Name</label>
@@ -504,6 +738,11 @@ export default function AdminCreateOrder() {
           {showPackages && (
             <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-4">
               Use the search box on the right to add tests or packages. Packages are labeled as “Package” in results.
+              {orderType === 'corporate' && (
+                <div className="mt-2 text-xs text-slate-500">
+                  Corporate packages follow the assigned payment terms (corporate pays vs self pay).
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -585,10 +824,16 @@ export default function AdminCreateOrder() {
           <div className="relative">
             <input 
               className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400"
-              placeholder={address.pincode.length < 6 ? "Enter Pincode first" : "Search tests or packages..."}
+              placeholder={
+                orderType === 'corporate' && !selectedCorporateId
+                  ? "Select corporate first"
+                  : address.pincode.length < 6
+                    ? "Enter Pincode first"
+                    : "Search tests or packages..."
+              }
               value={query}
               onChange={e => setQuery(e.target.value)}
-              disabled={address.pincode.length < 6}
+              disabled={searchDisabled}
             />
             <Search className="absolute left-3 top-3.5 text-slate-400" size={20}/>
             
@@ -609,10 +854,26 @@ export default function AdminCreateOrder() {
                           <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
                             {item.type}
                           </span>
+                          {item.paymentType && (
+                            <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${item.paymentType === 'CORPORATE_PAYS' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                              {item.paymentType === 'CORPORATE_PAYS' ? 'Corporate Pays' : 'Self Pay'}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="admin-table-row-primary text-emerald-600">₹{item.price}</div>
+                        {item.corporateCovered ? (
+                          <>
+                            <div className="admin-table-row-primary text-emerald-600">₹0</div>
+                            <div className="text-[10px] text-slate-400 line-through">
+                              ₹{Number(item.sellingPrice ?? item.price).toFixed(2)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="admin-table-row-primary text-emerald-600">
+                            ₹{Number(item.price).toFixed(2)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -636,10 +897,26 @@ export default function AdminCreateOrder() {
                <div key={i} className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-100">
                   <div>
                      <p className="admin-table-row-primary">{item.name}</p>
-                     <p className="admin-table-row-secondary">{item.labName}</p>
+                     <p className="admin-table-row-secondary">
+                     {item.labName}
+                     {item.paymentType && (
+                       <span className={`ml-2 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${item.paymentType === 'CORPORATE_PAYS' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                         {item.paymentType === 'CORPORATE_PAYS' ? 'Corporate Pays' : 'Self Pay'}
+                       </span>
+                     )}
+                  </p>
                   </div>
                   <div className="flex items-center gap-3">
-                     <span className="admin-table-row-primary">₹{item.price}</span>
+                     {item.corporateCovered ? (
+                       <div className="text-right">
+                         <div className="admin-table-row-primary text-emerald-600">₹0</div>
+                         <div className="text-[10px] text-slate-400 line-through">
+                           ₹{Number(item.sellingPrice ?? item.price).toFixed(2)}
+                         </div>
+                       </div>
+                     ) : (
+                       <span className="admin-table-row-primary">₹{Number(item.price).toFixed(2)}</span>
+                     )}
                      <button onClick={() => removeFromCart(i)} className="admin-btn-danger p-1 rounded"><Trash2 size={16}/></button>
                   </div>
                </div>
@@ -693,6 +970,14 @@ export default function AdminCreateOrder() {
               <span>Subtotal</span>
               <span>₹{cart.reduce((acc, i) => acc + i.price, 0).toFixed(2)}</span>
             </div>
+
+
+              {corporateCoveredCount > 0 && (
+                <div className="flex justify-between text-sm text-emerald-600">
+                  <span>Corporate Coverage ({corporateCoveredCount} item{corporateCoveredCount > 1 ? 's' : ''})</span>
+                  <span>-₹{corporateCoveredTotal.toFixed(2)}</span>
+                </div>
+              )}
             
             {logistics.collectionType === 'home_collection' && (
               <div className="flex justify-between text-sm text-slate-500">
@@ -717,7 +1002,15 @@ export default function AdminCreateOrder() {
               ).toFixed(2)}</span>
             </div>
           </div>
+
            
+
+           {corporateCoveredCount > 0 && (
+             <p className="text-xs text-slate-500 mb-2">
+               Corporate covered items will be billed to the corporate account.
+             </p>
+           )}
+
            <button onClick={handleSubmit} disabled={loading} className="admin-btn-primary w-full py-3">
               {loading ? 'Processing...' : 'Confirm Order'}
            </button>
