@@ -49,7 +49,7 @@ export default function AdminLoginPage() {
             <label className="admin-form-label text-slate-400">Email or Phone</label>
             <input 
               type="text" 
-              className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
+              className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400"
               placeholder="admin@company.com"
               value={form.username}
               onChange={e => setForm({...form, username: e.target.value})}
@@ -61,7 +61,7 @@ export default function AdminLoginPage() {
             <div className="relative">
               <input 
                 type="password" 
-                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400"
               placeholder="••••••••"
               value={form.password}
               onChange={e => setForm({...form, password: e.target.value})}

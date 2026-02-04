@@ -18,10 +18,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [admin, setAdmin] = useState<{ name: string; role: string } | null>(null);
-
-  if (pathname === '/admin/login' || pathname === '/admin/register') return <>{children}</>;
+  const isAuthPage = pathname === '/admin/login' || pathname === '/admin/register';
 
   useEffect(() => {
+    if (isAuthPage) return;
     const fetchAdmin = async () => {
       try {
         const res = await fetch('/api/admin/auth/me');
@@ -31,7 +31,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       } catch {}
     };
     fetchAdmin();
-  }, []);
+  }, [isAuthPage]);
+
+  if (isAuthPage) return <>{children}</>;
 
   const handleLogout = async () => {
     try {

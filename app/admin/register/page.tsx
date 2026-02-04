@@ -144,7 +144,7 @@ export default function AdminRegisterPage() {
             <label className="admin-form-label text-slate-400">Full Name</label>
             <input
               type="text"
-              className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
+              className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400"
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               placeholder="Admin Name"
@@ -156,7 +156,7 @@ export default function AdminRegisterPage() {
             <div className="relative">
               <input
                 type="email"
-                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400 pl-10"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400 pl-10"
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 placeholder="admin@company.com"
@@ -170,7 +170,7 @@ export default function AdminRegisterPage() {
             <div className="relative">
               <input
                 type="tel"
-                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400 pl-10"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400 pl-10"
                 value={form.phone}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 placeholder="+91 9876543210"
@@ -184,7 +184,7 @@ export default function AdminRegisterPage() {
             <div className="relative">
               <input
                 type="password"
-                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400 pl-10"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400 pl-10"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="Minimum 8 characters"
@@ -198,7 +198,7 @@ export default function AdminRegisterPage() {
             <div className="relative">
               <input
                 type="password"
-                className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400 pl-10"
+                className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400 pl-10"
                 value={form.confirm}
                 onChange={(e) => setForm({ ...form, confirm: e.target.value })}
                 placeholder="Repeat password"
@@ -212,7 +212,7 @@ export default function AdminRegisterPage() {
             <input
               type="text"
               maxLength={6}
-              className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
+              className="admin-form-input bg-slate-900/50 border border-slate-700 !text-slate-100 placeholder:text-slate-400"
               value={form.otp}
               onChange={(e) => setForm({ ...form, otp: e.target.value })}
               placeholder="6-digit OTP"

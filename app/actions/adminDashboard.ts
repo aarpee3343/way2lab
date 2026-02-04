@@ -34,40 +34,44 @@ export async function getAdminDashboardStats() {
 
   /* ---------------- STATS ---------------- */
 
-  const [
-    totalOrders,
-    todayOrders,
-    pendingOrders,
-    completedOrders
-  ] = await Promise.all([
-    prisma.order.count(),
+  let totalOrders = 0;
+  let todayOrders = 0;
+  let pendingOrders = 0;
+  let completedOrders = 0;
 
-    prisma.order.count({
-      where: {
-        createdAt: {
-          gte: new Date(new Date().setHours(0, 0, 0, 0))
+  try {
+    [totalOrders, todayOrders, pendingOrders, completedOrders] = await Promise.all([
+      prisma.order.count(),
+
+      prisma.order.count({
+        where: {
+          createdAt: {
+            gte: new Date(new Date().setHours(0, 0, 0, 0))
+          }
         }
-      }
-    }),
+      }),
 
-    prisma.order.count({
-      where: {
-        status: {
-          in: [
-            OrderStatus.PENDING,
-            OrderStatus.PROCESSING,
-            OrderStatus.PARTIAL_COMPLETED
-          ]
+      prisma.order.count({
+        where: {
+          status: {
+            in: [
+              OrderStatus.PENDING,
+              OrderStatus.PROCESSING,
+              OrderStatus.PARTIAL_COMPLETED
+            ]
+          }
         }
-      }
-    }),
+      }),
 
-    prisma.order.count({
-      where: {
-        status: OrderStatus.COMPLETED
-      }
-    })
-  ]);
+      prisma.order.count({
+        where: {
+          status: OrderStatus.COMPLETED
+        }
+      })
+    ]);
+  } catch (err) {
+    console.error('Dashboard stats query failed:', err);
+  }
 
   /* ---------------- FINAL SHAPE ---------------- */
 
