@@ -14,6 +14,28 @@ export async function GET(req: Request) {
   }
 
   try {
+    const corporateId = user.corporateId ?? null;
+    const corporateServices = corporateId
+      ? await prisma.corporateService.findMany({
+          where: { corporateId, isActive: true },
+          select: {
+            packageId: true,
+            couponId: true,
+            reportVisibilityOverride: true,
+            package: { select: { isPreEmployment: true, reportVisibility: true } }
+          }
+        })
+      : [];
+
+    const policyByPackageId = new Map<number, 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH'>();
+    corporateServices.forEach((s) => {
+      if (!s.packageId) return;
+      const policy = s.package?.isPreEmployment
+        ? 'CORPORATE_ONLY'
+        : (s.reportVisibilityOverride || s.package?.reportVisibility || 'USER_ONLY');
+      policyByPackageId.set(s.packageId, policy as any);
+    });
+
     const reports = await prisma.order.findMany({
       where: {
         userId: user.id,
@@ -24,14 +46,11 @@ export async function GET(req: Request) {
           some: {} 
         },
 
-        // ✅ 2. Your Existing Rule: Exclude Pre-Employment Checkup orders
-        items: {
-          none: {
-            package: {
-              category: 'Pre-Employment Checkup'
-            }
-          }
-        }
+        // ✅ 2. Exclude pre-employment packages (users should not see them)
+        OR: [
+          { packageId: null },
+          { package: { isPreEmployment: false } }
+        ]
       },
       // ✅ 3. Select specific fields (No prices, just names/details)
       select: {
@@ -39,6 +58,8 @@ export async function GET(req: Request) {
         orderNumber: true,
         status: true, // Needed for the 'Partial' vs 'Completed' badge logic
         createdAt: true,
+        packageId: true,
+        isReportSharedWithCorp: true,
 
         // Patient Snapshot
         patientName: true,
@@ -53,6 +74,10 @@ export async function GET(req: Request) {
             labName: true,
             address: true 
           }
+        },
+
+        package: {
+          select: { isPreEmployment: true, reportVisibility: true }
         },
 
         // Items: Name only (No Price)
@@ -77,7 +102,25 @@ export async function GET(req: Request) {
       }
     });
 
-    return NextResponse.json(reports);
+    const enriched = reports.map((order) => {
+      let policy: 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH' = 'USER_ONLY';
+      if (order.package?.isPreEmployment) {
+        policy = 'CORPORATE_ONLY';
+      } else if (order.packageId) {
+        policy =
+          policyByPackageId.get(order.packageId) ||
+          order.package?.reportVisibility ||
+          'USER_ONLY';
+      }
+      const canShare = Boolean(corporateId) && policy === 'USER_ONLY';
+      return {
+        ...order,
+        sharePolicy: policy,
+        canShare
+      };
+    });
+
+    return NextResponse.json(enriched);
   } catch (error) {
     console.error('Fetch Reports Error:', error);
     return NextResponse.json(

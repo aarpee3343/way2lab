@@ -211,16 +211,29 @@ export async function getTestById(id: number) {
 export async function updateTestAction(id: number, data: any) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const baseSlug = String(data.slug || '').trim();
+    const slug = baseSlug
+      ? baseSlug
+      : String(data.testName || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)+/g, '');
+
     await prisma.test.update({
       where: { id },
       data: {
         testName: data.testName,
+        slug: slug || null,
         category: data.category,
         specialty: data.specialty,
         description: data.description,
+        preparation: data.preparation,
+        specialInstruction: data.specialInstruction,
+        scheduleReporting: data.scheduleReporting,
         price: data.price,
         discount: data.discount,
-        isActive: data.isActive
+        showOnHomepage: Boolean(data.showOnHomepage),
+        isActive: Boolean(data.isActive)
       }
     });
     return { success: true };

@@ -24,11 +24,14 @@ interface ReportItem {
   orderNumber: string;
   status: string; // 'COMPLETED' | 'PARTIAL_COMPLETED' etc.
   createdAt: string;
+  packageId?: number | null;
   patientName: string;
   patientGender: string;
   patientDob: string | null;
   patientRelation: string;
   patientUHID: string | null;
+  isReportSharedWithCorp?: boolean;
+  canShare?: boolean;
   lab: {
     labName: string;
     address: string;
@@ -41,6 +44,7 @@ interface ReportItem {
     id: number;
     createdAt: string;
   }[];
+  sharePolicy?: 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH';
 }
 
 export default function ReportsPage() {
@@ -48,6 +52,7 @@ export default function ReportsPage() {
   const [filteredReports, setFilteredReports] = useState<ReportItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [sharingId, setSharingId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -102,6 +107,24 @@ export default function ReportsPage() {
       toast.error('Download failed. Please try again.');
     } finally {
       setDownloadingId(null);
+    }
+  };
+
+  const handleShareToggle = async (orderId: number, share: boolean) => {
+    setSharingId(orderId);
+    try {
+      await axios.patch('/api/user/reports/share', { orderId, share });
+      setReports(prev =>
+        prev.map(r => (r.id === orderId ? { ...r, isReportSharedWithCorp: share } : r))
+      );
+      setFilteredReports(prev =>
+        prev.map(r => (r.id === orderId ? { ...r, isReportSharedWithCorp: share } : r))
+      );
+      toast.success(share ? 'Shared with corporate' : 'Unshared from corporate');
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to update sharing');
+    } finally {
+      setSharingId(null);
     }
   };
 
@@ -237,6 +260,24 @@ export default function ReportsPage() {
                     <div className="w-full h-11 bg-slate-100 text-slate-400 rounded-xl font-medium text-sm flex items-center justify-center gap-2 cursor-not-allowed">
                       <AlertCircle size={16} /> Processing
                     </div>
+                  )}
+
+                  {order.canShare && (
+                    <button
+                      onClick={() => handleShareToggle(order.id, !order.isReportSharedWithCorp)}
+                      disabled={sharingId === order.id}
+                      className={`w-full h-10 mt-3 rounded-xl font-medium text-sm border transition-all ${
+                        order.isReportSharedWithCorp
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                      }`}
+                    >
+                      {sharingId === order.id
+                        ? 'Updating...'
+                        : order.isReportSharedWithCorp
+                          ? 'Shared with Corporate'
+                          : 'Share with Corporate'}
+                    </button>
                   )}
 
                   <p className="text-[10px] text-center text-slate-400 mt-2 flex items-center justify-center gap-1">

@@ -244,6 +244,7 @@ model Package {
   corporateId         Int?                @map("corporate_id")
   isCorporate         Boolean             @default(false) @map("is_corporate")
   isPreEmployment     Boolean             @default(false) @map("is_pre_employment")
+  reportVisibility    ReportVisibility    @default(USER_ONLY) @map("report_visibility")
   paymentType         PaymentType?        @default(USER_PAYS) @map("payment_type")
   showOnHomepage      Boolean             @default(false) @map("show_on_homepage")
   tag                 String?
@@ -511,6 +512,7 @@ model OnsiteCamp {
   expectedHeadcount Int?                @map("expected_headcount")
   startedAt         DateTime?           @map("started_at")
   endedAt           DateTime?           @map("ended_at")
+  labName           String?             @map("lab_name")
   createdAt         DateTime            @default(now()) @map("created_at")
   createdByAdminId  Int?                @map("created_by_admin_id")
   packages          OnsiteCampPackage[]
@@ -576,6 +578,7 @@ model CorporateService {
   familyPaymentType PaymentType @default(USER_PAYS) @map("family_payment_type")
   selfUsageLimit    Int         @default(1) @map("self_usage_limit")
   familyUsageLimit  Int         @default(0) @map("family_usage_limit")
+  reportVisibilityOverride ReportVisibility? @map("report_visibility_override")
   isActive          Boolean     @default(true) @map("is_active")
   createdAt         DateTime    @default(now()) @map("created_at")
   corporate         Corporate   @relation(fields: [corporateId], references: [id], onDelete: Cascade)
@@ -708,6 +711,12 @@ model Pincode {
 enum DiscountType {
   PERCENTAGE
   FIXED
+}
+
+enum ReportVisibility {
+  USER_ONLY
+  CORPORATE_ONLY
+  BOTH
 }
 
 enum PaymentType {

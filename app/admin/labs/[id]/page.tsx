@@ -105,6 +105,8 @@ export default function EditLabPage() {
           const existing = lab.tests.find(lt => lt.id === t.id);
           return {
             ...t,
+            basePrice: Number(t.price) || 0,
+            baseDiscount: Number(t.discount) || 0,
             selected: !!existing,
             price: existing?.price ?? 0,
             discount: existing?.discount ?? 0,
@@ -154,6 +156,39 @@ export default function EditLabPage() {
       [type]: prev[type].map((item: any) =>
         item.id === id ? { ...item, [field]: val } : item
       ),
+    }));
+  };
+
+  const setAllTestsSelected = (selected: boolean) => {
+    setForm((prev: any) => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => ({ ...t, selected }))
+    }));
+  };
+
+  const applyBasePricingToTests = (onlySelected: boolean) => {
+    setForm((prev: any) => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => {
+        if (onlySelected && !t.selected) return t;
+        return {
+          ...t,
+          price: Number(t.basePrice) || 0,
+          discount: Number(t.baseDiscount) || 0
+        };
+      })
+    }));
+  };
+
+  const selectAllAndUseBasePricing = () => {
+    setForm((prev: any) => ({
+      ...prev,
+      tests: prev.tests.map((t: any) => ({
+        ...t,
+        selected: true,
+        price: Number(t.basePrice) || 0,
+        discount: Number(t.baseDiscount) || 0
+      }))
     }));
   };
 
@@ -586,7 +621,7 @@ export default function EditLabPage() {
               </div>
 
               <div className="admin-table-container">
-                <div className="admin-table-toolbar">
+                <div className="admin-table-toolbar flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                   <div className="admin-search-container">
                     <Search className="admin-search-icon" size={18} />
                     <input
@@ -596,6 +631,38 @@ export default function EditLabPage() {
                       placeholder={`Search ${step === 3 ? 'packages' : 'tests'}...`}
                     />
                   </div>
+                  {step === 4 && (
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAllTestsSelected(true)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Select All
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAllTestsSelected(false)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Clear Selection
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => applyBasePricingToTests(true)}
+                        className="admin-btn-secondary text-xs"
+                      >
+                        Use Base Price and Discount
+                      </button>
+                      <button
+                        type="button"
+                        onClick={selectAllAndUseBasePricing}
+                        className="admin-btn-primary text-xs"
+                      >
+                        Select All and Apply Base
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="admin-table-wrapper admin-scrollbar">

@@ -55,6 +55,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
   
   // Reschedule State
   const [open, setOpen] = useState(false);
@@ -114,6 +115,20 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
       fetchOrder();
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'Cancel failed');
+    }
+  };
+
+  const handleShareToggle = async (share: boolean) => {
+    if (!order) return;
+    setSharing(true);
+    try {
+      await axios.patch('/api/user/reports/share', { orderId: order.id, share });
+      toast.success(share ? 'Shared with corporate' : 'Unshared from corporate');
+      setOrder((prev: any) => ({ ...prev, isReportSharedWithCorp: share }));
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to update sharing');
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -213,8 +228,8 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         </Card>
 
         {/* 4. AI REPORT SUMMARY */}
-        {/* Only show if Report is generated */}
-        {(order.reportSummary || order.reports?.length > 0) && (
+        {/* Only show if Report is generated and not pre-employment */}
+        {!order.package?.isPreEmployment && (order.reportSummary || order.reports?.length > 0) && (
           <Card title="Report Summary" icon={<Activity className="text-indigo-600" />}>
             {order.reportSummary ? (
               <>
@@ -236,20 +251,46 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         )}
 
         {/* 5. DOWNLOAD REPORTS */}
-        <Card title="Download Reports" icon={<FileText />}>
-          {order.reports?.length > 0 ? (
-            <div className="space-y-2">
-              {order.reports.map((r: any) => (
-                <a key={r.id} href={`/api/reports/${r.id}`} target="_blank" className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors group">
-                  <span className="text-sm font-medium text-blue-700">{r.reportType || 'Lab Report'}</span>
-                  <FileDown size={18} className="text-blue-500 group-hover:scale-110 transition-transform" />
-                </a>
-              ))}
-            </div>
-          ) : (
-            <p className="text-sm text-slate-500">Reports will appear here once uploaded by the lab.</p>
-          )}
-        </Card>
+        {!order.package?.isPreEmployment ? (
+          <Card title="Download Reports" icon={<FileText />}>
+            {order.reports?.length > 0 ? (
+              <div className="space-y-2">
+                {order.reports.map((r: any) => (
+                  <a key={r.id} href={`/api/reports/${r.id}`} target="_blank" className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors group">
+                    <span className="text-sm font-medium text-blue-700">{r.reportType || 'Lab Report'}</span>
+                    <FileDown size={18} className="text-blue-500 group-hover:scale-110 transition-transform" />
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500">Reports will appear here once uploaded by the lab.</p>
+            )}
+
+            {order.reports?.length > 0 && order.canShare && (
+              <button
+                onClick={() => handleShareToggle(!order.isReportSharedWithCorp)}
+                disabled={sharing}
+                className={`mt-4 w-full h-11 rounded-xl font-bold text-sm border transition-all ${
+                  order.isReportSharedWithCorp
+                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
+                    : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {sharing
+                  ? 'Updating...'
+                  : order.isReportSharedWithCorp
+                    ? 'Shared with Corporate'
+                    : 'Share with Corporate'}
+              </button>
+            )}
+          </Card>
+        ) : (
+          <Card title="Download Reports" icon={<FileText />}>
+            <p className="text-sm text-slate-500">
+              Pre-employment reports are shared directly with your corporate team.
+            </p>
+          </Card>
+        )}
 
         {/* 6. LAB DETAILS */}
         {order.lab && (

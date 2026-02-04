@@ -35,6 +35,8 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
   // Form States
   const [packageData, setPackageData] = useState<any>(null);
   const [isCorporate, setIsCorporate] = useState(false);
+  const [isPreEmployment, setIsPreEmployment] = useState(false);
+  const [reportVisibility, setReportVisibility] = useState<'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH'>('USER_ONLY');
   const [basePrice, setBasePrice] = useState(0);
   const [discount, setDiscount] = useState(0);
 
@@ -61,6 +63,8 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
         setSelectedTestIds(pkg.testIds); // [1, 5, 10]
         setBasePrice(pkg.price);
         setDiscount(pkg.discount);
+        setIsPreEmployment(Boolean(pkg.isPreEmployment));
+        setReportVisibility((pkg.reportVisibility as any) || 'USER_ONLY');
         
         // Logic to determine if "Corporate Toggle" should be on
         if (pkg.category && pkg.category !== 'ANNUAL') {
@@ -75,6 +79,12 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
     };
     init();
   }, [packageId, router]);
+
+  useEffect(() => {
+    if (isPreEmployment) {
+      setReportVisibility('CORPORATE_ONLY');
+    }
+  }, [isPreEmployment]);
 
 
   // --- 2. HANDLERS ---
@@ -196,7 +206,8 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
                       <input
                         type="checkbox"
                         name="isPreEmployment"
-                        defaultChecked={Boolean(packageData.isPreEmployment)}
+                        checked={isPreEmployment}
+                        onChange={(e) => setIsPreEmployment(e.target.checked)}
                       />
                       <span>Pre-Employment</span>
                     </div>
@@ -214,6 +225,29 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
                       <option value="EXECUTIVE">Executive Health Check</option>
                       <option value="BLUE_COLLAR">Blue-Collar Package</option>
                     </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="admin-form-label">Report Visibility</label>
+                    {isPreEmployment && (
+                      <input type="hidden" name="reportVisibility" value="CORPORATE_ONLY" />
+                    )}
+                    <select
+                      name="reportVisibility"
+                      className="admin-form-select"
+                      value={isPreEmployment ? 'CORPORATE_ONLY' : reportVisibility}
+                      onChange={(e) => setReportVisibility(e.target.value as any)}
+                      disabled={isPreEmployment}
+                    >
+                      <option value="USER_ONLY">User Only (Share Optional)</option>
+                      <option value="CORPORATE_ONLY">Corporate Only</option>
+                      <option value="BOTH">Both User & Corporate</option>
+                    </select>
+                    {isPreEmployment && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        Pre-employment reports are always corporate-only.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

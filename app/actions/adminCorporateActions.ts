@@ -492,6 +492,7 @@ export async function assignCorporateService(data: {
   familyPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
   selfLimit: number;
   familyLimit: number;
+  reportVisibilityOverride?: 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH' | null;
 }) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
@@ -521,6 +522,7 @@ export async function assignCorporateService(data: {
         familyPaymentType: data.familyPaymentType,
         selfUsageLimit: Number(data.selfLimit),
         familyUsageLimit: Number(data.familyLimit),
+        reportVisibilityOverride: data.reportVisibilityOverride || null,
         isActive: true
       }
     });

@@ -17,6 +17,15 @@ import {
 import Link from 'next/link';
 import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
+import {
+  Section,
+  InputField,
+  TextareaField,
+  SelectField,
+  CheckboxField,
+  TEST_CATEGORIES,
+  TEST_SPECIALTIES
+} from '@/components/admin/tests/TestFormFields';
 
 export default function AddTestPage() {
   const [loading, setLoading] = useState(false);
@@ -141,8 +150,8 @@ export default function AddTestPage() {
           <div className="admin-form-grid">
             <InputField name="test_name" label="Test Name *" required />
             <InputField name="slug" label="Slug" />
-            <SelectField name="category" label="Category *" options={['Allergy and Immunology', 'Cancer Markers', 'Cardiac and Diabetes', 'Genetic and Wellness', 'Hormonal and Endocrine', 'Infectious Dieseas', 'Routine Tests', 'Specialised Tests', 'Others']} />
-            <SelectField name="specialty" label="Specialty *" options={['Pathology', 'Radiology', 'Cardiology', 'Nuclear Imaging', 'Others']} />
+            <SelectField name="category" label="Category *" options={TEST_CATEGORIES} />
+            <SelectField name="specialty" label="Specialty *" options={TEST_SPECIALTIES} />
             <div className="col-span-2">
               <TextareaField name="description" label="Short Description *" />
             </div>
@@ -181,64 +190,5 @@ export default function AddTestPage() {
         </button>
       </form>
     </div>
-  );
-}
-
-/* ---------------- UI COMPONENTS ---------------- */
-
-function Section({ title, icon, children }: any) {
-  return (
-    <div className="admin-form-section">
-      <h3 className="admin-form-title">
-        {icon} {title}
-      </h3>
-      {children}
-    </div>
-  );
-}
-
-function InputField({ label, icon, ...props }: any) {
-  return (
-    <div>
-      <label className="admin-form-label">{label}</label>
-      <div className="relative">
-        {icon && <span className="absolute left-3 top-3">{icon}</span>}
-        <input {...props} className="admin-form-input" />
-      </div>
-    </div>
-  );
-}
-
-function TextareaField({ label, ...props }: any) {
-  return (
-    <div>
-      <label className="admin-form-label">{label}</label>
-      <textarea {...props} className="admin-form-textarea" />
-    </div>
-  );
-}
-
-function SelectField({ label, options, ...props }: any) {
-  return (
-    <div>
-      <label className="admin-form-label">{label}</label>
-      <select {...props} className="admin-form-select">
-        <option value="">Select</option>
-        {options.map((o: string) => (
-          <option key={o} value={o}>
-            {o}
-          </option>
-        ))}
-      </select>
-    </div>
-  );
-}
-
-function CheckboxField({ label, ...props }: any) {
-  return (
-    <label className="admin-form-checkbox">
-      <input type="checkbox" {...props} />
-      <span>{label}</span>
-    </label>
   );
 }

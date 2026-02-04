@@ -124,7 +124,7 @@ export default function AdminRegisterPage() {
           </div>
           <h1 className="text-2xl font-bold text-white">Register Admin</h1>
           <p className="text-slate-400 text-sm">
-            OTP verification is required. Code is sent to {ADMIN_OTP_PHONE}.
+            OTP verification is required.
           </p>
         </div>
 

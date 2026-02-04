@@ -37,6 +37,61 @@ const buildEmployeeWhere = (session: CorpSession) => {
 const canEdit = (session: CorpSession | null) =>
   Boolean(session && (session.role === 'SUPER_ADMIN' || session.canEdit));
 
+type ReportVisibility = 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH';
+
+const resolveReportVisibility = (service: {
+  reportVisibilityOverride?: ReportVisibility | null;
+  package?: { isPreEmployment?: boolean | null; reportVisibility?: ReportVisibility | null } | null;
+}): ReportVisibility => {
+  if (service.package?.isPreEmployment) return 'CORPORATE_ONLY';
+  if (service.reportVisibilityOverride) return service.reportVisibilityOverride;
+  if (service.package?.reportVisibility) return service.package.reportVisibility;
+  return 'USER_ONLY';
+};
+
+const buildCorporateReportVisibilityFilter = (
+  services: any[],
+  options?: { includePreEmployment?: boolean; excludePreEmploymentPackages?: boolean }
+) => {
+  const corporatePackageIds: number[] = [];
+  const corporateCouponIds: number[] = [];
+  const sharedPackageIds: number[] = [];
+  const sharedCouponIds: number[] = [];
+
+  services.forEach((s) => {
+    if (options?.excludePreEmploymentPackages && s.package?.isPreEmployment) return;
+    const policy = resolveReportVisibility(s);
+    if (policy === 'CORPORATE_ONLY' || policy === 'BOTH') {
+      if (s.packageId) corporatePackageIds.push(s.packageId);
+      if (s.couponId) corporateCouponIds.push(s.couponId);
+    } else {
+      if (s.packageId) sharedPackageIds.push(s.packageId);
+      if (s.couponId) sharedCouponIds.push(s.couponId);
+    }
+  });
+
+  const orConditions: any[] = [];
+  if (options?.includePreEmployment !== false) {
+    orConditions.push({ package: { isPreEmployment: true } });
+  }
+
+  if (corporatePackageIds.length) {
+    orConditions.push({ packageId: { in: corporatePackageIds } });
+  }
+  if (corporateCouponIds.length) {
+    orConditions.push({ couponId: { in: corporateCouponIds } });
+  }
+
+  const sharedOr: any[] = [];
+  if (sharedPackageIds.length) sharedOr.push({ packageId: { in: sharedPackageIds } });
+  if (sharedCouponIds.length) sharedOr.push({ couponId: { in: sharedCouponIds } });
+  if (sharedOr.length) {
+    orConditions.push({ isReportSharedWithCorp: true, OR: sharedOr });
+  }
+
+  return { OR: orConditions };
+};
+
 const logActivity = async (
   corporateId: number,
   performedBy: string,
@@ -164,13 +219,6 @@ export async function getCorporateOverview(filter?: {
   if (filter?.department) employeeWhere.department = filter.department;
   if (filter?.location) employeeWhere.location = filter.location;
   const orderBaseWhere = { customer: employeeWhere };
-  const visibleOrderWhere: any = {
-    ...orderBaseWhere,
-    OR: [
-      { package: { isPreEmployment: true } },
-      { isReportSharedWithCorp: true }
-    ]
-  };
 
   const [
     totalEmployees,
@@ -178,7 +226,6 @@ export async function getCorporateOverview(filter?: {
     totalOrders,
     completedOrders,
     pendingOrders,
-    reportsReady,
     services,
     departmentRows,
     locationRows,
@@ -194,15 +241,10 @@ export async function getCorporateOverview(filter?: {
         status: { in: ['PENDING', 'ACCEPTED', 'PROCESSING', 'PARTIAL_COMPLETED'] }
       }
     }),
-    prisma.orderReport.count({
-      where: {
-        order: { ...visibleOrderWhere, status: 'COMPLETED' }
-      }
-    }),
     prisma.corporateService.findMany({
       where: { corporateId: session.corporateId, isActive: true },
       include: {
-        package: { select: { id: true, packageName: true, price: true } },
+        package: { select: { id: true, packageName: true, price: true, isPreEmployment: true, reportVisibility: true } },
         coupon: { select: { id: true, code: true } }
         },
         orderBy: { createdAt: 'desc' },
@@ -243,24 +285,74 @@ export async function getCorporateOverview(filter?: {
 
   const serviceStats = await Promise.all(
     services.map(async (s) => {
-      const usedCount = await prisma.order.count({
-        where: {
-          ...orderBaseWhere,
-          ...(s.packageId ? { packageId: s.packageId } : {}),
-          ...(s.couponId ? { couponId: s.couponId } : {})
-        }
-      });
+      const usageWhere: any = {
+        ...orderBaseWhere,
+        status: { notIn: ['CANCELLED', 'REJECTED'] },
+        ...(s.packageId ? { packageId: s.packageId } : {}),
+        ...(s.couponId ? { couponId: s.couponId } : {})
+      };
+
+      const [usedCount, availedEmployees, recentOrders] = await Promise.all([
+        prisma.order.count({ where: usageWhere }),
+        prisma.order.count({ where: usageWhere, distinct: ['userId'] }),
+        prisma.order.findMany({
+          where: usageWhere,
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            orderNumber: true,
+            createdAt: true,
+            customer: { select: { id: true, name: true, employeeId: true } }
+          }
+        })
+      ]);
+
+      const seen = new Set<number>();
+      const availedBy = recentOrders
+        .map((o) => o.customer)
+        .filter((c): c is { id: number; name: string | null; employeeId: string | null } => Boolean(c))
+        .filter((c) => {
+          if (seen.has(c.id)) return false;
+          seen.add(c.id);
+          return true;
+        })
+        .map((c) => ({
+          id: c.id,
+          name: c.name || 'Employee',
+          employeeId: c.employeeId || null
+        }));
+
+      const limitPerEmployee = Number(s.selfUsageLimit || 0);
+      const totalQuota = limitPerEmployee > 0 ? totalEmployees * limitPerEmployee : null;
+      const remaining = totalQuota !== null ? Math.max(totalQuota - usedCount, 0) : null;
 
       return {
         id: s.id,
         name: s.package?.packageName || `Coupon: ${s.coupon?.code}`,
         eligibility: totalEmployees,
         availed: usedCount,
+        availedEmployees,
+        remaining,
+        limitPerEmployee,
+        availedBy,
         validFrom: s.validFrom.toISOString(),
         validTill: s.validTill.toISOString()
       };
     })
   );
+
+  const visibilityFilter = buildCorporateReportVisibilityFilter(services);
+  const visibleOrderWhere: any = {
+    ...orderBaseWhere,
+    ...visibilityFilter
+  };
+
+  const reportsReady = await prisma.orderReport.count({
+    where: {
+      order: { ...visibleOrderWhere, status: 'COMPLETED' }
+    }
+  });
 
   const recentReports = await prisma.orderReport.findMany({
     where: {
@@ -489,22 +581,22 @@ export async function getCorporateReports(filter?: {
     status: 'COMPLETED'
   };
 
-  let visibilityFilter: any = {
-    OR: [
-      { package: { isPreEmployment: true } },
-      { isReportSharedWithCorp: true }
-    ]
-  };
+  const services = await prisma.corporateService.findMany({
+    where: { corporateId: session.corporateId, isActive: true },
+    include: { package: { select: { isPreEmployment: true, reportVisibility: true } } }
+  });
+
+  let visibilityFilter: any = buildCorporateReportVisibilityFilter(services);
 
   if (filter?.type === 'PRE_EMPLOYMENT') {
     visibilityFilter = { package: { isPreEmployment: true } };
   } else if (filter?.type === 'SHARED_BY_EMPLOYEE') {
-    visibilityFilter = { isReportSharedWithCorp: true };
+    visibilityFilter = { isReportSharedWithCorp: true, package: { isPreEmployment: false } };
   } else if (filter?.type === 'ANNUAL_CHECKUP') {
-    visibilityFilter = {
-      isReportSharedWithCorp: true,
-      package: { isPreEmployment: false }
-    };
+    visibilityFilter = buildCorporateReportVisibilityFilter(services, {
+      includePreEmployment: false,
+      excludePreEmploymentPackages: true
+    });
   }
 
   const searchFilter = filter?.search

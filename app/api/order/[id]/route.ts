@@ -44,6 +44,11 @@ export async function GET(
       reports: true,
       reportSummary: true,
 
+      // 4.5 Package (for report sharing rules)
+      package: {
+        select: { isPreEmployment: true, reportVisibility: true }
+      },
+
       // 5. Others
       address: true,
       customer: true,
@@ -69,8 +74,29 @@ export async function GET(
     if (!order) return NextResponse.json({ message: "Order not found" }, { status: 404 });
     if (order.userId !== user.id) return NextResponse.json({ message: "Forbidden" }, { status: 403 });
 
+    let sharePolicy: 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH' =
+      order.package?.reportVisibility || 'USER_ONLY';
+    if (order.package?.isPreEmployment) {
+      sharePolicy = 'CORPORATE_ONLY';
+    }
+    if (user.corporateId && order.packageId) {
+      const service = await prisma.corporateService.findFirst({
+        where: { corporateId: user.corporateId, isActive: true, packageId: order.packageId },
+        select: { reportVisibilityOverride: true, package: { select: { isPreEmployment: true, reportVisibility: true } } }
+      });
+      if (service?.package?.isPreEmployment) {
+        sharePolicy = 'CORPORATE_ONLY';
+      } else if (service?.reportVisibilityOverride) {
+        sharePolicy = service.reportVisibilityOverride as any;
+      } else if (service?.package?.reportVisibility) {
+        sharePolicy = service.package.reportVisibility as any;
+      }
+    }
+
+    const canShare = Boolean(user.corporateId) && !order.package?.isPreEmployment && sharePolicy === 'USER_ONLY';
+
     // Handle BigInt/Decimal serialization safety
-    return NextResponse.json(JSON.parse(JSON.stringify(order)));
+    return NextResponse.json(JSON.parse(JSON.stringify({ ...order, sharePolicy, canShare })));
 
   } catch (error) {
     console.error("Order Fetch Error:", error);

@@ -30,8 +30,16 @@ export default function AddPackagePage() {
   
   // Form States
   const [isCorporate, setIsCorporate] = useState(false);
+  const [isPreEmployment, setIsPreEmployment] = useState(false);
+  const [reportVisibility, setReportVisibility] = useState<'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH'>('USER_ONLY');
   const [basePrice, setBasePrice] = useState(0);
   const [discount, setDiscount] = useState(0);
+
+  useEffect(() => {
+    if (isPreEmployment) {
+      setReportVisibility('CORPORATE_ONLY');
+    }
+  }, [isPreEmployment]);
 
   useEffect(() => {
     getPackageFormData().then(setTests);
@@ -142,7 +150,12 @@ export default function AddPackagePage() {
                       <Building size={14} /> Corporate Settings
                     </label>
                     <div className="admin-form-checkbox">
-                      <input type="checkbox" name="isPreEmployment" />
+                      <input
+                        type="checkbox"
+                        name="isPreEmployment"
+                        checked={isPreEmployment}
+                        onChange={(e) => setIsPreEmployment(e.target.checked)}
+                      />
                       <span>Pre-Employment</span>
                     </div>
                   </div>
@@ -155,6 +168,29 @@ export default function AddPackagePage() {
                       <option value="EXECUTIVE">Executive Health Check</option>
                       <option value="BLUE_COLLAR">Blue-Collar Package</option>
                     </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="admin-form-label">Report Visibility</label>
+                    {isPreEmployment && (
+                      <input type="hidden" name="reportVisibility" value="CORPORATE_ONLY" />
+                    )}
+                    <select
+                      name="reportVisibility"
+                      className="admin-form-select"
+                      value={isPreEmployment ? 'CORPORATE_ONLY' : reportVisibility}
+                      onChange={(e) => setReportVisibility(e.target.value as any)}
+                      disabled={isPreEmployment}
+                    >
+                      <option value="USER_ONLY">User Only (Share Optional)</option>
+                      <option value="CORPORATE_ONLY">Corporate Only</option>
+                      <option value="BOTH">Both User & Corporate</option>
+                    </select>
+                    {isPreEmployment && (
+                      <p className="text-xs text-slate-400 mt-1">
+                        Pre-employment reports are always corporate-only.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

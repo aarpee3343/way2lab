@@ -39,6 +39,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     familyPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
     selfLimit: number;
     familyLimit: number;
+    reportVisibilityOverride?: '' | 'USER_ONLY' | 'CORPORATE_ONLY' | 'BOTH';
   }>({ 
     type: 'PACKAGE', 
     itemId: '', 
@@ -47,7 +48,8 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     selfPaymentType: 'CORPORATE_PAYS', 
     familyPaymentType: 'USER_PAYS',
     selfLimit: 1,
-    familyLimit: 0
+    familyLimit: 0,
+    reportVisibilityOverride: ''
   });
   const [domainInput, setDomainInput] = useState('');
   const [employeeAssignForm, setEmployeeAssignForm] = useState({
@@ -171,7 +173,10 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       selfPaymentType: serviceForm.selfPaymentType,
       familyPaymentType: serviceForm.familyPaymentType,
       selfLimit: serviceForm.selfLimit,
-      familyLimit: serviceForm.familyLimit
+      familyLimit: serviceForm.familyLimit,
+      reportVisibilityOverride: serviceForm.type === 'PACKAGE'
+        ? (serviceForm.reportVisibilityOverride || undefined)
+        : undefined
     });
     if(res.success) { toast.success("Assigned!"); refresh(); }
     else { toast.error(res.error); }
@@ -537,6 +542,30 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                     onChange={e =>setServiceForm({...serviceForm,familyLimit: e.target.value === '' ? 0 : parseInt(e.target.value)})}/>
                  </div>
               </div>
+
+              {serviceForm.type === 'PACKAGE' && (
+                <div>
+                  <label className="text-xs font-bold text-slate-500">Report Visibility (Override)</label>
+                  <select
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-sm mt-1"
+                    value={serviceForm.reportVisibilityOverride}
+                    onChange={(e) =>
+                      setServiceForm({
+                        ...serviceForm,
+                        reportVisibilityOverride: e.target.value as any
+                      })
+                    }
+                  >
+                    <option value="">Use package default</option>
+                    <option value="USER_ONLY">User Only</option>
+                    <option value="CORPORATE_ONLY">Corporate Only</option>
+                    <option value="BOTH">Both User & Corporate</option>
+                  </select>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      If left blank, package report visibility applies (pre-employment always corporate only).
+                    </p>
+                  </div>
+                )}
 
               <button
                 onClick={handleAssignService}

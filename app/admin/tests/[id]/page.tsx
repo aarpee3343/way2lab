@@ -4,9 +4,18 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/safe-toast';
-import { Save, ArrowLeft, Trash2 } from 'lucide-react';
+import { Save, ArrowLeft, Trash2, FlaskConical, Clock, FileText, Banknote } from 'lucide-react';
 import Link from 'next/link';
-import { updateTestAction, getTestById, deleteTestAction } from '@/app/actions/adminInventoryActions'; 
+import { updateTestAction, getTestById, deleteTestAction } from '@/app/actions/adminInventoryActions';
+import {
+  Section,
+  InputField,
+  TextareaField,
+  SelectField,
+  CheckboxField,
+  TEST_CATEGORIES,
+  TEST_SPECIALTIES
+} from '@/components/admin/tests/TestFormFields';
 
 export default function EditTestPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -21,7 +30,7 @@ export default function EditTestPage({ params }: { params: Promise<{ id: string 
 
     getTestById(testId).then(data => {
       if (!data) {
-        toast.error("Test not found");
+        toast.error('Test not found');
         router.push('/admin/tests');
       } else {
         setForm(data);
@@ -33,23 +42,33 @@ export default function EditTestPage({ params }: { params: Promise<{ id: string 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form) return;
-    
-    const res = await updateTestAction(form.id, form);
-    
+
+    const payload = {
+      ...form,
+      price: Number(form.price || 0),
+      discount: Number(form.discount || 0)
+    };
+
+    const res = await updateTestAction(form.id, payload);
+
     if (res.success) {
-      toast.success("Test Updated Successfully");
+      toast.success('Test Updated Successfully');
       router.refresh();
     } else {
-      toast.error("Failed to update test");
+      toast.error('Failed to update test');
     }
   };
 
+  const updateField = (field: string, value: any) => {
+    setForm((prev: any) => ({ ...prev, [field]: value }));
+  };
+
   const handleDelete = async () => {
-    if (!confirm("Are you sure? This will remove the test from all labs.")) return;
-    
+    if (!confirm('Are you sure? This will remove the test from all labs.')) return;
+
     const res = await deleteTestAction(testId);
     if (res.success) {
-      toast.success("Test Deleted");
+      toast.success('Test Deleted');
       router.push('/admin/tests');
     }
   };
@@ -57,10 +76,10 @@ export default function EditTestPage({ params }: { params: Promise<{ id: string 
   if (loading || !form) return <div className="admin-loading">Loading Test...</div>;
 
   return (
-    <div className="max-w-4xl mx-auto pb-20">
-      <div className="flex justify-between items-center mb-6">
+    <div className="max-w-5xl mx-auto pb-20">
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="admin-page-title">Edit Test: {form.testName}</h1>
+          <h1 className="admin-page-title">Edit Diagnostic Test</h1>
           <p className="admin-page-subtitle">Update global test details</p>
         </div>
         <Link href="/admin/tests" className="admin-btn-secondary">
@@ -69,113 +88,108 @@ export default function EditTestPage({ params }: { params: Promise<{ id: string 
       </div>
 
       <form onSubmit={handleSubmit} className="admin-space-y">
-        
-        <div className="admin-form-section">
-          <h3 className="admin-form-title mb-4">Basic Information</h3>
+        <Section title="Core Identity" icon={<FlaskConical size={18} />}>
           <div className="admin-form-grid">
-            <div className="col-span-2 sm:col-span-1">
-              <label className="admin-form-label">Test Name</label>
-              <input 
-                className="admin-form-input" 
-                value={form.testName} 
-                onChange={e => setForm({...form, testName: e.target.value})} 
+            <InputField
+              label="Test Name *"
+              value={form.testName || ''}
+              onChange={(e) => updateField('testName', e.target.value)}
+            />
+            <InputField
+              label="Slug"
+              value={form.slug || ''}
+              onChange={(e) => updateField('slug', e.target.value)}
+            />
+            <SelectField
+              label="Category *"
+              options={TEST_CATEGORIES}
+              value={form.category || ''}
+              onChange={(e) => updateField('category', e.target.value)}
+            />
+            <SelectField
+              label="Specialty *"
+              options={TEST_SPECIALTIES}
+              value={form.specialty || ''}
+              onChange={(e) => updateField('specialty', e.target.value)}
+            />
+            <div className="col-span-2">
+              <TextareaField
+                label="Short Description *"
+                value={form.description || ''}
+                onChange={(e) => updateField('description', e.target.value)}
               />
             </div>
-            <div className="col-span-2 sm:col-span-1">
-              <label className="admin-form-label">Slug</label>
-              <input 
-                className="admin-form-input bg-slate-50" 
-                value={form.slug} 
-                readOnly 
+          </div>
+        </Section>
+
+        <Section title="Clinical Details" icon={<FileText size={18} />}>
+          <div className="admin-form-grid">
+            <div className="col-span-2">
+              <TextareaField
+                label="Preparation Instructions"
+                value={form.preparation || ''}
+                onChange={(e) => updateField('preparation', e.target.value)}
               />
-            </div>
-            <div>
-              <label className="admin-form-label">Category</label>
-              <select 
-                className="admin-form-select" 
-                value={form.category} 
-                onChange={e => setForm({...form, category: e.target.value})}
-              >
-                <option value="Pathology">Pathology</option>
-                <option value="Radiology">Radiology</option>
-                <option value="Cardiology">Cardiology</option>
-              </select>
-            </div>
-            <div>
-              <label className="admin-form-label">Specialty</label>
-              <select 
-                className="admin-form-select" 
-                value={form.specialty} 
-                onChange={e => setForm({...form, specialty: e.target.value})}
-              >
-                <option value="General">General</option>
-                <option value="Heart">Heart</option>
-                <option value="Diabetes">Diabetes</option>
-              </select>
             </div>
             <div className="col-span-2">
-              <label className="admin-form-label">Description</label>
-              <textarea 
-                rows={3} 
-                className="admin-form-textarea" 
-                value={form.description} 
-                onChange={e => setForm({...form, description: e.target.value})} 
+              <TextareaField
+                label="Technician Notes"
+                value={form.specialInstruction || ''}
+                onChange={(e) => updateField('specialInstruction', e.target.value)}
               />
             </div>
           </div>
-        </div>
+        </Section>
 
-        <div className="admin-form-section">
-          <h3 className="admin-form-title mb-4">Global Defaults</h3>
-          <div className="admin-alert admin-alert-warning mb-4">
-            Note: Updating price here changes the <strong>Global Base Price</strong>. 
-            Lab-specific prices set in the Lab Manager will override this.
-          </div>
+        <Section title="Pricing & Config" icon={<Banknote size={18} />}>
           <div className="admin-form-grid">
-            <div>
-              <label className="admin-form-label">Base Price (₹)</label>
-              <input 
-                type="number" 
-                className="admin-form-input" 
-                value={form.price} 
-                onChange={e => setForm({...form, price: parseFloat(e.target.value)})} 
+            <InputField
+              label="Base Price (₹)"
+              type="number"
+              value={form.price ?? 0}
+              onChange={(e) => updateField('price', Number(e.target.value || 0))}
+            />
+            <InputField
+              label="Discount (%)"
+              type="number"
+              value={form.discount ?? 0}
+              onChange={(e) => updateField('discount', Number(e.target.value || 0))}
+            />
+            <InputField
+              label="Report Time"
+              icon={<Clock size={16} />}
+              value={form.scheduleReporting || ''}
+              onChange={(e) => updateField('scheduleReporting', e.target.value)}
+            />
+            <div className="col-span-2 flex gap-6 mt-4">
+              <CheckboxField
+                label="Active Test"
+                checked={Boolean(form.isActive)}
+                onChange={(e) => updateField('isActive', e.target.checked)}
+              />
+              <CheckboxField
+                label="Featured"
+                checked={Boolean(form.showOnHomepage)}
+                onChange={(e) => updateField('showOnHomepage', e.target.checked)}
               />
             </div>
-            <div>
-              <label className="admin-form-label">Discount (%)</label>
-              <input 
-                type="number" 
-                className="admin-form-input" 
-                value={form.discount} 
-                onChange={e => setForm({...form, discount: parseFloat(e.target.value)})} 
-              />
-            </div>
-             <div className="flex items-center gap-2 mt-6">
-               <input 
-                 type="checkbox" 
-                 checked={form.isActive} 
-                 onChange={e => setForm({...form, isActive: e.target.checked})} 
-                 className="w-5 h-5"
-               />
-               <span className="font-bold text-slate-700">Active</span>
-             </div>
           </div>
-        </div>
+        </Section>
 
         <div className="flex justify-between items-center pt-4">
-          <button 
-            type="button" 
-            onClick={handleDelete} 
+          <button
+            type="button"
+            onClick={handleDelete}
             className="admin-btn-danger"
           >
             <Trash2 size={18} /> Delete Test
           </button>
-          
-          <button 
-            type="submit" 
+
+          <button
+            type="submit"
             className="admin-btn-primary"
           >
-            <Save size={18} /> Update Test
+            <Save size={18} /> Save Changes
           </button>
         </div>
       </form>

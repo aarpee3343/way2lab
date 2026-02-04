@@ -45,10 +45,17 @@ export async function GET(
       where: {
         id: reportId,
         order: { userId } // Security check
+      },
+      include: {
+        order: { select: { package: { select: { isPreEmployment: true } } } }
       }
     });
 
     if (!report) {
+      return new NextResponse('Report not found', { status: 404 });
+    }
+
+    if (report.order?.package?.isPreEmployment) {
       return new NextResponse('Report not found', { status: 404 });
     }
 

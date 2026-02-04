@@ -72,6 +72,7 @@ export async function createPackageAction(formData: FormData) {
     const isCorporate = formData.get('isCorporate') === 'on'; 
     const category = formData.get('category') as string;
     const isPreEmployment = formData.get('isPreEmployment') === 'on';
+    const reportVisibility = (formData.get('reportVisibility') as string) || 'USER_ONLY';
 
     // LOGIC: Set Status
     // If Corporate -> Force Inactive (wait for assignment)
@@ -103,6 +104,9 @@ export async function createPackageAction(formData: FormData) {
         corporateId: null, // Explicitly unassigned
         category: isCorporate ? category : null, 
         isPreEmployment: isCorporate ? isPreEmployment : false,
+        reportVisibility: isCorporate
+          ? (isPreEmployment ? 'CORPORATE_ONLY' : (reportVisibility as any))
+          : 'USER_ONLY',
 
         // Link Tests
         tests: {
@@ -135,6 +139,7 @@ export async function updatePackageAction(id: number, formData: FormData) {
     const isCorporate = formData.get('isCorporate') === 'on'; 
     const category = formData.get('category') as string;
     const isPreEmployment = formData.get('isPreEmployment') === 'on';
+    const reportVisibility = (formData.get('reportVisibility') as string) || 'USER_ONLY';
 
     // Logic: If switching to corporate, we might want to deactivate, but usually
     // on update we respect the user's manual "isActive" toggle.
@@ -159,6 +164,9 @@ export async function updatePackageAction(id: number, formData: FormData) {
         isCorporate,
         category: isCorporate ? category : null,
         isPreEmployment: isCorporate ? isPreEmployment : false,
+        reportVisibility: isCorporate
+          ? (isPreEmployment ? 'CORPORATE_ONLY' : (reportVisibility as any))
+          : 'USER_ONLY',
 
         tests: {
           deleteMany: {}, 

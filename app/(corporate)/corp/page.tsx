@@ -127,6 +127,7 @@ export default function CorporateDashboardPage() {
                     <th className="px-8 py-4">Assigned Service</th>
                     <th className="px-4 py-4 text-center">Eligibility</th>
                     <th className="px-4 py-4 text-center">Availed</th>
+                    <th className="px-4 py-4 text-center">Remaining</th>
                     <th className="px-4 py-4 text-center">Status</th>
                     <th className="px-8 py-4 text-right">Action</th>
                   </tr>
@@ -139,9 +140,25 @@ export default function CorporateDashboardPage() {
                         <p className="text-[10px] font-bold text-slate-400 mt-0.5">
                           Valid {new Date(service.validFrom).toLocaleDateString()} - {new Date(service.validTill).toLocaleDateString()}
                         </p>
+                        <p className="text-[10px] font-bold text-slate-400 mt-0.5">
+                          {service.limitPerEmployee > 0 ? `Limit ${service.limitPerEmployee} / employee` : 'Unlimited usage'}
+                        </p>
+                        {service.availedBy?.length ? (
+                          <p className="text-[10px] font-semibold text-slate-400 mt-1">
+                            Availed by {service.availedBy.map((e: any) => e.employeeId ? `${e.name} (${e.employeeId})` : e.name).join(', ')}
+                            {service.availedEmployees > service.availedBy.length
+                              ? ` +${service.availedEmployees - service.availedBy.length} more`
+                              : ''}
+                          </p>
+                        ) : (
+                          <p className="text-[10px] font-semibold text-slate-400 mt-1">No availed entries yet</p>
+                        )}
                       </td>
                       <td className="px-4 py-5 text-center font-bold text-slate-600">{service.eligibility}</td>
                       <td className="px-4 py-5 text-center font-black text-emerald-600">{service.availed}</td>
+                      <td className="px-4 py-5 text-center font-black text-slate-600">
+                        {service.remaining === null ? '∞' : service.remaining}
+                      </td>
                       <td className="px-4 py-5">
                         <div className="flex items-center justify-center gap-2">
                           <div className={`w-1.5 h-1.5 rounded-full ${new Date(service.validTill) < new Date() ? 'bg-slate-400' : 'bg-emerald-500'} animate-pulse`} />
@@ -162,7 +179,7 @@ export default function CorporateDashboardPage() {
                   ))}
                   {!loading && (!overview?.services || overview.services.length === 0) && (
                     <tr>
-                      <td colSpan={5} className="px-8 py-6 text-sm text-slate-500">
+                      <td colSpan={6} className="px-8 py-6 text-sm text-slate-500">
                         No active services assigned.
                       </td>
                     </tr>

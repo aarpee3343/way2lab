@@ -46,17 +46,47 @@ export async function GET(
         id: reportId,
         order: {
           customer: { corporateId },
-          status: 'COMPLETED',
-          OR: [
-            { package: { isPreEmployment: true } },
-            { isReportSharedWithCorp: true }
-          ]
+          status: 'COMPLETED'
+        }
+      },
+      include: {
+        order: {
+          select: {
+            id: true,
+            packageId: true,
+            couponId: true,
+            isReportSharedWithCorp: true,
+            package: { select: { isPreEmployment: true, reportVisibility: true } }
+          }
         }
       }
     });
 
     if (!report) {
       return new NextResponse('Report not found', { status: 404 });
+    }
+
+    const isPreEmployment = Boolean(report.order?.package?.isPreEmployment);
+    if (!isPreEmployment) {
+      const service = await prisma.corporateService.findFirst({
+        where: {
+          corporateId,
+          isActive: true,
+          OR: [
+            report.order?.packageId ? { packageId: report.order.packageId } : undefined,
+            report.order?.couponId ? { couponId: report.order.couponId } : undefined
+          ].filter(Boolean) as any
+        },
+        select: { reportVisibilityOverride: true }
+      });
+
+      const policy =
+        service?.reportVisibilityOverride ||
+        report.order?.package?.reportVisibility ||
+        'USER_ONLY';
+      if (policy === 'USER_ONLY' && !report.order?.isReportSharedWithCorp) {
+        return new NextResponse('Report not found', { status: 404 });
+      }
     }
 
     if (!report.storagePath) {
