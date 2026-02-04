@@ -137,8 +137,8 @@ export default function Header() {
               />
             </div>
             <div className="hidden md:flex flex-col">
-              <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">Waytolab</span>
-              <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest leading-none mt-2">Healthcare</span>
+              <span className="text-xl font-bold tracking-tight text-slate-900 leading-none">WAYTOLAB</span>
+              <span className="text-[10px] font-bold text-teal-700 uppercase tracking-widest leading-none mt-2">HEALTHCARE</span>
             </div>
           </Link>
 

@@ -30,9 +30,9 @@ export default function ContactPage() {
   const contactInfo = [
     { 
       icon: Phone, 
-      title: "Healthcare Helpline", 
+      title: "WayToLab Helpline", 
       value: "+91 93112 13388", 
-      sub: "24/7 Medical Support", 
+      sub: "24/7 Support", 
       color: "bg-teal-50 text-teal-600 border-teal-100",
       gradient: "from-teal-50 to-teal-50"
     },
@@ -46,9 +46,9 @@ export default function ContactPage() {
     },
     { 
       icon: MapPin, 
-      title: "Healthcare Center", 
+      title: "WayToLab Healthcare", 
       value: "Gurugram, India", 
-      sub: "Sector 48, Medical Plaza", 
+      sub: "E-504, ROF Ananda, Sector 95", 
       color: "bg-emerald-50 text-emerald-600 border-emerald-100",
       gradient: "from-emerald-50 to-emerald-50"
     }

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import { 
   Facebook, Twitter, Linkedin, Instagram, ArrowUpRight, 
-  MessageCircle, Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award
+  MessageCircle, Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award, Building2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -87,18 +87,32 @@ export default function Footer() {
                 className="h-12 w-auto brightness-0 invert opacity-90"
               />
               <div className="flex flex-col">
-                <span className="text-xl font-bold tracking-tight text-white leading-none">WayToLab</span>
-                <span className="text-xs font-bold text-teal-400 uppercase tracking-widest leading-none">Advanced Diagnostics</span>
+                <span className="text-xl font-bold tracking-tight text-white leading-none">WAYTOLAB</span>
+                <span className="text-xs font-bold text-teal-400 uppercase tracking-widest leading-none">HEALTHCARE</span>
               </div>
             </div>
             <div className="space-y-4 text-slate-400 text-sm">
-              <div className="flex items-start gap-3">
+              {/* <div className="flex items-start gap-3">
                 <MapPin className="shrink-0 mt-1 text-teal-600" size={18} />
                 <p className="leading-relaxed">Medical Plaza, Sector 48<br/>Gurugram, Haryana 122018, INDIA</p>
+              </div> */}
+              <div className="flex items-start gap-3">
+                <MapPin className="shrink-0 mt-1 text-teal-600" size={18} />
+                <p className="leading-relaxed">
+                  <span className="font-bold">Corp. Office-</span> 114, Vipul Business Park<br />
+                  Sector 48, Gurugram - 122001 IN
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <Building2 className="shrink-0 mt-1 text-teal-600" size={18} />
+                <p className="leading-relaxed">
+                  <span className="font-bold">Regd. Office-</span> E-504, ROF Ananda<br />
+                  Sector 95, Gurugram - 122505 IN
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <Mail className="shrink-0 text-teal-600" size={18} />
-                <a href="mailto:care@WayToLab.com" className="hover:text-white transition-colors">care@WayToLab.com</a>
+                <a href="mailto:care@WayToLab.com" className="hover:text-white transition-colors">care@waytolab.com</a>
               </div>
             </div>
             
