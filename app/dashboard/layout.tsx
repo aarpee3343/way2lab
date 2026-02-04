@@ -10,7 +10,6 @@ import {
   FileText, 
   MapPin, 
   Users, 
-  Settings, 
   LogOut, 
   Menu, 
   X,
@@ -41,11 +40,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => {
     const init = async () => {
       try {
-        // ✅ HttpOnly Cookie Check (No Headers needed)
-        const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`);
+        const res = await axios.get('/api/auth/me', { withCredentials: true });
         setUser(res.data.user);
       } catch (error) {
-        // If 401, redirect to login
         router.push('/login');
       } finally {
         setLoading(false);
@@ -56,7 +53,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const handleLogout = async () => {
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/logout`);
+      await axios.post('/api/auth/logout', undefined, { withCredentials: true });
       router.push('/login');
     } catch (e) {
       console.error('Logout failed');

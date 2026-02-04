@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const logos = [
   'dr-lal-pathlabs.png',
@@ -12,6 +14,30 @@ const logos = [
   'advance-pathology-diagnostic-centre-farrukhabad.png',
   'the-health-county-labs.png',
 ];
+
+function LabLogoImage({ logo }: { logo: string }) {
+  const [failed, setFailed] = useState(false);
+  const label = logo.replace('.png', '').replace(/-/g, ' ');
+
+  if (failed) {
+    return (
+      <div className="h-12 w-full flex items-center justify-center text-teal-700 font-bold text-sm">
+        {label}
+      </div>
+    );
+  }
+
+  return (
+    <Image
+      src={`/assets/images/labs/${logo}`}
+      alt={`${label} logo`}
+      width={160}
+      height={48}
+      className="h-12 w-auto object-contain grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export default function LabSlider() {
   return (
@@ -59,17 +85,7 @@ export default function LabSlider() {
                   
                   {/* Logo container */}
                   <div className="relative h-full flex items-center justify-center p-2">
-                    <img 
-                      src={`/assets/images/labs/${logo}`} 
-                      alt="Lab Logo" 
-                      className="h-12 w-auto object-contain grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement?.insertAdjacentHTML('beforeend', 
-                          `<div class="h-12 w-full flex items-center justify-center text-teal-700 font-bold text-sm">${logo.replace('.png', '').replace(/-/g, ' ')}</div>`
-                        );
-                      }}
-                    />
+                    <LabLogoImage logo={logo} />
                   </div>
                   
                   {/* Active indicator */}

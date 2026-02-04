@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAppSettingValue } from '@/lib/app-settings';
 
 const API_KEY = process.env.SMS_API_KEY;
 const SENDER_ID = process.env.SMS_SENDER_ID;
@@ -17,60 +18,67 @@ export type SMSType =
   | 'PAYMENT_PENDING'
   | 'REFUND_INITIATED';
 
-// 2. Define Template Configuration
-// This maps the Type -> Approved Content & DLT Template ID
-const TEMPLATES: Record<SMSType, { id: string; format: (...args: string[]) => string }> = {
-  
-  OTP: {
+export const DEFAULT_SMS_TEMPLATES: Array<{ type: SMSType; id: string; message: string }> = [
+  {
+    type: 'OTP',
     id: "1707176917094757100",
-    format: (otp) => `Your OTP is ${otp}. Use it to verify your mobile number on WayToLab. Valid for 10 minutes.`
+    message: "Your OTP is {{1}}. Use it to verify your mobile number on WayToLab. Valid for 10 minutes."
   },
-
-  ORDER_PLACED: {
+  {
+    type: 'ORDER_PLACED',
     id: "1707176917126750664",
-    format: (orderId) => `Your WayToLab order ${orderId} is placed successfully. Our team will contact you shortly.`
+    message: "Your WayToLab order {{1}} is placed successfully. Our team will contact you shortly."
   },
-
-  HOME_COLLECTION_SCHEDULED: {
+  {
+    type: 'HOME_COLLECTION_SCHEDULED',
     id: "1707176917146040630",
-    format: (orderId, date) => `WayToLab home sample collection for order ${orderId} is scheduled on ${date}.`
+    message: "WayToLab home sample collection for order {{1}} is scheduled on {{2}}."
   },
-
-  CENTER_VISIT_CONFIRMED: {
+  {
+    type: 'CENTER_VISIT_CONFIRMED',
     id: "1707176917153525024",
-    format: (orderId) => `Your WayToLab center visit for order ${orderId} is confirmed. Please carry ID proof.`
+    message: "Your WayToLab center visit for order {{1}} is confirmed. Please carry ID proof."
   },
-
-  SAMPLE_COLLECTED: {
+  {
+    type: 'SAMPLE_COLLECTED',
     id: "1707176917166829309",
-    format: (orderId) => `Sample for your WayToLab order ${orderId} has been collected. Reports will be shared soon.`
+    message: "Sample for your WayToLab order {{1}} has been collected. Reports will be shared soon."
   },
-
-  REPORT_UPLOADED: {
+  {
+    type: 'REPORT_UPLOADED',
     id: "1707176917173493715",
-    format: (orderId) => `Report for your WayToLab order ${orderId} is uploaded. Login to view and download.`
+    message: "Report for your WayToLab order {{1}} is uploaded. Login to view and download."
   },
-
-  COLLECTION_FAILED: {
+  {
+    type: 'COLLECTION_FAILED',
     id: "1707176917186628176",
-    format: (orderId) => `WayToLab could not collect the sample for order ${orderId}. Please reschedule.`
+    message: "WayToLab could not collect the sample for order {{1}}. Please reschedule."
   },
-
-  REMINDER: {
+  {
+    type: 'REMINDER',
     id: "1707176917201384098",
-    format: (orderId) => `Reminder from WayToLab Sample collection today for order ${orderId}. Please be available.`
+    message: "Reminder from WayToLab: sample collection today for order {{1}}. Please be available."
   },
-
-  PAYMENT_PENDING: {
+  {
+    type: 'PAYMENT_PENDING',
     id: "1707176917209892882",
-    format: (orderId) => `Payment pending for your WayToLab order ${orderId}. Complete payment to proceed.`
+    message: "Payment pending for your WayToLab order {{1}}. Complete payment to proceed."
   },
-
-  REFUND_INITIATED: {
+  {
+    type: 'REFUND_INITIATED',
     id: "1707176917216797989",
-    format: (orderId) => `Refund for your WayToLab order ${orderId} has been initiated. Amount will reflect soon.`
+    message: "Refund for your WayToLab order {{1}} has been initiated. Amount will reflect soon."
   }
-};
+];
+
+const DEFAULT_TEMPLATE_MAP = new Map(DEFAULT_SMS_TEMPLATES.map(t => [t.type, t]));
+
+function renderTemplate(message: string, vars: string[]) {
+  return message.replace(/\{\{(\d+)\}\}/g, (_, idx) => {
+    const i = Number(idx) - 1;
+    return typeof vars[i] !== 'undefined' ? String(vars[i]) : '';
+  });
+}
 
 /**
  * Universal SMS Sender
@@ -85,11 +93,25 @@ export async function sendSMS(mobile: string, type: SMSType, vars: string[]) {
   }
 
   try {
-    const template = TEMPLATES[type];
+    let templates = DEFAULT_SMS_TEMPLATES;
+    try {
+      const settings = await getAppSettingValue<{ templates?: typeof DEFAULT_SMS_TEMPLATES } | null>(
+        'sms_templates',
+        null
+      );
+      if (settings?.templates?.length) {
+        templates = settings.templates as typeof DEFAULT_SMS_TEMPLATES;
+      }
+    } catch (error) {
+      console.warn('Failed to load SMS template overrides. Using defaults.', error);
+    }
+
+    const override = templates.find(t => t.type === type);
+    const template = override || DEFAULT_TEMPLATE_MAP.get(type);
     if (!template) throw new Error(`Invalid SMS Template Type: ${type}`);
 
     // Generate the final message string using the variables
-    const message = template.format(...vars);
+    const message = renderTemplate(template.message, vars);
 
     // Construct URL with DLT Template ID (Crucial for delivery in India)
     const url = `${BASE_URL}?method=sms&api_key=${API_KEY}&to=${mobile}&sender=${SENDER_ID}&message=${encodeURIComponent(message)}&template_id=${template.id}&format=json`;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 // REMOVED: import Cookies from 'js-cookie'; 
@@ -31,7 +31,7 @@ export default function CheckoutDetails() {
   const [newAddr, setNewAddr] = useState({ address_line1: '', address_line2: '', city: '', state: 'Haryana', pincode: '', type: 'Home' });
   const [newMember, setNewMember] = useState({ name: '', relationship: 'Parent', gender: 'Male', date_of_birth: '', phone: '' });
 
-  const fetchUser = async () => {
+  const fetchUser = useCallback(async () => {
     try {
       // ✅ FIX: No headers needed, browser sends HttpOnly cookie automatically
       const [addrRes, famRes, userRes] = await Promise.all([
@@ -53,9 +53,17 @@ export default function CheckoutDetails() {
     } finally { 
       setLoading(false); 
     }
-  };
+  }, [router]);
 
-  useEffect(() => { fetchUser(); }, []);
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  useEffect(() => {
+    if (!allowedPincode) return;
+    const allowed = String(allowedPincode);
+    setNewAddr(prev => (prev.pincode === allowed ? prev : { ...prev, pincode: allowed }));
+  }, [allowedPincode]);
 
   useEffect(() => {
     if (!allowedPincode) return;

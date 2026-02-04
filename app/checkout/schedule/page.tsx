@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useCartStore } from '@/store/useCartStore';
@@ -21,6 +21,12 @@ export default function SchedulePage() {
   const hasNonPathology = items.some(i => 
     i.type === 'test' && ['x-ray', 'mri', 'scan', 'ultrasound'].some(k => i.name.toLowerCase().includes(k))
   );
+
+  useEffect(() => {
+    if (hasNonPathology && type === 'home_collection') {
+      setType('center_visit');
+    }
+  }, [hasNonPathology, type]);
 
   // Generate 14 days
   const dates = Array.from({length: 14}, (_, i) => {

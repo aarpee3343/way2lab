@@ -27,6 +27,24 @@ export default function CorporateDashboard() {
             </div>
           </div>
         </div>
+        <div className="admin-stat-card bg-white border border-slate-200">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-emerald-50 rounded-xl"><Users size={24} className="text-emerald-600"/></div>
+            <div>
+              <p className="admin-stat-label text-slate-500">Active</p>
+              <h3 className="admin-stat-value text-slate-900">{data.active}</h3>
+            </div>
+          </div>
+        </div>
+        <div className="admin-stat-card bg-white border border-slate-200">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-slate-100 rounded-xl"><Building2 size={24} className="text-slate-500"/></div>
+            <div>
+              <p className="admin-stat-label text-slate-500">Archived</p>
+              <h3 className="admin-stat-value text-slate-900">{data.archived}</h3>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Recent List */}
@@ -41,6 +59,7 @@ export default function CorporateDashboard() {
               <th>Contact</th>
               <th>City</th>
               <th>Employees</th>
+              <th>Status</th>
               <th className="text-right">Action</th>
             </tr>
           </thead>
@@ -54,6 +73,13 @@ export default function CorporateDashboard() {
                 </td>
                 <td className="admin-table-row-secondary">{c.city || '-'}</td>
                 <td className="admin-table-row-primary">{c._count.employees}</td>
+                <td>
+                  <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
+                    c.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {c.isActive ? 'Active' : 'Archived'}
+                  </span>
+                </td>
                 <td className="text-right">
                   <Link href={`/admin/corporates/${c.id}`} className="admin-btn-secondary text-xs">
                     Manage

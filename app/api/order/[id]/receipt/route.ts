@@ -55,9 +55,10 @@ export async function GET(
 
     // --- 2. GENERATE PDF ---
     const pdfBuffer = await generateBoardingPassPDF(order, patientUhid, qrCodeData);
+    const body = new Uint8Array(pdfBuffer);
 
     // --- 3. RETURN RESPONSE ---
-    return new NextResponse(pdfBuffer, {
+    return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
@@ -130,20 +131,20 @@ async function generateBoardingPassPDF(order: any, patientUhid: string, qrCodeDa
     // ==========================================
     // 2. LEFT SIDE (MEDICAL DETAILS)
     // ==========================================
-    let row1Y = cardY + 70;
+    const row1Y = cardY + 70;
     
     drawField('Patient Name', order.patientName || 'Guest', cardX + 20, row1Y, 160);
     drawField('UHID', patientUhid, cardX + 200, row1Y);
     drawField('Order ID', `#${order.orderNumber || order.id}`, cardX + 330, row1Y);
     
-    let row2Y = row1Y + 40;
+    const row2Y = row1Y + 40;
     const typeLabel = order.collectionType === 'home_collection' ? 'HOME COLLECTION' : 'LAB VISIT';
     drawField('Type', typeLabel, cardX + 20, row2Y, 160);
     drawField('Lab / Gate', order.lab?.labName || 'Assigned Lab', cardX + 200, row2Y, 180);
     drawField('Time', order.preferredTimeSlot || 'N/A', cardX + 400, row2Y);
 
     // Test Manifest Box
-    let listY = row2Y + 40;
+    const listY = row2Y + 40;
     doc.roundedRect(cardX + 20, listY, 480, 85, 8).fill(lightGray);
     doc.fillColor(brandColor).fontSize(8).font('Helvetica-Bold').text('TEST MANIFEST', cardX + 30, listY + 10);
     

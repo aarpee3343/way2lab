@@ -144,7 +144,8 @@ function SuccessContent() {
   const sellingTotal = order.items.reduce((s: number, i: any) => s + Number(i.price || 0), 0);
 
   const labDiscount = totalMRP - sellingTotal;
-  const couponDiscount = Number(order.discountAmount || 0);
+  const totalDiscount = Number(order.discountAmount || 0);
+  const couponDiscount = Math.max(0, totalDiscount - labDiscount);
   const homeCollection = Number(order.homeCollectionCharges || 0);
   const payable = Number(order.finalAmount || 0);
   const totalSavings = labDiscount + couponDiscount;

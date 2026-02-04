@@ -1,7 +1,10 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { sendSMS } from '@/lib/sms';
+import bcrypt from 'bcryptjs';
 import {
   generateOrderNumber,
   generateCustomerUHID
@@ -11,6 +14,7 @@ import {
    1. Check Customer & Fetch Addresses
 --------------------------------------------------- */
 export async function checkCustomerAction(phone: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const customer = await prisma.customer.findFirst({
     where: { phone },
     include: { addresses: true }
@@ -47,6 +51,7 @@ export async function searchAdminTestsAction(
   pincode: string,
   lockedLabId?: number
 ) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   if (query.length < 2) return [];
 
   // Find labs servicing this pincode
@@ -88,7 +93,24 @@ export async function searchAdminTestsAction(
     take: 10
   });
 
-  return tests.map(t => ({
+  const packages = await prisma.labPackage.findMany({
+    where: {
+      labId: { in: targetLabIds },
+      available: true,
+      package: {
+        packageName: { contains: query, mode: 'insensitive' },
+        isActive: true
+      },
+      lab: { activeStatus: true }
+    },
+    include: {
+      package: true,
+      lab: true
+    },
+    take: 10
+  });
+
+  const mappedTests = tests.map(t => ({
     id: t.testId,
     name: t.test.testName,
     type: 'test',
@@ -99,29 +121,54 @@ export async function searchAdminTestsAction(
     price: Number(t.price) - (Number(t.price) * (Number(t.discount) / 100)),
     homeCollectionCharges: Number(t.lab.homeCollectionCharges || 0)
   }));
+
+  const mappedPackages = packages.map(p => {
+    const mrp = Number(p.price);
+    const discount = Number(p.discount || 0);
+    return {
+      id: p.packageId,
+      name: p.package.packageName,
+      type: 'package',
+      labId: p.labId,
+      labName: p.lab.labName,
+      mrp,
+      discount,
+      price: mrp - (mrp * (discount / 100)),
+      homeCollectionCharges: Number(p.lab.homeCollectionCharges || 0)
+    };
+  });
+
+  return [...mappedTests, ...mappedPackages];
 }
 
 /* ---------------------------------------------------
    3. Place Admin Order (Transaction Safe)
 --------------------------------------------------- */
 export async function placeAdminOrderAction(data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     return await prisma.$transaction(async (tx) => {
       let customerId = data.customerId;
+      const subtotal = Number(data.subtotal) || 0;
+      const homeCharges = Number(data.homeCharges) || 0;
+      const couponCode = typeof data.couponCode === 'string' ? data.couponCode.trim() : '';
 
       /* ---------- A. Customer ---------- */
       if (!customerId) {
         const uhid = await generateCustomerUHID();
+        const passwordSeed = Math.random().toString(36).slice(-10) + Date.now();
+        const hashedPassword = await bcrypt.hash(passwordSeed, 10);
+        const email = typeof data.email === 'string' && data.email.trim() ? data.email.trim() : null;
 
         const customer = await tx.customer.create({
           data: {
             name: data.name,
             phone: data.phone,
-            email: data.email,
+            email,
             gender: data.gender,
-            dateOfBirth: new Date(data.dob),
+            dateOfBirth: data.dob ? new Date(data.dob) : null,
             uhid,
-            password: 'hashed_default_password', // replace with real hashing
+            password: hashedPassword,
           },
         });
 
@@ -149,6 +196,42 @@ export async function placeAdminOrderAction(data: any) {
       /* ---------- C. Order ---------- */
       const orderNumber = await generateOrderNumber();
 
+      let couponId: number | null = null;
+      let discountAmount = 0;
+
+      if (couponCode) {
+        const coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
+        if (!coupon || !coupon.isActive) {
+          throw new Error('Invalid or inactive coupon');
+        }
+
+        const now = new Date();
+        if ((coupon.expiryDate && new Date(coupon.expiryDate) < now) || (new Date(coupon.startDate) > now)) {
+          throw new Error('Coupon is not valid at this time');
+        }
+
+        const minOrderVal = coupon.minOrderValue ? Number(coupon.minOrderValue) : 0;
+        if (subtotal < minOrderVal) {
+          throw new Error(`Minimum order value of ₹${minOrderVal} required`);
+        }
+
+        const discountVal = Number(coupon.discountValue);
+        const maxDiscount = coupon.maxDiscountAmount ? Number(coupon.maxDiscountAmount) : 0;
+
+        if (coupon.discountType === 'PERCENTAGE') {
+          discountAmount = (subtotal * discountVal) / 100;
+          if (maxDiscount > 0 && discountAmount > maxDiscount) discountAmount = maxDiscount;
+        } else {
+          discountAmount = discountVal;
+        }
+
+        if (discountAmount > subtotal) discountAmount = subtotal;
+        couponId = coupon.id;
+      }
+
+      const finalAmount = subtotal + homeCharges - discountAmount;
+      const associateId = data.associateId ? Number(data.associateId) : null;
+
       const order = await tx.order.create({
         data: {
           orderNumber,
@@ -157,10 +240,11 @@ export async function placeAdminOrderAction(data: any) {
           addressId,
 
           // Financials
-          totalAmount: data.subtotal,
-          discountAmount: 0,
-          homeCollectionCharges: data.homeCharges,
-          finalAmount: data.finalTotal,
+          totalAmount: subtotal,
+          discountAmount,
+          homeCollectionCharges: homeCharges,
+          finalAmount,
+          couponId,
 
           // Payment / status
           paymentMode: data.paymentMode,
@@ -173,14 +257,14 @@ export async function placeAdminOrderAction(data: any) {
           preferredTimeSlot: data.time,
 
           // Associate
-          associateId: data.associateId ? parseInt(data.associateId) : null,
+          associateId: Number.isFinite(associateId) ? associateId : null,
 
           // Instructions
           collectionInstructions: data.instructions || '',
 
           // Patient
           patientName: data.name,
-          patientAge: data.age ? parseInt(data.age) : null,
+          patientDob: data.dob ? new Date(data.dob) : null,
           patientGender: data.gender,
           patientPhone: data.phone,
         },
@@ -188,15 +272,34 @@ export async function placeAdminOrderAction(data: any) {
 
       /* ---------- D. Order Items ---------- */
       for (const item of data.items) {
+        const itemType = item.type === 'package' ? 'package' : 'test';
+        const basePrice = Number(item.mrp ?? item.basePrice ?? item.price ?? 0);
+        const price = Number(item.price ?? basePrice);
+        const discount = Number(item.discount ?? 0);
         await tx.orderItem.create({
           data: {
             orderId: order.id,
-            itemType: item.type,
-            testId: item.type === 'test' ? item.id : null,
+            itemType,
+            testId: itemType === 'test' ? item.id : null,
+            packageId: itemType === 'package' ? item.id : null,
+            isPackage: itemType === 'package',
             itemName: item.name,
-            basePrice: item.mrp,
-            price: item.price,
+            basePrice,
+            price,
+            discount
           },
+        });
+      }
+
+      if (couponId) {
+        await tx.coupon.update({
+          where: { id: couponId },
+          data: {
+            usedCount: { increment: 1 },
+            couponUsage: {
+              create: { customerId }
+            }
+          }
         });
       }
 

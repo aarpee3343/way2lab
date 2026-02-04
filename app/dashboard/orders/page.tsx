@@ -28,20 +28,23 @@ const statusFilters = [
   { label: 'Cancelled', value: 'CANCELLED' },
 ];
 
-const formatDate = (dateStr: string) => {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-IN', {
+const formatDate = (dateValue: string | Date | null | undefined) => {
+  if (!dateValue) return '-';
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  return date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
   });
 };
 
-const monthLabel = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString('en-IN', {
+const monthLabel = (dateValue: string | Date) => {
+  const date = dateValue instanceof Date ? dateValue : new Date(dateValue);
+  return date.toLocaleDateString('en-IN', {
     month: 'long',
     year: 'numeric'
   });
+};
 
 const statusStyles: Record<string, { bg: string; text: string }> = {
   COMPLETED: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
@@ -301,7 +304,6 @@ export default function OrdersPage() {
               {/* ORDERS */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredGroups[month].map(order => {
-                  const hasReport = order.reports && order.reports.length > 0;
                   const statusStyle = statusStyles[order.status] || { bg: 'bg-slate-100', text: 'text-slate-700' };
 
                   return (
@@ -334,7 +336,7 @@ export default function OrdersPage() {
                       {/* LAB INFO */}
                       <div className="flex items-center gap-2 text-sm text-slate-600 mb-4">
                         <FlaskConical size={16} className="text-blue-500" />
-                        <span className="font-medium">{order.lab?.labName || '—'}</span>
+                        <span className="font-medium">{order.lab?.labName || '-'}</span>
                       </div>
 
                       {/* PATIENT INFO */}

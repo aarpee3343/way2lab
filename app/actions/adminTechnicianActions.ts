@@ -1,12 +1,26 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 
 // --- 1. GET TECHNICIANS LIST ---
-export async function getTechnicians() {
+export async function getTechnicians(search?: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  const query = (search || '').trim();
   const technicians = await prisma.technician.findMany({
+    where: query
+      ? {
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { email: { contains: query, mode: 'insensitive' } },
+            { phone: { contains: query } },
+            { username: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      : undefined,
     include: {
       labs: {
         include: {
@@ -26,6 +40,7 @@ export async function getTechnicians() {
 
 // --- 2. GET STATS ---
 export async function getTechnicianStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [total, active, inactive, labsCount] = await Promise.all([
     prisma.technician.count(),
     prisma.technician.count({ where: { isActive: true } }),
@@ -37,6 +52,7 @@ export async function getTechnicianStats() {
 
 // --- 3. GET FORM DATA (Labs List) ---
 export async function getTechnicianFormData() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   return await prisma.lab.findMany({
     where: { activeStatus: true },
     select: { id: true, labName: true, city: true },
@@ -46,6 +62,7 @@ export async function getTechnicianFormData() {
 
 // --- 4. CREATE TECHNICIAN ---
 export async function createTechnicianAction(formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     const name = formData.get('name') as string;
     const phone = formData.get('phone') as string;
@@ -92,6 +109,7 @@ export async function createTechnicianAction(formData: FormData) {
 
 // --- 5. GET TECHNICIAN BY ID ---
 export async function getTechnicianById(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const tech = await prisma.technician.findUnique({
     where: { id },
     include: {
@@ -109,6 +127,7 @@ export async function getTechnicianById(id: number) {
 
 // --- 6. UPDATE TECHNICIAN ---
 export async function updateTechnicianAction(id: number, formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     const name = formData.get('name') as string;
     const phone = formData.get('phone') as string;
@@ -155,6 +174,7 @@ export async function updateTechnicianAction(id: number, formData: FormData) {
 
 // --- 7. DELETE TECHNICIAN ---
 export async function deleteTechnicianAction(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     // Remove relations first (TechnicianLab)
     await prisma.technicianLab.deleteMany({ where: { technicianId: id } }); 

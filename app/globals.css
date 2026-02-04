@@ -239,6 +239,12 @@ body {
   animation: fadeInUp 0.5s ease-out;
 }
 
+.admin-page-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+}
+
 .admin-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -429,6 +435,7 @@ body {
   border-radius: 0.75rem;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
 .admin-form-title {
@@ -444,6 +451,7 @@ body {
   display: grid;
   grid-template-columns: repeat(1, 1fr);
   gap: 1rem;
+  align-items: start;
 }
 
 @media (min-width: 640px) {
@@ -535,6 +543,116 @@ body {
   font-size: 0.875rem;
   font-weight: 700;
   color: #475569;
+}
+
+/* Wizard & Heavy Form Pages */
+.admin-wizard-card {
+  min-height: 560px;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-wizard-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.admin-stepper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.admin-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.admin-step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 0.5rem;
+  border: 1px solid #cbd5e1;
+  background: white;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.admin-step-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.admin-step.active .admin-step-circle {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: white;
+}
+
+.admin-step.active .admin-step-label {
+  color: #1e293b;
+}
+
+.admin-step.complete .admin-step-circle {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: white;
+}
+
+.admin-action-bar {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.admin-chip-active {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: white;
+}
+
+.admin-chip-remove {
+  color: #94a3b8;
+}
+
+.admin-chip-remove:hover {
+  color: #ef4444;
+}
+
+.admin-input-compact {
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 /* Table Styling */

@@ -12,9 +12,12 @@ const icon = L.icon({
   iconSize: [25, 41], 
   iconAnchor: [12, 41] 
 });
+const center: [number, number] = [28.4595, 77.0266];
 
 export default function LiveMap() {
   const [locations, setLocations] = useState<any[]>([]);
+  const MapContainerAny = MapContainer as any;
+  const MarkerAny = Marker as any;
 
   useEffect(() => {
     async function load() {
@@ -41,10 +44,10 @@ export default function LiveMap() {
         <p className="text-sm text-slate-500">{locations.length} pending pickups</p>
       </div>
 
-      <MapContainer center={[28.4595, 77.0266]} zoom={12} style={{ height: '100%', width: '100%' }}>
+      <MapContainerAny center={center} zoom={12} style={{ height: '100%', width: '100%' }}>
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {locations.map((loc) => (
-          <Marker key={loc.id} position={[loc.lat, loc.lng]} icon={icon}>
+          <MarkerAny key={loc.id} position={[loc.lat, loc.lng]} icon={icon as any}>
             <Popup>
               <div className="p-1">
                 <strong className="block text-sm">Order #{loc.orderNumber}</strong>
@@ -52,9 +55,9 @@ export default function LiveMap() {
                 <span className="text-xs font-bold text-blue-600">{loc.preferredTimeSlot}</span>
               </div>
             </Popup>
-          </Marker>
+          </MarkerAny>
         ))}
-      </MapContainer>
+      </MapContainerAny>
     </div>
   );
 }

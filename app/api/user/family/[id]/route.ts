@@ -3,13 +3,17 @@ import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
 // UPDATE Family Member
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, relationship, gender, date_of_birth } = await req.json();
-    const id = parseInt(params.id);
+    const { name, relationship, gender, date_of_birth, phone, email } = await req.json();
+    const { id: rawId } = await params;
+    const id = parseInt(rawId);
 
     // Check ownership
     const exists = await prisma.familyMember.findFirst({
@@ -24,7 +28,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         name,
         relationship,
         gender,
-        dateOfBirth: new Date(date_of_birth)
+        dateOfBirth: date_of_birth ? new Date(date_of_birth) : null,
+        phone: phone || null,
+        email: email || null
       }
     });
 
@@ -35,12 +41,16 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // DELETE Family Member
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const id = parseInt(params.id);
+    const { id: rawId } = await params;
+    const id = parseInt(rawId);
 
     const exists = await prisma.familyMember.findFirst({
       where: { id, customerId: user.id }

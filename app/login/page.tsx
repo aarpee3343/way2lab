@@ -4,6 +4,7 @@ import { useState, Suspense } from 'react';
 import axios from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import Cookies from 'js-cookie';
 import { motion } from 'framer-motion';
 import { ArrowRight, Loader2, CheckCircle2, ShieldCheck, Phone, Mail, HeartPulse, Stethoscope, Users } from 'lucide-react';
@@ -147,7 +148,7 @@ function LoginContent() {
         
         <div className="relative z-10 text-white space-y-8 max-w-lg">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" className="h-14 w-auto" alt="WayToLab" />
+            <Image src="/logo.png" alt="WayToLab" width={200} height={56} className="h-14 w-auto" priority />
             <div>
               <h1 className="text-2xl font-bold tracking-tight">WayToLab</h1>
               <p className="text-xs text-teal-200 font-medium">Diagnostic Healthcare</p>

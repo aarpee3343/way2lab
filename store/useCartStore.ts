@@ -11,12 +11,14 @@ export interface CartItem {
   basePrice: number;  // lab MRP
   labId: number;
   labName: string;
+  isCorporate?: boolean;
 }
 
 export interface CartLab {
   labId: number;
   labName: string;
   servicePincode: string;
+  homeCollectionCharges?: number;
 }
 
 interface CartState {
@@ -50,7 +52,8 @@ const calculateTotals = (
   coupon: CartState['coupon']
 ) => {
   const subtotal = items.reduce((sum, i) => sum + Number(i.price || 0), 0);
-  const couponDiscount = coupon ? Number(coupon.discountAmount || 0) : 0;
+  const rawDiscount = coupon ? Number(coupon.discountAmount || 0) : 0;
+  const couponDiscount = Math.min(rawDiscount, subtotal);
 
   return {
     subtotal,

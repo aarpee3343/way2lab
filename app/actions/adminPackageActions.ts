@@ -1,10 +1,13 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 // --- 1. GET PACKAGES LIST (For Admin Table) ---
 export async function getPackages() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const packages = await prisma.package.findMany({
     orderBy: { id: 'desc' },
     include: {
@@ -22,6 +25,7 @@ export async function getPackages() {
 
 // --- 2. GET STATS ---
 export async function getPackageStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [total, active] = await Promise.all([
     prisma.package.count(),
     prisma.package.count({ where: { isActive: true } }),
@@ -31,6 +35,7 @@ export async function getPackageStats() {
 
 // --- 3. GET FORM DATA (Tests List for "Add Package" Page) ---
 export async function getPackageFormData() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const tests = await prisma.test.findMany({
     where: { isActive: true },
     select: { id: true, testName: true, price: true }
@@ -45,6 +50,7 @@ export async function getPackageFormData() {
 }
 
 export async function createPackageAction(formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     const packageName = formData.get('package_name') as string;
     const description = formData.get('description') as string;
@@ -107,6 +113,7 @@ export async function createPackageAction(formData: FormData) {
 
 // --- UPDATE PACKAGE ---
 export async function updatePackageAction(id: number, formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     const packageName = formData.get('package_name') as string;
     const description = formData.get('description') as string;
@@ -160,6 +167,7 @@ export async function updatePackageAction(id: number, formData: FormData) {
 
 // --- 5. DELETE PACKAGE ---
 export async function deletePackageAction(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.package.delete({ where: { id } });
     revalidatePath('/admin/packages');
@@ -172,6 +180,7 @@ export async function deletePackageAction(id: number) {
 
 // --- 6. GET SINGLE PACKAGE (For Edit Page) ---
 export async function getPackageById(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const pkg = await prisma.package.findUnique({
     where: { id },
     include: {
@@ -191,4 +200,3 @@ export async function getPackageById(id: number) {
     testIds: pkg.tests.map(t => t.testId) 
   };
 }
-

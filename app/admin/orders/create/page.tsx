@@ -1,8 +1,9 @@
 // app/admin/orders/create/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { checkCustomerAction, searchAdminTestsAction, placeAdminOrderAction } from '@/app/actions/adminOrderActions';
+import { getAdminSettings } from '@/app/actions/adminSettingsActions';
 import { 
   Search, User, MapPin, Clock, CreditCard, 
   CheckCircle2, Printer, Plus, Trash2, Home,
@@ -46,6 +47,13 @@ export default function AdminCreateOrder() {
   const [associateId, setAssociateId] = useState('');
   const [urgentOrder, setUrgentOrder] = useState(false);
   const [patientNotes, setPatientNotes] = useState('');
+  const [paymentModes, setPaymentModes] = useState<string[]>(['Pay Upon Service']);
+  const settingsAppliedRef = useRef(false);
+
+  useEffect(() => {
+    setDiscountApplied(false);
+    setCouponDiscount(0);
+  }, [cart]);
 
   // Logistics
   const [logistics, setLogistics] = useState({
@@ -56,6 +64,40 @@ export default function AdminCreateOrder() {
     instructions: '',
     paymentMode: 'Pay Upon Service'
   });
+
+  useEffect(() => {
+    let active = true;
+    getAdminSettings()
+      .then((settings) => {
+        if (!active) return;
+        const modes = settings.paymentModes?.modes?.length
+          ? settings.paymentModes.modes
+          : ['Pay Upon Service'];
+        setPaymentModes(modes);
+
+        setLogistics((prev) => {
+          const next = { ...prev };
+          if (!modes.includes(prev.paymentMode)) {
+            next.paymentMode = settings.paymentModes?.defaultMode || modes[0];
+          }
+
+          if (!settingsAppliedRef.current) {
+            settingsAppliedRef.current = true;
+            next.collectionType = settings.defaults?.collectionType || prev.collectionType;
+            if (typeof settings.defaults?.homeCharge === 'number') {
+              next.homeCharges = settings.defaults.homeCharge;
+            }
+          }
+
+          return next;
+        });
+      })
+      .catch(() => null);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // --- GOOGLE ADDRESS HANDLER ---
   const handleGoogleAddressSelect = (place: any) => {
@@ -186,7 +228,9 @@ export default function AdminCreateOrder() {
 
   // --- CART HANDLERS ---
   const addToCart = (item: any) => {
-    if (cart.some(i => i.id === item.id)) return toast.error("Item already in cart");
+    if (cart.some(i => i.id === item.id && i.type === item.type)) {
+      return toast.error("Item already in cart");
+    }
     if (cart.length > 0 && cart[0].labId !== item.labId) {
       return toast.error(`Lab Mismatch! Current cart is from ${cart[0].labName}`);
     }
@@ -215,24 +259,23 @@ export default function AdminCreateOrder() {
     setLoading(true);
     try {
       // Call coupon validation API
-      const response = await fetch('/api/admin/coupons/validate', {
+      const response = await fetch('/api/search/coupons/validate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          couponCode, 
-          subtotal: cart.reduce((acc, item) => acc + item.price, 0),
-          labId: cart.length > 0 ? cart[0].labId : null 
+          code: couponCode.trim(),
+          cartTotal: cart.reduce((acc, item) => acc + item.price, 0)
         }),
       });
       
       const data = await response.json();
       
       if (data.valid) {
-        setCouponDiscount(data.discount);
+        setCouponDiscount(Number(data.discountAmount || 0));
         setDiscountApplied(true);
-        toast.success(`Coupon applied! Discount: ₹${data.discount}`);
+        toast.success(`Coupon applied! Discount: ₹${Number(data.discountAmount || 0)}`);
       } else {
-        toast.error(data.error || "Invalid coupon code");
+        toast.error(data.message || data.error || "Invalid coupon code");
       }
     } catch (error) {
       toast.error("Failed to apply coupon");
@@ -262,24 +305,23 @@ export default function AdminCreateOrder() {
         labId: cart[0].labId,
         items: cart,
         subtotal, 
-        homeCharges,
-        couponCode: discountApplied ? couponCode : null,
+        couponCode: discountApplied ? couponCode.trim() : null,
         couponDiscount,
         finalTotal: subtotal + homeCharges - couponDiscount,
         associateId: associateId.trim() || null,
         urgentOrder,
-        patientNotes,
-        ...logistics
+        ...logistics,
+        instructions: patientNotes || logistics.instructions
     };
 
     const res = await placeAdminOrderAction(payload);
     setLoading(false);
 
-    if (res.success) {
+    if (res.success && 'orderId' in res) {
       toast.success("Order Created!");
       setOrderSuccessId(res.orderId);
     } else {
-      toast.error("Failed: " + res.error);
+      toast.error("Failed: " + ('error' in res ? res.error : 'Unknown error'));
     }
   };
 
@@ -455,22 +497,13 @@ export default function AdminCreateOrder() {
               <Package size={20} className="text-amber-600"/> Packages
             </h3>
             <button onClick={() => setShowPackages(!showPackages)} className="text-sm font-medium text-blue-600 hover:underline">
-              {showPackages ? 'Hide Packages' : 'Browse Packages'}
+              {showPackages ? 'Hide Info' : 'View Info'}
             </button>
           </div>
           
           {showPackages && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div className="p-4 border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                <div className="font-bold text-slate-800">Complete Health Package</div>
-                <div className="text-sm text-slate-500">Includes 50+ tests</div>
-                <div className="text-lg font-bold text-emerald-600 mt-2">₹2,999</div>
-              </div>
-              <div className="p-4 border border-slate-200 rounded-lg cursor-pointer hover:border-blue-300 hover:bg-blue-50 transition-colors">
-                <div className="font-bold text-slate-800">Basic Health Checkup</div>
-                <div className="text-sm text-slate-500">Includes 20+ tests</div>
-                <div className="text-lg font-bold text-emerald-600 mt-2">₹1,299</div>
-              </div>
+            <div className="text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-4">
+              Use the search box on the right to add tests or packages. Packages are labeled as “Package” in results.
             </div>
           )}
         </div>
@@ -497,18 +530,32 @@ export default function AdminCreateOrder() {
                 <label className="admin-form-label">Date</label>
                 <input type="date" className="w-full mt-1 admin-form-input" value={logistics.date} onChange={e => setLogistics({...logistics, date: e.target.value})} />
              </div>
-             <div>
-                <label className="admin-form-label">Time</label>
-                <select className="w-full mt-1 admin-form-input" value={logistics.time} onChange={e => setLogistics({...logistics, time: e.target.value})}>
-                    <option value="">Select</option>
-                    <option value="07:00 - 08:00">07:00 - 08:00 AM</option>
-                    <option value="08:00 - 09:00">08:00 - 09:00 AM</option>
-                    <option value="09:00 - 10:00">09:00 - 10:00 AM</option>
-                    <option value="10:00 - 11:00">10:00 - 11:00 AM</option>
-                </select>
-             </div>
-             <div className="col-span-2">
-                <label className="admin-form-label">Special Instructions</label>
+              <div>
+                 <label className="admin-form-label">Time</label>
+                 <select className="w-full mt-1 admin-form-input" value={logistics.time} onChange={e => setLogistics({...logistics, time: e.target.value})}>
+                     <option value="">Select</option>
+                     <option value="07:00 - 08:00">07:00 - 08:00 AM</option>
+                     <option value="08:00 - 09:00">08:00 - 09:00 AM</option>
+                     <option value="09:00 - 10:00">09:00 - 10:00 AM</option>
+                     <option value="10:00 - 11:00">10:00 - 11:00 AM</option>
+                 </select>
+              </div>
+              <div>
+                 <label className="admin-form-label">Payment Mode</label>
+                 <select
+                   className="w-full mt-1 admin-form-input"
+                   value={logistics.paymentMode}
+                   onChange={e => setLogistics({ ...logistics, paymentMode: e.target.value })}
+                 >
+                   {paymentModes.map((mode, idx) => (
+                     <option key={`${mode}-${idx}`} value={mode}>
+                       {mode}
+                     </option>
+                   ))}
+                 </select>
+              </div>
+              <div className="col-span-2">
+                 <label className="admin-form-label">Special Instructions</label>
                 <textarea className="w-full mt-1 admin-form-textarea" 
                   placeholder="Any special instructions for sample collection..."
                   value={patientNotes}
@@ -538,7 +585,7 @@ export default function AdminCreateOrder() {
           <div className="relative">
             <input 
               className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400"
-              placeholder={address.pincode.length < 6 ? "Enter Pincode first" : "Search tests..."}
+              placeholder={address.pincode.length < 6 ? "Enter Pincode first" : "Search tests or packages..."}
               value={query}
               onChange={e => setQuery(e.target.value)}
               disabled={address.pincode.length < 6}
@@ -552,12 +599,17 @@ export default function AdminCreateOrder() {
                   <div className="p-4 text-center text-slate-400 text-sm">Searching...</div>
                 ) : searchResults.length > 0 ? (
                   searchResults.map(item => (
-                    <div key={item.id} onClick={() => addToCart(item)} 
+                    <div key={`${item.type}-${item.id}`} onClick={() => addToCart(item)} 
                       className="p-3 hover:bg-blue-50 rounded-lg cursor-pointer group flex justify-between items-center"
                     >
                       <div>
                         <div className="admin-table-row-primary">{item.name}</div>
-                        <div className="admin-table-row-secondary">{item.labName}</div>
+                        <div className="admin-table-row-secondary">
+                          {item.labName}
+                          <span className="ml-2 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase text-slate-600">
+                            {item.type}
+                          </span>
+                        </div>
                       </div>
                       <div className="text-right">
                         <div className="admin-table-row-primary text-emerald-600">₹{item.price}</div>

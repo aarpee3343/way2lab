@@ -8,6 +8,7 @@ export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  corporateId?: number | null;
 }
 
 export async function getAuthUser(req?: Request): Promise<AuthUser | null> {

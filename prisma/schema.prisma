@@ -25,6 +25,11 @@ enum PaymentType {
   CORPORATE_PAYS
 }
 
+enum AdminRole {
+  SUPER_ADMIN
+  ADMIN
+}
+
 enum Role {
   USER
   ADMIN
@@ -83,8 +88,13 @@ model Admin {
   id        Int      @id @default(autoincrement())
   name      String   @db.VarChar(100)
   email     String   @unique @db.VarChar(100)
+  phone     String?  @unique @db.VarChar(20)
   password  String   @db.VarChar(255)
+  role      AdminRole @default(SUPER_ADMIN)
+  isActive  Boolean  @default(true) @map("is_active")
+  lastLoginAt DateTime? @map("last_login_at")
   createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("admins")
 }
@@ -125,6 +135,16 @@ model VerificationCode {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("verification_codes")
+}
+
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("app_settings")
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -846,6 +866,24 @@ model TicketMessage {
   createdAt  DateTime @default(now())
 
   ticket CorporateTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+}
+
+model BlogPost {
+  id         Int      @id @default(autoincrement())
+  title      String
+  slug       String   @unique
+  content    String   @db.Text
+  excerpt    String   @db.Text
+  authorName String   @map("author_name")
+  category   String
+  coverImage String?  @map("cover_image")
+  seoTitle   String?  @map("seo_title")
+  seoDesc    String?  @map("seo_desc")
+  status     String   @default("APPROVED")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("blog_posts")
 }
 
 

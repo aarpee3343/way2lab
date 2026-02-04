@@ -1,35 +1,43 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, use, useCallback } from 'react';
 import { 
   getCorporateDetails, 
   mapDomainAction, 
   assignCorporateService, 
   getAdminInventory,
-  bulkUpdateEmployeeStatus,
+  updateCorporateEmployeeStatus,
   updateCorporateAction,      
   deleteCorporateServiceAction, 
-  deleteCorporateAction       
+  setCorporateActiveStatus       
 } from '@/app/actions/adminCorporateActions';
 import BulkEmployeeUpload from '@/components/admin/BulkEmployeeUpload';
 import { toast } from '@/lib/safe-toast';
-import { useRouter } from 'next/navigation';
 import { Users, Package, Plus, Link as LinkIcon, Calendar, RefreshCcw, Pencil, Trash2, X } from 'lucide-react';
 
 export default function CorporateDetails({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const corpId = parseInt(id);
-  const router = useRouter();
   
   const [corp, setCorp] = useState<any>(null);
   const [inventory, setInventory] = useState<any>(null);
   const [activeTab, setActiveTab] = useState('employees');
+  const serviceTypes = ['PACKAGE', 'COUPON'] as const;
   
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
 
   // Service Form State
-  const [serviceForm, setServiceForm] = useState({ 
+  const [serviceForm, setServiceForm] = useState<{
+    type: 'PACKAGE' | 'COUPON';
+    itemId: string;
+    validFrom: string;
+    validTill: string;
+    selfPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
+    familyPaymentType: 'USER_PAYS' | 'CORPORATE_PAYS';
+    selfLimit: number;
+    familyLimit: number;
+  }>({ 
     type: 'PACKAGE', 
     itemId: '', 
     validFrom: '', 
@@ -41,30 +49,32 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
   });
   const [domainInput, setDomainInput] = useState('');
 
-  const refresh = () => getCorporateDetails(corpId).then(data => {
-    setCorp(data);
-    if(data) {
+  const refresh = useCallback(() => {
+    return getCorporateDetails(corpId).then(data => {
+      setCorp(data);
+      if (data) {
         // Pre-fill edit form
         setEditForm({
-            companyName: data.companyName,
-            contactPerson: data.contactPerson,
-            phone: data.phone,
-            email: data.email,
-            address: data.address || '',
-            city: data.city || '',
-            state: data.state || '',
-            pincode: data.pincode || '',
-            employeeCount: data.employeeCount,
-            panNumber: data.panNumber || '',
-            gstin: data.gstin || ''
+          companyName: data.companyName,
+          contactPerson: data.contactPerson,
+          phone: data.phone,
+          email: data.email,
+          address: data.address || '',
+          city: data.city || '',
+          state: data.state || '',
+          pincode: data.pincode || '',
+          employeeCount: data.employeeCount,
+          panNumber: data.panNumber || '',
+          gstin: data.gstin || ''
         });
-    }
-  });
+      }
+    });
+  }, [corpId]);
 
   useEffect(() => {
     refresh();
     getAdminInventory().then(setInventory);
-  }, [corpId]);
+  }, [refresh]);
 
   // --- ACTIONS ---
 
@@ -80,20 +90,30 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     }
   };
 
-  const handleDeleteCorporate = async () => {
-    if(!confirm("ARE YOU SURE? This will permanently delete this corporate and release all packages.")) return;
-    const res = await deleteCorporateAction(corpId);
+  const handleArchiveCorporate = async () => {
+    if (!confirm("Archive this corporate? Employees will become regular users and corporate logins will be disabled.")) return;
+    const res = await setCorporateActiveStatus(corpId, false);
     if(res.success) {
-        toast.success("Corporate Deleted");
-        router.push('/admin/corporates');
+        toast.success("Corporate Archived");
+        refresh();
     } else {
         toast.error(res.error);
     }
   };
 
-  const handleRemoveService = async (serviceId: number, packageId: number | null) => {
+  const handleRestoreCorporate = async () => {
+    const res = await setCorporateActiveStatus(corpId, true);
+    if (res.success) {
+      toast.success("Corporate Restored");
+      refresh();
+    } else {
+      toast.error(res.error);
+    }
+  };
+
+  const handleRemoveService = async (serviceId: number) => {
     if(!confirm("Remove this service? The package will be released back to inventory.")) return;
-    const res = await deleteCorporateServiceAction(serviceId, packageId);
+    const res = await deleteCorporateServiceAction(serviceId);
     if(res.success) {
         toast.success("Service Removed");
         refresh();
@@ -103,8 +123,8 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
   };
 
   // ... (Keep existing handleDomainMap, handleAssignService, toggleEmployeeStatus logic here) ...
-  const toggleEmployeeStatus = async (customerId: number, newStatus: boolean, email: string) => {
-    const res = await bulkUpdateEmployeeStatus([email], newStatus);
+  const toggleEmployeeStatus = async (customerId: number, newStatus: boolean) => {
+    const res = await updateCorporateEmployeeStatus(customerId, newStatus, corpId);
     if(res.success) { toast.success("Status Updated"); refresh(); } 
     else { toast.error("Failed"); }
   };
@@ -116,13 +136,30 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
   };
   const handleAssignService = async () => {
     if (!serviceForm.itemId) return toast.error("Select item");
-    const res = await assignCorporateService({ ...serviceForm, corporateId: corpId });
+    const itemId = Number(serviceForm.itemId);
+    if (Number.isNaN(itemId)) return toast.error("Invalid item");
+    if (!serviceForm.validFrom || !serviceForm.validTill) {
+      return toast.error("Select valid dates");
+    }
+
+    const res = await assignCorporateService({
+      corporateId: corpId,
+      type: serviceForm.type,
+      itemId,
+      validFrom: serviceForm.validFrom,
+      validTill: serviceForm.validTill,
+      selfPaymentType: serviceForm.selfPaymentType,
+      familyPaymentType: serviceForm.familyPaymentType,
+      selfLimit: serviceForm.selfLimit,
+      familyLimit: serviceForm.familyLimit
+    });
     if(res.success) { toast.success("Assigned!"); refresh(); }
     else { toast.error(res.error); }
   };
 
 
   if (!corp) return <div className="p-10 text-center flex items-center justify-center gap-2"><RefreshCcw className="animate-spin"/> Loading...</div>;
+  const isArchived = !corp.isActive;
 
   return (
     <div className="space-y-8 relative">
@@ -155,9 +192,9 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
 
                 {/* Danger Zone */}
                 <div className="mt-8 pt-6 border-t border-red-100">
-                    <h3 className="text-xs font-bold text-red-600 uppercase mb-2">Danger Zone</h3>
-                    <button onClick={handleDeleteCorporate} className="text-xs text-red-500 border border-red-200 px-3 py-2 rounded hover:bg-red-50 font-bold flex items-center gap-2">
-                        <Trash2 size={14} /> Delete Corporate Permanently
+                    <h3 className="text-xs font-bold text-red-600 uppercase mb-2">Archive</h3>
+                    <button onClick={handleArchiveCorporate} className="text-xs text-red-500 border border-red-200 px-3 py-2 rounded hover:bg-red-50 font-bold flex items-center gap-2">
+                        <Trash2 size={14} /> Archive Corporate
                     </button>
                 </div>
             </div>
@@ -172,10 +209,15 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
             <button onClick={() => setIsEditModalOpen(true)} className="text-slate-400 hover:text-blue-600 transition-colors">
                 <Pencil size={20} />
             </button>
+            <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
+              isArchived ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700'
+            }`}>
+              {isArchived ? 'Archived' : 'Active'}
+            </span>
           </div>
           <p className="text-slate-500">{corp.city || 'No City'}, {corp.state || 'No State'} • {corp.contactPerson}</p>
           <div className="flex gap-2 mt-3">
-            {corp.domains.map((d:string) => (
+            {(corp.domains || []).map((d:string) => (
               <span key={d} className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-1 rounded border border-blue-100">{d}</span>
             ))}
           </div>
@@ -183,6 +225,14 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
         <div className="text-right">
           <div className="text-4xl font-black text-blue-600">{corp._count?.employees || 0}</div>
           <div className="text-xs font-bold text-slate-400 uppercase">Total Employees</div>
+          {isArchived && (
+            <button
+              onClick={handleRestoreCorporate}
+              className="mt-3 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100"
+            >
+              Restore Corporate
+            </button>
+          )}
         </div>
       </div>
 
@@ -200,13 +250,31 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                 <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><LinkIcon size={18}/> Domain Mapping</h3>
                 <div className="flex gap-2">
-                    <input value={domainInput} onChange={e => setDomainInput(e.target.value)} placeholder="e.g. acme.com" className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" />
-                    <button onClick={handleDomainMap} className="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm">Map</button>
+                    <input
+                      value={domainInput}
+                      onChange={e => setDomainInput(e.target.value)}
+                      placeholder="e.g. acme.com"
+                      className="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none disabled:opacity-60"
+                      disabled={isArchived}
+                    />
+                    <button
+                      onClick={handleDomainMap}
+                      disabled={isArchived}
+                      className="bg-slate-900 text-white px-4 py-2 rounded-lg font-bold text-sm disabled:opacity-60"
+                    >
+                      Map
+                    </button>
                 </div>
                 </div>
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
                     <h3 className="font-bold text-slate-800 mb-3 flex items-center gap-2"><Users size={18}/> Bulk Upload</h3>
-                    <BulkEmployeeUpload corporateId={corpId} onSuccess={refresh} />
+                    {isArchived ? (
+                      <div className="text-xs text-slate-500">
+                        Corporate is archived. Bulk uploads are disabled.
+                      </div>
+                    ) : (
+                      <BulkEmployeeUpload corporateId={corpId} onSuccess={refresh} />
+                    )}
                 </div>
            </div>
            
@@ -225,7 +293,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                             <div className="text-xs">{e.email}</div>
                         </td>
                         <td className="px-4 py-3 text-right">
-                            <button onClick={() => toggleEmployeeStatus(e.id, !e.isActive, e.email)} className={`text-xs font-bold px-3 py-1 rounded-lg border ${e.isActive ? 'border-red-200 text-red-500' : 'border-emerald-200 text-emerald-500'}`}>
+                            <button onClick={() => toggleEmployeeStatus(e.id, !e.isActive)} className={`text-xs font-bold px-3 py-1 rounded-lg border ${e.isActive ? 'border-red-200 text-red-500' : 'border-emerald-200 text-emerald-500'}`}>
                                 {e.isActive ? 'Deactivate' : 'Activate'}
                             </button>
                         </td>
@@ -249,7 +317,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
               <div>
                 <label className="text-xs font-bold text-slate-500">Service Type</label>
                 <div className="flex gap-2 mt-1">
-                  {['PACKAGE', 'COUPON'].map(t => (
+                  {serviceTypes.map(t => (
                     <button key={t} onClick={() => setServiceForm({...serviceForm, type: t})} 
                       className={`flex-1 py-2 text-xs font-bold rounded-lg border ${serviceForm.type === t ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-500 border-slate-200'}`}
                     >
@@ -297,7 +365,11 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                  </div>
               </div>
 
-              <button onClick={handleAssignService} className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-black">
+              <button
+                onClick={handleAssignService}
+                disabled={isArchived}
+                className="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-black disabled:opacity-60"
+              >
                 Assign to Corporate
               </button>
             </div>
@@ -329,8 +401,9 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                      
                      {/* DELETE SERVICE BUTTON */}
                      <button 
-                        onClick={() => handleRemoveService(s.id, s.package?.id || null)}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100"
+                        onClick={() => handleRemoveService(s.id)}
+                        disabled={isArchived}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 disabled:opacity-40"
                         title="Remove Service"
                      >
                         <Trash2 size={16} />

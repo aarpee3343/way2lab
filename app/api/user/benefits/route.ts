@@ -57,6 +57,12 @@ export async function GET(req: Request) {
       paymentType: b.selfPaymentType,
       // Pass the first available lab as default for "Claim" logic
       defaultLab: b.package?.labs[0]?.lab || null,
+      labPrice: Number(b.package?.labs[0]?.price || b.package?.price || 0),
+      labDiscount: Number(b.package?.labs[0]?.discount || 0),
+      labSellingPrice: Math.round(
+        Number(b.package?.labs[0]?.price || b.package?.price || 0) *
+          (1 - Number(b.package?.labs[0]?.discount || 0) / 100)
+      ),
       originalPrice: Number(b.package?.price || 0)
     }));
 

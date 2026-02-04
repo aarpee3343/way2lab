@@ -1,8 +1,11 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ArrowLeft, Calendar, User, Clock, Share2, HeartPulse, Stethoscope, BookOpen } from 'lucide-react';
 import { Metadata } from 'next';
 import { prisma } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -140,10 +143,14 @@ export default async function SingleBlogPage({ params }: Props) {
       {blog.coverImage && (
         <div className="max-w-4xl mx-auto px-4 -mt-8 relative z-20">
           <div className="relative rounded-3xl overflow-hidden shadow-2xl shadow-teal-200/30 border border-teal-100">
-            <img 
-              src={blog.coverImage} 
+            <Image
+              src={blog.coverImage}
               alt={blog.title}
+              width={1200}
+              height={600}
+              sizes="(max-width: 1024px) 100vw, 800px"
               className="w-full h-auto max-h-[500px] object-cover"
+              unoptimized
             />
             {/* Gradient overlay */}
             <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />

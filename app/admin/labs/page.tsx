@@ -4,6 +4,8 @@ import { deleteLabAction } from '@/app/actions/adminLabActions';
 import { Edit, Plus, Building2, MapPin } from 'lucide-react';
 import DeleteRowButton from '@/components/admin/DeleteRowButton';
 
+export const dynamic = 'force-dynamic';
+
 // Simple getter for labs (can be moved to actions file if preferred)
 async function getLabs() {
   return await prisma.lab.findMany({

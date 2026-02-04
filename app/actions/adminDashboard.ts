@@ -1,9 +1,12 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { OrderStatus } from '@prisma/client';
 
 export async function getAdminDashboardStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   /* ---------------- CHART (LAST 7 DAYS) ---------------- */
 
   let chartData: { d: Date; c: number }[] = [];

@@ -252,14 +252,14 @@ export default function DashboardHome() {
                       {order.lab?.labName}
                     </div>
                     <div className="text-xs text-slate-500">
-                      #{order.orderNumber} • {order.patientName}
+                      #{order.orderNumber} - {order.patientName}
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <div className="font-bold text-slate-800">
-                        ₹{order.finalAmount?.toLocaleString()}
+                        INR {order.finalAmount?.toLocaleString()}
                       </div>
                       <span className="text-xs px-2 py-1 rounded-full bg-slate-100">
                         {order.status}

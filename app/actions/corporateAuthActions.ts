@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { getCorpUser } from '@/lib/auth-corp';
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET);
 
@@ -48,7 +49,7 @@ export async function corporateLoginAction(formData: FormData) {
       userId: user.id,
       corporateId: user.corporateId,
       email: user.email,
-      role: user.role, // CORP_ADMIN, DEPT_HEAD, etc.
+      role: user.role, // SUPER_ADMIN, DEPT_HEAD, LOCATION_MANAGER
       maskContactInfo: user.maskContactInfo,
       canEdit: user.canEdit,
       accessDept: user.accessDept,
@@ -66,7 +67,7 @@ export async function corporateLoginAction(formData: FormData) {
     const cookieStore = await cookies();
     cookieStore.set('corp_token', token, {
       httpOnly: true,
-      secure: process.env.NODE_SETTING === 'production',
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24, // 1 day
@@ -79,26 +80,72 @@ export async function corporateLoginAction(formData: FormData) {
   }
 }
 
-export async function getCorporateSubAdmins(corporateId: number) {
+export async function getCorporateSubAdmins() {
+  const session = await getCorpUser();
+  if (!session?.corporateId) return [];
+
   return await prisma.corporateUser.findMany({
-    where: { corporateId },
-    orderBy: { createdAt: 'desc' }
+    where: { corporateId: session.corporateId },
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      canEdit: true,
+      maskContactInfo: true,
+      accessDept: true,
+      accessLocation: true,
+      isActive: true,
+      createdAt: true
+    }
   });
 }
 
 export async function toggleMaskingAction(userId: number, currentStatus: boolean) {
   try {
-    await prisma.corporateUser.update({
-      where: { id: userId },
+    const session = await getCorpUser();
+    if (!session?.corporateId) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const canManage =
+      session.role === 'SUPER_ADMIN' || session.canEdit === true;
+    if (!canManage) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
+    const result = await prisma.corporateUser.updateMany({
+      where: { id: userId, corporateId: session.corporateId },
       data: { maskContactInfo: !currentStatus }
     });
+
+    if (result.count === 0) {
+      return { success: false, error: "User not found" };
+    }
     
     // Refresh the users page so the UI updates
-    revalidatePath('/corporate/users');
+    revalidatePath('/corp-users');
     return { success: true };
   } catch (error) {
     return { success: false, error: "Update failed" };
   }
+}
+
+export async function getCorpSession() {
+  const session = await getCorpUser();
+  if (!session) return null;
+
+  return {
+    userId: session.userId,
+    corporateId: session.corporateId,
+    email: session.email,
+    role: session.role,
+    canEdit: session.canEdit,
+    accessDept: session.accessDept,
+    accessLocation: session.accessLocation,
+    maskContactInfo: session.maskContactInfo
+  };
 }
 
 // 7. Logout Action

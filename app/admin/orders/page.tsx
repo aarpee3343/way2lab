@@ -11,6 +11,8 @@ import {
   XCircle
 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function OrdersPage({
   searchParams
 }: {
@@ -274,19 +276,19 @@ function StatCard({
 }
 
 function StatusBadge({ status }: { status: string }) {
-  if (status === 'Completed')
+  if (status === 'COMPLETED')
     return (
       <Badge color="emerald" icon={<CheckCircle size={14} />}>
         Completed
       </Badge>
     );
-  if (status === 'Pending')
+  if (status === 'PENDING')
     return (
       <Badge color="amber" icon={<Clock size={14} />}>
         Pending
       </Badge>
     );
-  if (status === 'Cancelled')
+  if (status === 'CANCELLED')
     return (
       <Badge color="rose" icon={<XCircle size={14} />}>
         Cancelled
@@ -295,7 +297,7 @@ function StatusBadge({ status }: { status: string }) {
   return <Badge>{status}</Badge>;
 }
 
-function PaymentBadge({ status }: { status: string }) {
+function PaymentBadge({ status }: { status?: string | null }) {
   if (status === 'Paid')
     return (
       <Badge color="emerald" icon={<CheckCircle size={14} />}>
@@ -304,7 +306,7 @@ function PaymentBadge({ status }: { status: string }) {
     );
   return (
     <Badge color="rose" icon={<Clock size={14} />}>
-      {status}
+      {status || 'Pending'}
     </Badge>
   );
 }

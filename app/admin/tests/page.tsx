@@ -4,9 +4,17 @@ import { getTestStats, getTests, deleteTestAction } from '@/app/actions/adminInv
 import { Plus, Search, FlaskConical, CheckCircle2, Tags, Stethoscope, Edit, Activity, ArrowUpRight } from 'lucide-react';
 import DeleteRowButton from '@/components/admin/DeleteRowButton';
 
-export default async function TestsPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function TestsPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ q?: string }>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const stats = await getTestStats();
-  const tests = await getTests();
+  const query = typeof resolvedSearchParams?.q === 'string' ? resolvedSearchParams.q.trim() : '';
+  const tests = await getTests(query);
 
   return (
     <div className="admin-space-y">
@@ -48,13 +56,15 @@ export default async function TestsPage() {
       <div className="admin-table-container">
         {/* Toolbar */}
         <div className="admin-table-toolbar">
-          <div className="admin-search-container">
+          <form className="admin-search-container" method="get">
             <Search className="admin-search-icon" size={18} />
             <input 
+              name="q"
+              defaultValue={query}
               placeholder="Search tests by name, category..." 
               className="admin-search-input" 
             />
-          </div>
+          </form>
           <div className="admin-space-x">
             <button className="admin-btn-secondary">Filters</button>
             <button className="admin-btn-secondary">Export</button>
@@ -111,6 +121,14 @@ export default async function TestsPage() {
                   </td>
                 </tr>
               ))}
+              {tests.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-12 text-slate-400">
+                    <FlaskConical size={48} className="mx-auto mb-3 opacity-20" />
+                    {query ? `No tests found for "${query}".` : 'No tests found. Create one to get started.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

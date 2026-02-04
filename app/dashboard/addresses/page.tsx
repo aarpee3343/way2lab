@@ -15,28 +15,49 @@ export default function AddressesPage() {
   });
 
   const fetchAddresses = async () => {
-    // ✅ No token, no header
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`);
-    setAddresses(res.data);
+    try {
+      const res = await axios.get('/api/user/addresses', { withCredentials: true });
+      setAddresses(res.data);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to load addresses');
+    }
   };
 
   useEffect(() => { fetchAddresses(); }, []);
 
   const handleDelete = async (id: number) => {
     if(!confirm("Delete this address?")) return;
-    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses/${id}`);
-    fetchAddresses();
+    try {
+      await axios.delete(`/api/user/addresses/${id}`, { withCredentials: true });
+      fetchAddresses();
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to delete address');
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`, formData);
+      await axios.post('/api/user/addresses', formData, { withCredentials: true });
       setShowModal(false);
       setFormData({ address_line1: '', address_line2: '', city: '', state: '', pincode: '', type: 'Home' });
       fetchAddresses();
-    } catch (err) { alert('Failed to add address'); }
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to add address');
+    }
     finally { setLoading(false); }
   };
 

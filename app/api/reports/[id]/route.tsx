@@ -54,6 +54,10 @@ export async function GET(
 
     /* ---------------- DECRYPT & DOWNLOAD ---------------- */
     try {
+      if (!report.storagePath) {
+        return new NextResponse('Report file missing', { status: 404 });
+      }
+
       const encrypted = await downloadEncryptedFile(report.storagePath);
 
       if (!report.iv || !report.authTag) {
@@ -76,7 +80,7 @@ export async function GET(
         }
       }).catch(err => console.error("Log failed", err));
 
-      return new NextResponse(decrypted, {
+      return new NextResponse(new Uint8Array(decrypted), {
         headers: {
           'Content-Type': 'application/pdf',
           'Content-Disposition': `inline; filename="Report-${reportId}.pdf"`,

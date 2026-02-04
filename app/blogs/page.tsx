@@ -4,9 +4,32 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 import { Calendar, User, ArrowRight, BookOpen, HeartPulse, Stethoscope, Clock, Activity } from 'lucide-react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import Breadcrumbs from '@/components/ui/Breadcrumbs';
+
+const fallbackBlogImage = 'https://placehold.co/600x400/0d9488/ffffff?text=Health+Article';
+
+function BlogCoverImage({ src, alt }: { src: string; alt: string }) {
+  const [imgSrc, setImgSrc] = useState(src);
+
+  useEffect(() => {
+    setImgSrc(src);
+  }, [src]);
+
+  return (
+    <Image
+      src={imgSrc}
+      alt={alt}
+      fill
+      sizes="(max-width: 768px) 100vw, 50vw"
+      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+      unoptimized
+      onError={() => setImgSrc(fallbackBlogImage)}
+    />
+  );
+}
 
 export default function BlogListingPage() {
   const [blogs, setBlogs] = useState<any[]>([]);
@@ -161,14 +184,9 @@ export default function BlogListingPage() {
               >
                 {/* Featured Image */}
                 <div className="relative h-56 w-full mb-6 overflow-hidden rounded-2xl bg-gradient-to-br from-teal-50 to-blue-50">
-                  <img 
-                    src={blog.coverImage || '/assets/images/blog-health-placeholder.jpg'} 
+                  <BlogCoverImage
+                    src={blog.coverImage || '/assets/images/blog-health-placeholder.jpg'}
                     alt={blog.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                    onError={(e) => {
-                      e.currentTarget.src = 'https://placehold.co/600x400/0d9488/ffffff?text=Health+Article';
-                      e.currentTarget.className = 'w-full h-full object-cover group-hover:scale-105 transition-transform duration-700';
-                    }}
                   />
                   {/* Healthcare Category Badge */}
                   <div className="absolute top-4 left-4">

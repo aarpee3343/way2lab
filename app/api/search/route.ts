@@ -16,6 +16,15 @@ export async function GET(req: Request) {
   try {
     // 🔐 Get logged-in user (may be null)
     const user = await getAuthUser(req);
+    let corporateId = user?.corporateId ?? null;
+
+    if (user?.id && corporateId == null) {
+      const dbUser = await prisma.customer.findUnique({
+        where: { id: user.id },
+        select: { corporateId: true }
+      });
+      corporateId = dbUser?.corporateId ?? null;
+    }
 
     /* -------------------- TEST SEARCH -------------------- */
     const tests = await prisma.test.findMany({
@@ -32,11 +41,11 @@ export async function GET(req: Request) {
       packageName: { contains: query, mode: 'insensitive' },
       OR: [
         { isCorporate: false }, // Public packages
-        ...(user?.corporateId
+        ...(corporateId
           ? [
               {
                 isCorporate: true,
-                corporateId: user.corporateId,
+                corporateId,
               },
             ]
           : []),
@@ -57,6 +66,7 @@ export async function GET(req: Request) {
         price: Number(t.price),
         discount: Number(t.discount || 0),
         description: t.category,
+        isCorporate: false,
       })),
       ...packages.map(p => ({
         id: p.id,
@@ -65,6 +75,7 @@ export async function GET(req: Request) {
         price: Number(p.price),
         discount: Number(p.discount || 0),
         description: 'Health Package',
+        isCorporate: Boolean(p.isCorporate),
       })),
     ];
 

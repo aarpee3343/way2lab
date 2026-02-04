@@ -4,8 +4,15 @@ import { getPackages, getPackageStats, deletePackageAction } from '@/app/actions
 import { Plus, Package, Activity, Search, Edit } from 'lucide-react';
 import DeleteRowButton from '@/components/admin/DeleteRowButton';
 
-export default async function PackagesPage() {
-  const packages = await getPackages();
+export const dynamic = 'force-dynamic';
+
+export default async function PackagesPage({
+  searchParams
+}: {
+  searchParams?: { q?: string };
+}) {
+  const query = typeof searchParams?.q === 'string' ? searchParams.q.trim() : '';
+  const packages = await getPackages(query);
   const stats = await getPackageStats();
 
   return (
@@ -46,10 +53,15 @@ export default async function PackagesPage() {
       {/* Data Table */}
       <div className="admin-table-container">
         <div className="admin-table-toolbar">
-          <div className="admin-search-container">
+          <form className="admin-search-container" method="get">
             <Search className="admin-search-icon" size={18}/>
-            <input className="admin-search-input" placeholder="Search packages..." />
-          </div>
+            <input
+              name="q"
+              defaultValue={query}
+              className="admin-search-input"
+              placeholder="Search packages..."
+            />
+          </form>
         </div>
 
         <table className="admin-table">
@@ -108,7 +120,7 @@ export default async function PackagesPage() {
               <tr>
                 <td colSpan={5} className="text-center py-12 text-slate-400">
                   <Package size={48} className="mx-auto mb-3 opacity-20" />
-                  No packages found. Create one to get started.
+                  {query ? `No packages found for "${query}".` : 'No packages found. Create one to get started.'}
                 </td>
               </tr>
             )}

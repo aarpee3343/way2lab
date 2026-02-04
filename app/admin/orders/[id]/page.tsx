@@ -27,6 +27,8 @@ import {
   Download
 } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 /* ================= STATUS / PAYMENT HELPERS ================= */
 
 const getStatusColor = (status: OrderStatus) => {
@@ -106,11 +108,12 @@ export default async function OrderDetailsPage({
     : 'N/A';
 
   const isCompleted = order.status === OrderStatus.COMPLETED;
-  const isTerminal = [
+  const terminalStatuses: OrderStatus[] = [
     OrderStatus.COMPLETED,
     OrderStatus.REJECTED,
     OrderStatus.CANCELLED
-  ].includes(order.status);
+  ];
+  const isTerminal = terminalStatuses.includes(order.status);
 
   return (
     <div className="max-w-7xl mx-auto pb-20 bg-slate-50 min-h-screen p-6">
@@ -296,7 +299,12 @@ export default async function OrderDetailsPage({
 
           {/* STATUS */}
           <Card title="Update Status" icon={Edit}>
-            <form action={updateOrderStatusAction} className="space-y-4">
+            <form
+              action={async (formData) => {
+                await updateOrderStatusAction(formData);
+              }}
+              className="space-y-4"
+            >
               <input type="hidden" name="orderId" value={order.id} />
               <select
                 name="status"
@@ -324,7 +332,12 @@ export default async function OrderDetailsPage({
           {/* TECHNICIAN */}
           
           <Card title="Technician Assignment" icon={UserCog}>
-            <form action={assignTechnicianAction} className="space-y-4">
+            <form
+              action={async (formData) => {
+                await assignTechnicianAction(formData);
+              }}
+              className="space-y-4"
+            >
               <input type="hidden" name="orderId" value={order.id} />
 
               {/* CURRENT ASSIGNMENT */}

@@ -1,0 +1,789 @@
+testName,slug,category,specialty,description,price,discount,scheduleReporting,preparation,specialInstruction,isActive,showOnHomepage
+"Hepatitis C Virus (HCV Antibody)-Rapid",hepatitis-c-virus-hcv-antibody-rapid,"Infectious Diseases",pathology,"Rapid test to detect antibodies against Hepatitis C Virus.",850.00,82.35,"Daily & Same day
+(19:00","No special preparation required.",,1,0
+"Cysticercosis IgG Antibody",cysticercosis-igg-antibody,"Infectious Diseases",pathology,"Detects IgG antibodies to Cysticercosis, caused by the pork tapeworm.",3200.00,81.88,"Daily & Same day
+(19:00","No special preparation required.",,1,0
+"Sex Hormone Binding Globulin (SHBG)",sex-hormone-binding-globulin-shbg-,"Hormonal & Endocrine",pathology,"Measures SHBG levels to evaluate androgen or estrogen levels.",3800.00,81.05,"Daily & 11:00/18:00","Fasting preferred for accurate results.",,1,0
+"Creatinine - 24 hrs Urine",creatinine-24-hrs-urine,"Routine Tests",pathology,"Evaluates kidney function by measuring creatinine in 24-hour urine sample.",500.00,80.00,"Daily & 11:00/18:00","Collect all urine for 24 hours in provided container.",,1,0
+"Cytomegalovirus IgG Antibody",cytomegalovirus-igg-antibody,"Infectious Diseases",pathology,"Tests for IgG antibodies to CMV indicating past infection.",750.00,80.00,"Daily & Same day (19:00","No special preparation required.",,1,0
+"Cytomegalovirus IgM Antibody",cytomegalovirus-igm-antibody,"Infectious Diseases",pathology,"Tests for IgM antibodies to CMV indicating recent infection.",750.00,80.00,"Daily & Same day (19:00","No special preparation required.",,1,0
+"Iron Saturation (%)",iron-saturation-,"Routine Tests",pathology,"Percentage of transferrin saturated with iron; used in anemia diagnosis.",1100.00,80.00,"Daily & 11:00/18:00","Fasting recommended for accurate results.",,1,0
+"Sputum for Malignant Cells",sputum-for-malignant-cells,"Cancer Markers",pathology,"Detects malignant cells in sputum; used in lung cancer screening.",750.00,80.00,"Daily & Next Day (11:00)","Early morning sputum sample recommended.",,1,0
+"Stool for Hanging Drop-Stool",stool-for-hanging-drop-stool,"Infectious Diseases",pathology,"Microscopic exam of stool for motile organisms like Vibrio cholerae.",600.00,80.00,"Daily & Next Day (11:00)","Fresh stool sample needed.",,1,0
+"Triiodothyronine - Free (FT3)",triiodothyronine-free-ft3-,"Hormonal & Endocrine",pathology,"Measures free T3 hormone; used in thyroid function assessment.",400.00,80.00,"Daily & 11:00/18:00","Fasting may be required as per doctor's advice.",,1,0
+"Culture, Aerobic - Ascitic Fluid",culture-aerobic-ascitic-fluid,"Infectious Diseases",pathology,"Bacterial culture from ascitic fluid to detect infections.",875.00,79.43,"Daily & 2 days (11:00)","Sterile sample collection required.",,1,0
+"Culture, Aerobic - Bronchial lavage",culture-aerobic-bronchial-lavage,"Infectious Diseases",pathology,"Detects pathogens in bronchial washings.",875.00,79.43,"Daily & 2 days (11:00)","Performed during bronchoscopy by physician.",,1,0
+Thyroglobulin,thyroglobulin,"Hormonal & Endocrine",pathology,"Used to evaluate thyroid cancer treatment and recurrence.",1350.00,78.52,"Daily & 11:00/18:00","Avoid thyroid medications before test as advised.",,1,0
+"Cytology -FNAC-PUS",cytology-fnac-pus,"Cancer Markers",pathology,"Examines pus sample cytologically to detect abnormal or malignant cells.",1100.00,78.18,"Daily & Next Day
+(11:00)","Sample taken by healthcare professional.",,1,0
+"Vitamin- B12 (cyanocobalamin)",vitamin-b12-cyanocobalamin-,"Routine Tests",pathology,"Measures Vitamin B12 levels to assess deficiency.",1000.00,78.00,"Daily & 11:00/18:00","Fasting preferred for best accuracy.",,1,0
+Urine-pH,urine-ph,"Routine Tests",pathology,"Determines the acidity or alkalinity of urine.",450.00,77.78,"Daily & 11:00/18:00","Midstream urine sample required.",,1,0
+"Helicobacter Pylorii IgG",helicobacter-pylorii-igg,"Infectious Diseases",pathology,"Detects IgG antibodies to H. pylori, a stomach bacteria.",2600.00,77.69,"2&4&6 & 2&4&6 (18: 00 )","No special preparation required.",,1,0
+"Thyroxine Free (FT4)",thyroxine-free-ft4-,"Hormonal & Endocrine",pathology,"Measures free T4 hormone; important in thyroid function evaluation.",400.00,77.50,"Daily & 11:00/18:00","Fasting may be advised by doctor.",,1,0
+"Microalbumin-24 hrs Urine",microalbumin-24-hrs-urine,"Routine Tests",pathology,"Detects small amounts of albumin in urine; early sign of kidney disease.",875.00,77.14,"Daily & 11:00/18:00","Collect full 24-hour urine sample.",,1,0
+"Phosphorus- 24hrs Urine",phosphorus-24hrs-urine,"Routine Tests",pathology,"Measures phosphorus levels in urine over 24 hours.",650.00,76.92,"Daily & 11:00/18:00","Complete 24-hour urine collection required.",,1,0
+"Helicobacter Pylori IgA",helicobacter-pylori-iga,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2500.00,76.80,"2&4&6 & 2&4&6 (18: 00 )","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Helicobacter Pylorii IgM",helicobacter-pylorii-igm,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2500.00,76.80,"2&4&6 & 2&4&6 (18: 00 )","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"TSH (Thyroid Stimulating Hormone)",tsh-thyroid-stimulating-hormone-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",250.00,76.00,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Hepatitis C Virus (HCV Antibody)",hepatitis-c-virus-hcv-antibody-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1200.00,75.83,"Daily & Same day
+(19:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR",mycobacterium-tuberculosis-complex-mtc-mott-pcr,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR",mycobacterium-tuberculosis-complex-mtc-mott-pcr,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (AF)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-af-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (BL)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-bl-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (Blood)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-blood-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (CSF)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-csf-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (PF)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-pf-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (SF)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-sf-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (Sputum)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-sputum-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (Tissue)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-tissue-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Mycobacterium Tuberculosis Complex (MTC) &
+MOTT PCR (Urine)",mycobacterium-tuberculosis-complex-mtc-mott-pcr-urine-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2950.00,75.59,"Daily & 3 Days","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture,Aerobic, Semen",culture-aerobic-semen,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,75.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Protein/Creatinine Ratio-24 hrs",protein-creatinine-ratio-24-hrs,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,74.86,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"FSH (Follicle Stimulating Hormone)",fsh-follicle-stimulating-hormone-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",550.00,74.55,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Glucose Challenge Test (75 Gms of
+glucose):Pregnancy",glucose-challenge-test-75-gms-of-glucose-pregnancy,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",300.00,73.33,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Troponin - I-Rapid",troponin-i-rapid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2700.00,73.33,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Troponin - T-Rapid",troponin-t-rapid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2700.00,73.33,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Urine - Ketone Bodies",urine-ketone-bodies,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",450.00,73.33,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"25 - Hydroxy Vitamin D",25-hydroxy-vitamin-d,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1250.00,72.80,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -FNAC-Air Dried Smears",cytology-fnac-air-dried-smears,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1100.00,72.73,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -FNAC-Aspirated Fluid",cytology-fnac-aspirated-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1100.00,72.73,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Air Dried Smears",cytology-pap-air-dried-smears,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1100.00,72.73,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Fixed Smears",cytology-pap-fixed-smears,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP -Peritoneal Fluid",cytology-pap-peritoneal-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Ascitic Fluid",cytology-pap-ascitic-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Aspirated Fluid",cytology-pap-aspirated-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Pleural",cytology-pap-pleural,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Pus",cytology-pap-pus,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP-Synovial",cytology-pap-synovial,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",875.00,72.57,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Pregnancy Associated Plasma Protein-A(PAPP-
+A)",pregnancy-associated-plasma-protein-a-papp-a-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",2600.00,72.31,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Cytology -PAP -Ovarian Cyst",cytology-pap-ovarian-cyst,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",850.00,71.76,"Daily & Next Day
+(11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Urine-Reducing Substance",urine-reducing-substance,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",350.00,71.43,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Allergy Profile - Drugs, Inhalants, Non-Veg and Vegetarian",allergy-profile-drugs-inhalants-non-veg-and-vegetarian,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",7500.00,71.20,"Daily & Next Day (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Folate Acid (Vitamin B9)",folate-acid-vitamin-b9-,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",1000.00,71.00,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Calcium/Creatinine Ratio - Random Urine",calcium-creatinine-ratio-random-urine,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",500.00,70.00,"Daily & 11:00/18:00","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture and Sensitivity, Urine",culture-and-sensitivity-urine,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",500.00,70.00,"Daily & 3 days (18:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic - Pericardial Fluid",culture-aerobic-pericardial-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic - Pleural Fluid",culture-aerobic-pleural-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic - Synovial  Fluid",culture-aerobic-synovial-fluid,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic, Body Fluids",culture-aerobic-body-fluids,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic, CSF",culture-aerobic-csf,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic, Ear swab",culture-aerobic-ear-swab,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic, Eye swab",culture-aerobic-eye-swab,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Culture, Aerobic, Miscellaneous",culture-aerobic-miscellaneous,"Specialized Tests",pathology,"Test-specific medical diagnostic analysis.",600.00,70.00,"Daily & 2 days (11:00)","As advised by physician. May vary depending on fluid/sample type.",,1,0
+"Adenosine Deaminase (ADA)-Serum",adenosine-deaminase-ada-serum,"Infectious Diseases",pathology,"Measures ADA in serum to aid TB diagnosis, less commonly used.",600.00,66.67,"Daily & 11:00/18:00","No special preparation required.",,1,0
+"AFB Stain (ZN Stain)-Sputum",afb-stain-zn-stain-sputum,"Infectious Diseases",pathology,"Identifies Mycobacterium tuberculosis in sputum using ZN stain.",250.00,64.00,"Daily & Next Day (11:00)","Early morning deep cough sputum sample recommended.",,1,0
+"Adenosine Deaminase (ADA)-AF",adenosine-deaminase-ada-af,"Infectious Diseases",pathology,"ADA test in ascitic fluid to aid in TB peritonitis diagnosis.",600.00,63.33,"Daily & 11:00/18:00","Sample collected from ascitic fluid. No preparation required.",,1,0
+"Adenosine Deaminase (ADA)-CSF",adenosine-deaminase-ada-csf,"Infectious Diseases",pathology,"ADA levels in CSF used to support TB meningitis diagnosis.",600.00,63.33,"Daily & 11:00/18:00","Sample from lumbar puncture. No special prep required.",,1,0
+"Adenosine Deaminase (ADA)-Pericardial Fluid",adenosine-deaminase-ada-pericardial-fluid,"Infectious Diseases",pathology,"Measures ADA in pericardial fluid to evaluate tubercular pericarditis.",600.00,63.33,"Daily & 11:00/18:00","No preparation required. Invasive fluid collection needed.",,1,0
+"Adenosine Deaminase (ADA)-PF",adenosine-deaminase-ada-pf,"Infectious Diseases",pathology,"ADA test in pleural fluid to assess tubercular pleuritis.",600.00,63.33,"Daily & 11:00/18:00","Requires pleural fluid. No dietary restrictions.",,1,0
+"Adenosine Deaminase (ADA)-PUS",adenosine-deaminase-ada-pus,"Infectious Diseases",pathology,"ADA levels in pus may support TB diagnosis in abscesses.",600.00,63.33,"Daily & 11:00/18:00","Sample required from site. No fasting necessary.",,1,0
+"Alpha Feto Protein (AFP)",alpha-feto-protein-afp-,"Cancer Markers",pathology,"Tumor marker primarily for liver and germ cell tumors.",600.00,63.33,"Daily & 11:00/18:00","No special preparation required.",,1,0
+"Anti Cyclic Citrullinated Peptide; ANTI CCP",anti-cyclic-citrullinated-peptide-anti-ccp,"Allergy & Immunology",pathology,"Marker for rheumatoid arthritis.",1500.00,61.33,"Daily & Same day
+(19:00","No special preparation required.",,1,0
+"Alanine Transaminase (ALT/IMPT)",alanine-transaminase-alt-impt-,"Routine Tests",pathology,"Enzyme test to assess liver function and detect liver damage.",150.00,60.00,"Daily & 11:00/18:00","Fasting not mandatory but preferred. Avoid alcohol before test.",,1,0
+"Absolute Reticulocyte Count",absolute-reticulocyte-count,"Routine Tests",pathology,"Measures reticulocytes to evaluate bone marrow function and anemia treatment.",350.00,57.14,"Daily & 11:00/18:00","Fasting not necessary unless advised by doctor.",,1,0
+"ANCA-MPO (Anti Myeloperoxidase Antibodies)",anca-mpo-anti-myeloperoxidase-antibodies-,"Allergy & Immunology",pathology,"Detects antibodies related to vasculitis and autoimmune diseases.",1500.00,56.67,"Daily & Same day
+(19:00","No special preparation required.",,1,0
+"17- Alpha Hydroxy Progesterone (17-OHP)",17-alpha-hydroxy-progesterone-17-ohp-,"Hormonal & Endocrine",pathology,"Evaluates adrenal gland function, commonly used to screen for congenital adrenal hyperplasia.",1300.00,55.38,"1&3&5 & 1&3&5 (18:00)","Test is best done in the morning. Fasting may be recommended.",,1,0
+"Albert Stain (Diptheria Bacilli)-Throat Swab",albert-stain-diptheria-bacilli-throat-swab,"Infectious Diseases",pathology,"Albert stain to detect Corynebacterium diphtheriae in throat swab.",250.00,52.00,"Daily & Next Day (11:00)","Sample collected via throat swab. No preparation needed.",,1,0
+"AFB Stain (ZN Stain)-Ascitic Fluid",afb-stain-zn-stain-ascitic-fluid,"Infectious Diseases",pathology,"Identifies acid-fast bacilli in ascitic fluid using ZN stain.",300.00,50.00,"Daily & Next Day (11:00)","Ascitic fluid collection needed. No special prep.",,1,0
+"AFB Stain (ZN Stain)-Body fluids",afb-stain-zn-stain-body-fluids,"Infectious Diseases",pathology,"ZN staining for AFB detection in various body fluids.",300.00,50.00,"Daily & Next Day (11:00)","Depends on the body fluid. No prep needed.",,1,0
+"Absolute Eosinophil Count",absolute-eosinophil-count,"Allergy & Immunology",pathology,"Counts eosinophils in blood to detect allergies, parasitic infections, or autoimmune diseases.",150.00,46.67,"Daily & 11:00/18:00","No special preparation needed.",,1,0
+"Absolute Lymphocyte Count",absolute-lymphocyte-count,"Routine Tests",pathology,"Measures lymphocytes to evaluate immune function or infections.",150.00,46.67,"Daily & 11:00/18:00","No special preparation required.",,1,0
+"Absolute Neutrophil Count",absolute-neutrophil-count,"Routine Tests",pathology,"Measures neutrophils to assess immune status and infection risk.",150.00,46.67,"Daily & 11:00/18:00","No special preparation required.",,1,0
+"Alkaline Phosphatase",alkaline-phosphatase,"Routine Tests",pathology,"Measures ALP enzyme for liver or bone health.",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred. Inform about any medication use.",,1,0
+"ANCA-PR3 (Serin Proteinase 3 AntibodieS)",anca-pr3-serin-proteinase-3-antibodies-,"Allergy & Immunology",pathology,"PR3 antibodies test for autoimmune vasculitis.",1500.00,46.67,"Daily & Same day
+(19:00","No special preparation required.",,1,0
+Amylase-Serum,amylase-serum,"Routine Tests",pathology,"Common test for pancreatic disorders.",400.00,45.00,"Daily & 11:00/18:00","No fasting required.",,1,0
+"Amylase-Urine Random",amylase-urine-random,"Routine Tests",pathology,"Detects urinary amylase levels, useful for kidney/pancreatic evaluation.",400.00,45.00,"Daily & 11:00/18:00","Preferably collect mid-stream urine.",,1,0
+"Angiotensin Converting Enzyme (ACE)",angiotensin-converting-enzyme-ace-,"Cardiac & Diabetes",pathology,"Detects levels of ACE enzyme associated with sarcoidosis.",900.00,43.33,"Daily & 11:00/18:00","Fasting preferred. Avoid ACE inhibitors before sample.",,1,0
+"Amylase-Body Fluid",amylase-body-fluid,"Routine Tests",pathology,"Evaluates pancreatic enzyme levels in body fluid.",500.00,42.00,"Daily & 11:00/18:00","Inform lab about ongoing medications.",,1,0
+Aldosterone,aldosterone,"Hormonal & Endocrine",pathology,"Hormone test to evaluate adrenal gland function and blood pressure regulation.",2200.00,40.91,"1&3&5 & 1&3&5 (18:00)","Patient may need to be upright for hours before sample collection.",,1,0
+"Amphetamine - Urine",amphetamine-urine,"Specialized Tests",pathology,"Screens for presence of amphetamine in urine.",975.00,40.51,"Daily & 11:00/18:00","Avoid substances for 24 hours that might interfere (e.g., cold medications).",,1,0
+"AFB Stain (ZN Stain)-Bronchial lavage",afb-stain-zn-stain-bronchial-lavage,"Infectious Diseases",pathology,"Stains bronchial lavage samples for acid-fast bacilli.",250.00,40.00,"Daily & Next Day (11:00)","Performed post-bronchoscopy. Fasting may be required.",,1,0
+"AFB Stain (ZN Stain)-CSF",afb-stain-zn-stain-csf,"Infectious Diseases",pathology,"ZN stain used to detect TB bacteria in CSF.",250.00,40.00,"Daily & Next Day (11:00)","CSF via lumbar puncture. No fasting required.",,1,0
+"AFB Stain (ZN Stain)-Pericardial Fluid",afb-stain-zn-stain-pericardial-fluid,"Infectious Diseases",pathology,"Detects TB in pericardial fluid via ZN staining.",250.00,40.00,"Daily & Next Day (11:00)","Fluid sample collection needed. No prep.",,1,0
+"AFB Stain (ZN Stain)-Peritoneal Fluid",afb-stain-zn-stain-peritoneal-fluid,"Infectious Diseases",pathology,"ZN staining for TB bacteria in peritoneal fluid.",250.00,40.00,"Daily & Next Day (11:00)","Sample collection required. No dietary restrictions.",,1,0
+"AFB Stain (ZN Stain)-Pleural Fluid",afb-stain-zn-stain-pleural-fluid,"Infectious Diseases",pathology,"Detects acid-fast bacilli in pleural fluid using Ziehl-Neelsen stain.",250.00,40.00,"Daily & Next Day (11:00)","Sample collection via thoracentesis. No special prep required.",,1,0
+"AFB Stain (ZN Stain)-PUS",afb-stain-zn-stain-pus,"Infectious Diseases",pathology,"Ziehl-Neelsen staining for acid-fast bacilli in pus samples.",250.00,40.00,"Daily & Next Day (11:00)","Pus collection required. No patient preparation needed.",,1,0
+"AFB Stain (ZN Stain)-Synovial Fluid",afb-stain-zn-stain-synovial-fluid,"Infectious Diseases",pathology,"AFB detection via ZN stain in synovial (joint) fluid.",250.00,40.00,"Daily & Next Day (11:00)","Synovial fluid collection needed. No special preparation.",,1,0
+"AFB Stain (ZN Stain)-Tissue",afb-stain-zn-stain-tissue,"Infectious Diseases",pathology,"Ziehl-Neelsen stain to identify TB bacilli in tissue samples.",250.00,40.00,"Daily & Next Day (11:00)","Tissue biopsy may be needed. Fasting if sedation is used.",,1,0
+"AFB Stain (ZN Stain)-Urine",afb-stain-zn-stain-urine,"Infectious Diseases",pathology,"AFB stain on urine to detect genitourinary tuberculosis.",250.00,40.00,"Daily & Next Day (11:00)","Collect early morning midstream urine. No special prep.",,1,0
+Albumin-Fluid,albumin-fluid,"Routine Tests",pathology,"Measures albumin levels in body fluids to assess infections or disease.",150.00,40.00,"Daily & 11:00/18:00","Fluid sample needed. No special prep.",,1,0
+Albumin-Serum,albumin-serum,"Routine Tests",pathology,"Measures serum albumin levels to assess nutritional and liver status.",150.00,40.00,"Daily & 11:00/18:00","Fasting preferred but not required.",,1,0
+"ACTH (Adreno Corticotrophic Hormone)",acth-adreno-corticotrophic-hormone-,"Hormonal & Endocrine",pathology,"Measures ACTH hormone to evaluate pituitary and adrenal gland function.",1300.00,38.46,"Daily & 11:00/18:00","Blood sample should be drawn early morning. Avoid stress before the test.",,1,0
+Aldolase,aldolase,"Specialized Tests",pathology,"Enzyme test used to diagnose muscle damage or diseases.",900.00,35.56,"Daily & Same day
+(18:00)","Fasting may be recommended. Avoid muscle exertion.",,1,0
+"1,25-Dihydroxy Vitamin D3",1-25-dihydroxy-vitamin-d3,"Routine Tests",pathology,"Measures active form of Vitamin D to assess calcium metabolism and kidney function.",3200.00,32.50,"Daily & Next Day 11:00","Fasting not required. Inform doctor of any supplements or medications.",,1,0
+"AFB Culture (LJ Method) - Ascitic Fluid",afb-culture-lj-method-ascitic-fluid,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis in ascitic fluid using Lowenstein-Jensen medium.",650.00,32.31,"Daily & 8 Weeks (11:00)","Ascitic fluid collection required. No dietary restrictions.",,1,0
+"AFB Culture (LJ Method) - Miscellaneous",afb-culture-lj-method-miscellaneous,"Infectious Diseases",pathology,"Culture of miscellaneous samples on LJ medium for TB detection.",650.00,32.31,"Daily & 8 Weeks (11:00)","Depends on sample type. No standard preparation needed.",,1,0
+"AFB Culture (LJ Method)- Body Fluids",afb-culture-lj-method-body-fluids,"Infectious Diseases",pathology,"Culture of body fluids for tuberculosis using LJ method.",650.00,32.31,"Daily & 8 Weeks (11:00)","Fluid collection required. No specific preparation.",,1,0
+"AFB Culture (LJ Method) Bronchial lavage",afb-culture-lj-method-bronchial-lavage,"Infectious Diseases",pathology,"Detects TB from bronchial lavage sample on LJ culture.",650.00,32.31,"Daily & 8 Weeks (11:00)","Fasting may be required before bronchoscopy.",,1,0
+"AFB Culture (LJ Method)- CSF",afb-culture-lj-method-csf,"Infectious Diseases",pathology,"LJ culture to detect TB meningitis from cerebrospinal fluid.",650.00,32.31,"Daily & 8 Weeks (11:00)","CSF collected via lumbar puncture. No special prep.",,1,0
+"AFB Culture (LJ Method) -Pericardial Fluid",afb-culture-lj-method-pericardial-fluid,"Infectious Diseases",pathology,"Culture of pericardial fluid for TB using LJ medium.",650.00,32.31,"Daily & 8 Weeks (11:00)","Requires fluid aspiration. No dietary restrictions.",,1,0
+"AFB Culture (LJ Method) -Peritoneal Fluid",afb-culture-lj-method-peritoneal-fluid,"Infectious Diseases",pathology,"Detects TB in peritoneal fluid using LJ culture technique.",650.00,32.31,"Daily & 8 Weeks (11:00)","Sample collected aseptically. No prep needed.",,1,0
+"AFB Culture (LJ Method)- Pleural fluid",afb-culture-lj-method-pleural-fluid,"Infectious Diseases",pathology,"TB culture using LJ medium from pleural fluid.",650.00,32.31,"Daily & 8 Weeks (11:00)","Thoracentesis required. No dietary restrictions.",,1,0
+"AFB Culture (LJ Method)- Pus",afb-culture-lj-method-pus,"Infectious Diseases",pathology,"Detection of TB from pus samples using LJ culture.",650.00,32.31,"Daily & 8 Weeks (11:00)","No special preparation required.",,1,0
+"AFB Culture (LJ Method)- Sputum",afb-culture-lj-method-sputum,"Infectious Diseases",pathology,"Cultures sputum for Mycobacterium tuberculosis using LJ medium.",650.00,32.31,"Daily & 8 Weeks (11:00)","Early morning sample recommended. Rinse mouth before collection.",,1,0
+"AFB Culture (LJ Method) -Synovial Fluid EXAMINATION BY ZN STAIN - SYNOVIAL FLUID",afb-culture-lj-method-synovial-fluid-examination-by-zn-stain-synovial-fluid,"Infectious Diseases",pathology,"Combines LJ culture and ZN staining for TB in synovial fluid.",650.00,32.31,"Daily & 8 Weeks (11:00)","Synovial fluid aspiration required. No dietary prep.",,1,0
+"AFB Culture (LJ Method)- Tissue",afb-culture-lj-method-tissue,"Infectious Diseases",pathology,"Detects TB in tissue samples via LJ method.",650.00,32.31,"Daily & 8 Weeks (11:00)","Tissue biopsy required. Follow fasting or sedation guidelines.",,1,0
+"AFB Culture (LJ Method)- Urine",afb-culture-lj-method-urine,"Infectious Diseases",pathology,"TB detection in urine samples using LJ culture.",650.00,32.31,"Daily & 8 Weeks (11:00)","Early morning midstream urine sample preferred.",,1,0
+"AFB Culture (BD MGIT) - Ascitic Fluid",afb-culture-bd-mgit-ascitic-fluid,"Infectious Diseases",pathology,"Detects TB bacteria in ascitic fluid using MGIT culture.",1050.00,31.43,"Daily & 6 Weeks (11:00)","No fasting required. Fluid sample needed.",,1,0
+"AFB Culture (BD MGIT) - Bronchial lavage",afb-culture-bd-mgit-bronchial-lavage,"Infectious Diseases",pathology,"Identifies TB or mycobacteria in bronchial lavage samples.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Performed post-bronchoscopy. No food 6 - 8 hours before.",,1,0
+"AFB Culture (BD MGIT) - Pericardial Fluid",afb-culture-bd-mgit-pericardial-fluid,"Infectious Diseases",pathology,"Culture for TB bacteria in pericardial fluid using MGIT method.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Requires fluid aspiration. No specific prep.",,1,0
+"AFB Culture (BD MGIT) - Peritoneal Fluid",afb-culture-bd-mgit-peritoneal-fluid,"Infectious Diseases",pathology,"MGIT culture for TB in peritoneal fluid.",1050.00,31.43,"Daily & 6 Weeks (11:00)","No preparation needed. Sterile collection required.",,1,0
+"AFB Culture (BD MGIT) - Pleural  Fluid",afb-culture-bd-mgit-pleural-fluid,"Infectious Diseases",pathology,"Detects mycobacterium in pleural fluid using MGIT method.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Thoracentesis needed. No fasting necessary.",,1,0
+"AFB Culture (BD MGIT) - Synovial Fluid",afb-culture-bd-mgit-synovial-fluid,"Infectious Diseases",pathology,"Cultures synovial fluid to identify TB arthritis.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Synovial fluid aspirated. No dietary restrictions.",,1,0
+"AFB Culture (BD MGIT)- Miscellaneous",afb-culture-bd-mgit-miscellaneous,"Infectious Diseases",pathology,"Mycobacterial culture for non-standard body fluids or tissues.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Sample dependent. No universal preparation.",,1,0
+"AFB Culture (BD MGIT)-Body Fluids",afb-culture-bd-mgit-body-fluids,"Infectious Diseases",pathology,"General TB culture using MGIT from body fluids like CSF, pleural, or ascitic fluid.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Requires sterile fluid sample. No food restrictions.",,1,0
+"AFB Culture (BD MGIT)-CSF",afb-culture-bd-mgit-csf,"Infectious Diseases",pathology,"Detects TB meningitis by culturing cerebrospinal fluid.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Lumbar puncture required. No dietary prep needed.",,1,0
+"AFB Culture (BD MGIT)-Pus",afb-culture-bd-mgit-pus,"Infectious Diseases",pathology,"Mycobacteria culture from pus sample to detect TB abscess.",1050.00,31.43,"Daily & 6 Weeks (11:00)","No specific preparation required.",,1,0
+"AFB Culture (BD MGIT)-Sputum",afb-culture-bd-mgit-sputum,"Infectious Diseases",pathology,"TB diagnosis through sputum culture using MGIT.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Collect morning sputum after rinsing mouth.",,1,0
+"AFB Culture (BD MGIT)-TissueRAPID BACTEC, TISSUE",afb-culture-bd-mgit-tissuerapid-bactec-tissue,"Infectious Diseases",pathology,"Rapid culture of tissue samples for TB using BACTEC system.",1050.00,31.43,"Daily & 6 Weeks (11:00)","Requires aseptic tissue collection. No fasting required.",,1,0
+Ammonia,ammonia,"Specialized Tests",pathology,"Measures ammonia levels to evaluate liver function.",1000.00,28.00,"Daily & 11:00/18:00","Fasting preferred. Avoid protein-rich meals before test.",,1,0
+5-a-Dihydrotestosterone,5-a-dihydrotestosterone,"Hormonal & Endocrine",pathology,"Assesses levels of DHT, a potent androgen hormone linked to hair loss and prostate health.",3000.00,24.00,"1&3&5 & 1&3&5 (18:00)","Fasting preferred. Avoid hormone supplements prior to the test.",,1,0
+"17-Ketosteroids-24hrs Urine",17-ketosteroids-24hrs-urine,"Hormonal & Endocrine",pathology,"Measures adrenal and gonadal steroid levels in 24-hour urine to evaluate hormone disorders.",3000.00,22.00,"Daily & Next day (18:00)","Avoid certain medications and foods 24 hours before and during urine collection.",,1,0
+Aluminium,aluminium,"Specialized Tests",pathology,"Measures aluminium levels in body fluids.",2500.00,22.00,"Daily & Reporting - 3Working Days","Avoid antacids and aluminium-containing medications before test.",,1,0
+"Acid Phosphatase-Total",acid-phosphatase-total,"Routine Tests",pathology,"Assesses total acid phosphatase levels for liver, bone, and prostate conditions.",250.00,20.00,"Daily & 11:00/18:00","No special preparation required.",,1,0
+"Allergy Drugs",allergy-drugs,"Allergy & Immunology",pathology,"Detects allergic reactions to common medications.",1800.00,20.00,"Daily & Next Day(11:00)","Avoid antihistamines for 5 - 7 days before test.",,1,0
+"Alpha 1 Antitrypsin-AAT",alpha-1-antitrypsin-aat,"Genetic & Wellness",pathology,"Screens for AAT deficiency, related to lung and liver diseases.",1800.00,20.00,"Daily & 11:00/18:00","No special preparation required.",,1,0
+Androstenedione,androstenedione,"Hormonal & Endocrine",pathology,"Measures adrenal androgen levels.",1600.00,18.75,"Daily & 11:00/18:00","Blood sample; no fasting required.",,1,0
+Alcohol-Serum,alcohol-serum,"Specialized Tests",pathology,"Measures alcohol concentration in blood.",1200.00,15.83,"Daily & 11:00/18:00","No alcohol consumption before the test unless directed.",,1,0
+Alcohol-Urine,alcohol-urine,"Specialized Tests",pathology,"Detects presence of alcohol metabolites in urine.",1200.00,15.83,"Daily & 11:00/18:00","Midstream urine sample preferred. No prep required.",,1,0
+"5-HIAA (Hydroxy Indole Acetic Acid)",5-hiaa-hydroxy-indole-acetic-acid-,"Specialized Tests",pathology,"Measures breakdown of serotonin in urine to diagnose carcinoid tumors.",3000.00,13.33,"Daily & Next day (18:00)","Avoid bananas, avocados, tomatoes, and medications like aspirin for 48 hours before and during urine collection.",,1,0
+"Allergy Food (Non-Vegetarian)",allergy-food-non-vegetarian-,"Allergy & Immunology",pathology,"Panel test to identify allergic responses to non-veg food items.",1500.00,12.00,"Daily & Next Day
+(11:00)","Avoid antihistamines before test. No fasting required.",,1,0
+"Allergy Food (Vegetarian)",allergy-food-vegetarian-,"Allergy & Immunology",pathology,"Tests for allergic reactions to common vegetarian foods.",1500.00,12.00,"Daily & Next Day
+(11:00)","Avoid antihistamines for accurate results.",,1,0
+"Allergy Inhalants",allergy-inhalants,"Allergy & Immunology",pathology,"Detects allergic reactions to common airborne substances.",1500.00,12.00,"Daily & Next Day
+(11:00)","No special preparation required. Avoid antihistamines for 48 hours.",,1,0
+"Acid Fast Suspectibility - 5 drugs - Mycobacterium Pure Culture - LJ",acid-fast-suspectibility-5-drugs-mycobacterium-pure-culture-lj,"Infectious Diseases",pathology,"Checks resistance of TB bacteria to 5 key drugs using LJ method.",2800.00,10.00,"Daily & 8 weeks (11:00)","Performed on cultured TB sample. No preparation required.",,1,0
+"Anti Dnase B",anti-dnase-b,"Allergy & Immunology",pathology,"Used to diagnose recent streptococcal infection.",1600.00,10.00,"2 & 5 & 5 & 2 18:00","No special preparation required.",,1,0
+"Amino Leveulinic acid-24hrs Urine",amino-leveulinic-acid-24hrs-urine,"Specialized Tests",pathology,"Detects porphyria and lead poisoning through urine test.",2800.00,7.14,"Daily & Same day
+(18:00)","Collect complete 24-hour urine sample.",,1,0
+"Acetyl Choline Receptor Antibodies(ACHR)",acetyl-choline-receptor-antibodies-achr-,"Allergy & Immunology",pathology,"Used to diagnose myasthenia gravis by detecting autoantibodies against muscle receptors.",4500.00,6.67,"1&3&5 & 1&3&5 (18:00)","No special preparation required.",,1,0
+"Acid Fast Suspectibility - 10 drugs",acid-fast-suspectibility-10-drugs,"Infectious Diseases",pathology,"Determines tuberculosis (TB) bacteria resistance to 10 anti-TB drugs.",4500.00,6.67,"Daily & 8 weeks (11:00)","No special preparation needed. Requires Mycobacterium culture.",,1,0
+"Acid Fast Suspectibility - 10 drugs - Mycobacterium Pure Culture - MGIT",acid-fast-suspectibility-10-drugs-mycobacterium-pure-culture-mgit,"Infectious Diseases",pathology,"Drug susceptibility test for TB bacteria using MGIT culture technique.",9000.00,6.67,"Daily & 3 Weeks (11:00)","No preparation needed. Sample required from positive culture.",,1,0
+"Acid Fast Suspectibility - 5drugs - Mycobacterium Pure Culture - MGIT",acid-fast-suspectibility-5drugs-mycobacterium-pure-culture-mgit,"Infectious Diseases",pathology,"Tests resistance to 5 anti-TB drugs using liquid culture (MGIT).",5500.00,6.18,"Daily & 3 Weeks (11:00)","Requires culture of Mycobacterium. No fasting needed.",,1,0
+17p-FISH,17p-fish,"Genetic & Wellness",pathology,"Detects deletion or mutation in 17p chromosome commonly seen in blood cancers like CLL.",6000.00,6.00,"Daily & 6 days (18:00)","No special preparation needed. Requires blood or bone marrow sample.",,1,0
+"Acid Phosphatase - Prostatic (PAP)",acid-phosphatase-prostatic-pap-,"Cancer Markers",pathology,"Measures PAP enzyme level as a marker for prostate cancer.",600.00,5.00,"Daily & 11:00/18:00","Fasting not required. Avoid digital rectal exam 48 hrs before test.",,1,0
+"Culture, Aerobic, Miscellaneous- Automated Method",culture-aerobic-miscellaneous-automated-method,"Infectious Diseases",pathology,"Identifies bacterial infections in various samples using automated systems",600.00,70.00,"Daily & 2 days (11:00)","Depends on sample type - follow specific collection instructions",,1,0
+"Culture, Aerobic, Nasal swab",culture-aerobic-nasal-swab,"Infectious Diseases",pathology,"Detects bacterial infections in nasal passages",600.00,70.00,"Daily & 2 days (11:00)","Avoid nasal sprays/medications 24hr before; no nose blowing 1hr prior",,1,0
+"Culture, Aerobic, Pus",culture-aerobic-pus,"Infectious Diseases",pathology,"Identifies bacteria causing abscesses/wound infections",600.00,70.00,"Daily & 2 days (11:00)","Clean surrounding skin; collect before antibiotics if possible",,1,0
+"Culture, Aerobic, Sputum",culture-aerobic-sputum,"Infectious Diseases",pathology,"Diagnoses lower respiratory infections (pneumonia, TB)",600.00,70.00,"Daily & 2 days (11:00)","Morning deep cough sample; rinse mouth before collection",,1,0
+"Culture, Aerobic, Stool",culture-aerobic-stool,"Infectious Diseases",pathology,"Detects GI pathogens (Salmonella, E. coli etc.)",600.00,70.00,"Daily & 2 days (11:00)","Collect in sterile container; avoid urine contamination",,1,0
+"Culture, Aerobic, Throat swab",culture-aerobic-throat-swab,"Infectious Diseases",pathology,"Identifies strep throat/diphtheria",600.00,70.00,"Daily & 2 days (11:00)","No eating/drinking 1hr before; avoid mouthwash morning of test",,1,0
+"Culture, Aerobic, Vaginal sawb",culture-aerobic-vaginal-sawb,"Infectious Diseases",pathology,"Diagnoses vaginal infections (bacterial vaginosis)",600.00,70.00,"Daily & 2 days (11:00)","Avoid douching/tampons 24hr prior; no intercourse 48hr before",,1,0
+"T3 (Triiodothyronine)",t3-triiodothyronine-,"Hormonal & Endocrine",pathology,"Evaluates thyroid function (hyperthyroidism)",200.00,70.00,"Daily & 11:00/18:00","Fasting preferred; morning sample ideal",,1,0
+"T4 (Thyroxine)",t4-thyroxine-,"Hormonal & Endocrine",pathology,"Measures thyroid hormone production",200.00,70.00,"Daily & 11:00/18:00","Fasting preferred; consistent timing if serial tests",,1,0
+"Total IgE",total-ige,"Allergy & Immunology",pathology,"Assesses allergic responses/parasitic infections",700.00,70.00,"Daily & 11:00/18:00","No antihistamines 48hr before; fasting not required",,1,0
+"Phenytoin (Eptoin)",phenytoin-eptoin-,"Specialized Tests",pathology,"Monitors anti-seizure medication levels",950.00,69.47,"Daily & 11:00/18:00","Take medication as normal; note timing of last dose",,1,0
+"Echinococcus Antibody IgG (Hydatid serology)",echinococcus-antibody-igg-hydatid-serology-,"Infectious Diseases",pathology,"Detects hydatid disease (dog tapeworm infection)",2100.00,69.05,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Glucose Tolerance Test (GTT) 3 Samples(90)",glucose-tolerance-test-gtt-3-samples-90-,"Cardiac & Diabetes",pathology,"Diagnoses diabetes/insulin resistance",450.00,68.89,"Daily & 11:00/18:00","12hr fasting required; no smoking/exercise during test",,1,0
+"LH (Leutinizing Hormone)",lh-leutinizing-hormone-,"Hormonal & Endocrine",pathology,"Evaluates reproductive/pituitary function",450.00,68.89,"Daily & 11:00/18:00","For women: day 3 of cycle preferred; fasting not required",,1,0
+"Prolactin (PRL)",prolactin-prl-,"Hormonal & Endocrine",pathology,"Assesses pituitary function/lactation disorders",450.00,68.89,"Daily & 11:00/18:00","Morning test; no breast stimulation 24hr prior; stress affects results",,1,0
+"Hepatitis Core Antibody IgM (Anti HBc - IgM)",hepatitis-core-antibody-igm-anti-hbc-igm-,"Infectious Diseases",pathology,"Detects acute hepatitis B infection",1150.00,68.70,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Hepatitis Core Antibody Total (HBcAb- Total)",hepatitis-core-antibody-total-hbcab-total-,"Infectious Diseases",pathology,"Identifies current/past hepatitis B exposure",1150.00,68.70,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Complete Blood Count (CBC)",complete-blood-count-cbc-,"Routine Tests",pathology,"Basic health screen (anemia, infection, etc.)",350.00,68.57,"Daily & 11:00/18:00","Fasting preferred but not required; avoid strenuous exercise before test",,1,0
+"Phosphorus - Serum",phosphorus-serum,"Routine Tests",pathology,"Evaluates bone/kidney function and mineral metabolism",350.00,68.57,"Daily & 11:00/18:00","Fasting 8-10 hours required",,1,0
+"Packed Cell Volume(PCV)",packed-cell-volume-pcv-,"Routine Tests",pathology,"Measures red blood cell percentage (hematocrit)",250.00,68.00,"Daily & 11:00/18:00","Fasting not required; well-hydrated for accurate results",,1,0
+"Triglycerides (TGL)",triglycerides-tgl-,"Cardiac & Diabetes",pathology,"Measures blood fats for cardiovascular risk assessment",250.00,68.00,"Daily & 11:00/18:00","12-14 hour fasting required; no alcohol 24hr prior",,1,0
+"Treponema Pallidum Haemagglutination Assay",treponema-pallidum-haemagglutination-assay,"Infectious Diseases",pathology,"Syphilis diagnosis (confirmatory test)",900.00,67.78,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Hepatitis B envelope Antibody (AntiHBe)",hepatitis-b-envelope-antibody-antihbe-,"Infectious Diseases",pathology,"Determines HBV infection stage/immunity",1100.00,67.27,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Hepatitis B Envelope Antigen (HBeAg)",hepatitis-b-envelope-antigen-hbeag-,"Infectious Diseases",pathology,"Assesses HBV replication and infectivity",1100.00,67.27,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Culture, Anaerobic -OT Swab",culture-anaerobic-ot-swab,"Infectious Diseases",pathology,"Identifies anaerobic bacteria in surgical wounds",875.00,66.86,"Daily & 7 days (18:00)","Collect before antibiotics; maintain anaerobic transport conditions",,1,0
+"Hepatitis A virus-IgG (HAV IgG)",hepatitis-a-virus-igg-hav-igg-,"Infectious Diseases",pathology,"Checks immunity to Hepatitis A",1750.00,66.86,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Immunoglobulin A-(IgA)",immunoglobulin-a-iga-,"Allergy & Immunology",pathology,"Evaluates immune function/mucosal immunity",875.00,66.86,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Immunoglobulin G(IgG):Quantitative",immunoglobulin-g-igg-quantitative,"Allergy & Immunology",pathology,"Measures total IgG for immune status assessment",875.00,66.86,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Immunoglobulin M(IgM):Quantitative",immunoglobulin-m-igm-quantitative,"Allergy & Immunology",pathology,"Detects acute infections/immune deficiencies",875.00,66.86,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Activated Partial Thromboplastin Time
+(APTT/PTTK)",activated-partial-thromboplastin-time-aptt-pttk-,"Cardiac & Diabetes",pathology,"Assesses intrinsic clotting pathway",450.00,66.67,"Daily & 11:00/18:00","Inform if taking blood thinners; fasting not required",,1,0
+"Coombs Test - Direct",coombs-test-direct,"Specialized Tests",pathology,"Detects antibodies attached to RBCs (hemolytic anemia)",450.00,66.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Coombs Test - Indirect",coombs-test-indirect,"Specialized Tests",pathology,"Screens for antibodies against RBCs in serum",450.00,66.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+Ferritin,ferritin,"Routine Tests",pathology,"Measures iron storage levels",600.00,66.67,"Daily & 11:00/18:00","Fasting preferred; morning sample ideal",,1,0
+"HIV 1& 2 antibodies & P24 Combo",hiv-1-2-antibodies-p24-combo,"Infectious Diseases",pathology,"Early HIV detection (antigen-antibody test)",1950.00,66.67,"Daily & Same day
+(19:00","Fasting not required; window period applies",,1,0
+"Prothrombin Time (PT)",prothrombin-time-pt-,"Cardiac & Diabetes",pathology,"Evaluates extrinsic clotting pathway",450.00,66.67,"Daily & 11:00/18:00","Inform if taking warfarin; fasting not required",,1,0
+"Rheumatoid Factor, RA",rheumatoid-factor-ra,"Allergy & Immunology",pathology,"Diagnoses rheumatoid arthritis",450.00,66.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Widal Test (Tube Test)",widal-test-tube-test-,"Infectious Diseases",pathology,"Detects typhoid fever antibodies",600.00,66.67,"Daily & Same day
+(19:00","Fasting not required; avoid antibiotics before test",,1,0
+"TB Gold- IGRA (IFN-y)",tb-gold-igra-ifn-y-,"Infectious Diseases",pathology,"Tuberculosis screening (blood-based)",2600.00,66.54,"Daily & Same day
+(19:00","No TB vaccine 4 weeks prior; fasting not required",,1,0
+Progesterone-Serum,progesterone-serum,"Hormonal & Endocrine",pathology,"Assesses ovulation/pregnancy",650.00,66.15,"Daily & 11:00/18:00","For women: day 21 of cycle (or as directed); fasting not required",,1,0
+"Protein/Creatinine Ratio-Ramdom",protein-creatinine-ratio-ramdom,"Routine Tests",pathology,"Screens for kidney disease (alternative to 24hr urine)",650.00,66.15,"Daily & 11:00/18:00","First morning urine preferred; avoid strenuous exercise 24hr before",,1,0
+Hemogram,hemogram,"Routine Tests",pathology,"Complete blood evaluation (RBC, WBC, platelets, hemoglobin)",350.00,65.71,"Daily & 11:00/18:00","Fasting preferred but not required; avoid strenuous exercise before test",,1,0
+"Varicella Zoster Virus IgG",varicella-zoster-virus-igg,"Infectious Diseases",pathology,"Checks immunity to chickenpox/shingles",2100.00,65.71,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"Varicella Zoster Virus IgM",varicella-zoster-virus-igm,"Infectious Diseases",pathology,"Detects active chickenpox/shingles infection",2100.00,65.71,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"Allergy Profile (Drugs,Inhalants,Non-Veg and
+Vegetarian",allergy-profile-drugs-inhalants-non-veg-and-vegetarian,"Allergy & Immunology",pathology,"Comprehensive allergy screening panel",7500.00,65.33,"Daily & Next Day
+(11:00)","Stop antihistamines 5-7 days prior; no steroid creams on test sites",,1,0
+"Liver-Kidney Microsome - 1 Antibody (LKM 1)",liver-kidney-microsome-1-antibody-lkm-1-,"Allergy & Immunology",pathology,"Autoimmune hepatitis marker",2500.00,65.20,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"Testosterone - Total",testosterone-total,"Hormonal & Endocrine",pathology,"Evaluates male hormones/reproductive health",600.00,65.00,"Daily & 11:00/18:00","Morning sample (7-10 AM); fasting preferred",,1,0
+"Free Beta HCG(600)",free-beta-hcg-600-,"Cancer Markers",pathology,"Early pregnancy detection/Down syndrome screening",2450.00,64.49,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Anti TPO (Anti Thyroperoxidase/ Microsomal)",anti-tpo-anti-thyroperoxidase-microsomal-,"Allergy & Immunology",pathology,"Diagnoses Hashimoto's thyroiditis",1000.00,64.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Cardiolipin Antibody, IgA",cardiolipin-antibody-iga,"Specialized Tests",pathology,"Antiphospholipid syndrome screening",800.00,63.75,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Cardiolipin Antibody, IgG",cardiolipin-antibody-igg,"Specialized Tests",pathology,"Thrombophilia/recurrent miscarriage evaluation",800.00,63.75,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Cardiolipin Antibody,IgM",cardiolipin-antibody-igm,"Specialized Tests",pathology,"Autoimmune disorder assessment",800.00,63.75,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Lead Random Urine",lead-random-urine,"Specialized Tests",pathology,"Heavy metal toxicity screening",1600.00,63.75,"Daily & 3 days (18:00)","First morning urine preferred; use metal-free collection container",,1,0
+"Prostate Specific Antigen Free",prostate-specific-antigen-free,"Cancer Markers",pathology,"Prostate cancer screening (free/total ratio)",800.00,63.75,"Daily & 11:00/18:00","Avoid ejaculation 48hr prior; no prostate massage",,1,0
+"Creatine Kinase (CK), MB",creatine-kinase-ck-mb,"Cardiac & Diabetes",pathology,"Heart muscle damage detection (heart attack)",550.00,63.64,"Daily & 11:00/18:00","Avoid strenuous exercise 48hr before",,1,0
+"CA19.9 - Pancreatic Cancer Marker",ca19-9-pancreatic-cancer-marker,"Cancer Markers",pathology,"Pancreatic/gastrointestinal cancer marker",1400.00,63.57,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Beta Human Chorionic Gonadotropin - Serum",beta-human-chorionic-gonadotropin-serum,"Cancer Markers",pathology,"Pregnancy/tumor marker",600.00,63.33,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Biopsy-Large(> 5 cm) Specimen",biopsy-large-5-cm-specimen,"Specialized Tests",pathology,"Histopathological examination of large tissue samples",1200.00,63.33,"Daily & 7 days (18:00)","Follow surgical preparation instructions",,1,0
+"Culture and Sensitivity, Urine (22 drugs)",culture-and-sensitivity-urine-22-drugs-,"Infectious Diseases",pathology,"UTI diagnosis with extended antibiotic sensitivity",600.00,63.33,"Daily & 3 days (18:00)","First morning urine; clean-catch midstream collection",,1,0
+"Culture, Aerobic, Swab",culture-aerobic-swab,"Infectious Diseases",pathology,"Identifies bacteria from wound/lesion swabs",600.00,63.33,"Daily & 2 days (11:00)","Collect before antibiotics; avoid antiseptics at site",,1,0
+"Culture, Aerobic, Blood",culture-aerobic-blood,"Infectious Diseases",pathology,"Bloodstream infection detection",600.00,63.33,"Daily & Interim:24 hrs Final:5 days","Collect during fever spike if possible; multiple sets often required",,1,0
+"Estradiol (E2)",estradiol-e2-,"Hormonal & Endocrine",pathology,"Evaluates ovarian function and estrogen levels",600.00,63.33,"Daily & 11:00/18:00","For women: specific cycle day may be required; fasting not needed",,1,0
+"Hepatitis E virus - IgG (HEV IgG)",hepatitis-e-virus-igg-hev-igg-,"Infectious Diseases",pathology,"Detects past HEV infection/immunity",1200.00,63.33,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Hepatitis E virus - IgM (HEV IgM)",hepatitis-e-virus-igm-hev-igm-,"Infectious Diseases",pathology,"Diagnoses acute Hepatitis E infection",1200.00,63.33,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Magnesium - Serum",magnesium-serum,"Routine Tests",pathology,"Assesses electrolyte balance and neuromuscular function",600.00,63.33,"Daily & 11:00/18:00","Fasting preferred; avoid magnesium supplements 24hr prior",,1,0
+"Microalbumin / Creatinine Ratio-Urine",microalbumin-creatinine-ratio-urine,"Cardiac & Diabetes",pathology,"Early kidney damage detection in diabetics",600.00,63.33,"Daily & 11:00/18:00","First morning urine preferred; avoid strenuous exercise 24hr before",,1,0
+"PTH-Intact Parathyroid Hormone (iPTH)",pth-intact-parathyroid-hormone-ipth-,"Hormonal & Endocrine",pathology,"Evaluates calcium metabolism and parathyroid function",1200.00,63.33,"Daily & 11:00/18:00","Fasting preferred; sample stability requires quick processing",,1,0
+"Cytology -CSF",cytology-csf,"Specialized Tests",pathology,"Detects malignant cells in cerebrospinal fluid",650.00,63.08,"Daily & Next Day
+(11:00)","Requires lumbar puncture; fasting not required for procedure",,1,0
+"Cytology -Cystic Fluids",cytology-cystic-fluids,"Specialized Tests",pathology,"Examines cells from cysts for malignancy",650.00,63.08,"Daily & Next Day
+(11:00)","Depends on collection method; no special patient prep",,1,0
+"Cytology -Fixed Smears",cytology-fixed-smears,"Specialized Tests",pathology,"Microscopic examination of preserved cell samples",650.00,63.08,"Daily & Next Day
+(11:00)","Preparation depends on original sample type",,1,0
+"Cytology -Peritoneal Fluid",cytology-peritoneal-fluid,"Specialized Tests",pathology,"Evaluates ascitic fluid for cancer cells",650.00,63.08,"Daily & Next Day
+(11:00)","Collected during paracentesis; fasting not required",,1,0
+"Cytology -Fluids",cytology-fluids,"Specialized Tests",pathology,"General cellular analysis of various fluids",650.00,63.08,"Daily & Next Day
+(11:00)","Preparation varies by fluid type",,1,0
+"Cytology -Ascitic Fluid",cytology-ascitic-fluid,"Specialized Tests",pathology,"Detects malignancy in abdominal fluid",650.00,63.08,"Daily & Next Day
+(11:00)","Collected during paracentesis; no food/fluid restrictions",,1,0
+"Cytology -BAL Fluid",cytology-bal-fluid,"Specialized Tests",pathology,"Analyzes cells from bronchoalveolar lavage",650.00,63.08,"Daily & Next Day
+(11:00)","Requires bronchoscopy; follow pre-procedure fasting guidelines",,1,0
+"Cytology -FNAC-Fixed Smears",cytology-fnac-fixed-smears,"Specialized Tests",pathology,"Fine needle aspiration cytology of preserved samples",650.00,63.08,"Daily & Next Day
+(11:00)","Depends on biopsy site; local anesthesia may be used",,1,0
+"Cytology -Others",cytology-others,"Specialized Tests",pathology,"Cellular analysis of miscellaneous samples",650.00,63.08,"Daily & Next Day
+(11:00)","Varies by specimen type",,1,0
+"Cytology -Ovarian Cyst",cytology-ovarian-cyst,"Specialized Tests",pathology,"Evaluates ovarian cyst fluid for cancer cells",650.00,63.08,"Daily & Next Day
+(11:00)","Collected during cyst aspiration; pelvic exam prep may apply",,1,0
+"Cytology -Pericardial Fluid",cytology-pericardial-fluid,"Specialized Tests",pathology,"Detects malignant cells in heart sac fluid",650.00,63.08,"Daily & Next Day
+(11:00)","Requires pericardiocentesis; cardiac monitoring during procedure",,1,0
+"Cytology -Pleural Fluid",cytology-pleural-fluid,"Specialized Tests",pathology,"Diagnoses cancer/infection in lung lining fluid",650.00,63.08,"Daily & Next Day
+(11:00)","Collected during thoracentesis; no special patient prep",,1,0
+"Cytology -PUS",cytology-pus,"Specialized Tests",pathology,"Examines inflammatory/cancer cells in pus",650.00,63.08,"Daily & Next Day
+(11:00)","Clean wound surface before collection if possible",,1,0
+"Cytology -Synovial Fluid",cytology-synovial-fluid,"Specialized Tests",pathology,"Analyzes joint fluid for abnormal cells",650.00,63.08,"Daily & Next Day
+(11:00)","Collected during arthrocentesis; rest joint before procedure",,1,0
+"Cytology -Urine",cytology-urine,"Specialized Tests",pathology,"Detects abnormal/malignant cells in urine",650.00,63.08,"Daily & Next Day
+(11:00)","First morning urine preferred; clean genital area before collection",,1,0
+"Fluid Analysis (Other Fluids)",fluid-analysis-other-fluids-,"Specialized Tests",pathology,"Biochemical/cellular evaluation of uncommon body fluids",650.00,63.08,"Daily & Next Day (11:00)","Depends on collection method; sterile technique required",,1,0
+"Fluid Analysis-Ascitic",fluid-analysis-ascitic,"Specialized Tests",pathology,"Evaluates abdominal fluid for infection/cancer",650.00,63.08,"Daily & Next Day (11:00)","Fasting not required; collected during paracentesis",,1,0
+"Fluid Analysis-CSF",fluid-analysis-csf,"Specialized Tests",pathology,"Diagnoses CNS infections/bleeding through spinal fluid analysis",650.00,63.08,"Daily & Next Day (11:00)","Requires lumbar puncture; no fasting needed",,1,0
+"Fluid Analysis - Pericardial",fluid-analysis-pericardial,"Specialized Tests",pathology,"Assesses heart sac fluid for infection/malignancy",650.00,63.08,"Daily & Next Day (11:00)","Collected during pericardiocentesis; cardiac monitoring",,1,0
+"Fluid Analysis-Peritoneal",fluid-analysis-peritoneal,"Specialized Tests",pathology,"Analyzes abdominal cavity fluid characteristics",650.00,63.08,"Daily & Next Day (11:00)","Sterile collection during paracentesis",,1,0
+"Fluid Analysis-Pleural",fluid-analysis-pleural,"Specialized Tests",pathology,"Evaluates lung lining fluid for infection/cancer",650.00,63.08,"Daily & Next Day (11:00)","Thoracentesis procedure; no special patient prep",,1,0
+"Fluid Analysis-Synovial Fluid",fluid-analysis-synovial-fluid,"Specialized Tests",pathology,"Diagnoses joint disorders through fluid analysis",650.00,63.08,"Daily & Next Day (11:00)","Rest joint 24hr before arthrocentesis",,1,0
+"Semen Analysis",semen-analysis,"Hormonal & Endocrine",pathology,"Evaluates male fertility parameters",650.00,63.08,"Daily & 11:00/18:00","2-5 days abstinence; collect in sterile container; complete within 1hr",,1,0
+"Hepatitis C Virus - HCV-Genotyping",hepatitis-c-virus-hcv-genotyping,"Infectious Diseases",pathology,"Identifies HCV strain for treatment guidance",7000.00,62.86,"Daily & 5 days (18:00)","Fasting not required",,1,0
+"Gram Stain -  Pleural Fluid",gram-stain-pleural-fluid,"Infectious Diseases",pathology,"Rapid bacterial detection in lung fluid",400.00,62.50,"Daily & 2 days (11:00)","Collected during thoracentesis; transport immediately",,1,0
+"Gram Stain - Ascitic Fluid",gram-stain-ascitic-fluid,"Infectious Diseases",pathology,"Identifies bacteria in abdominal fluid",400.00,62.50,"Daily & 2 days (11:00)","Maintain sterility during paracentesis",,1,0
+"Gram Stain - Bodyfluids",gram-stain-bodyfluids,"Infectious Diseases",pathology,"Preliminary bacterial detection in various fluids",400.00,62.50,"Daily & 2 days (11:00)","Sample must reach lab within 1 hour",,1,0
+"Gram Stain - Bronchial lavage",gram-stain-bronchial-lavage,"Infectious Diseases",pathology,"Detects lower respiratory pathogens",400.00,62.50,"Daily & 2 days (11:00)","Collected during bronchoscopy; NPO 6hr prior procedure",,1,0
+"Gram Stain - CSF",gram-stain-csf,"Infectious Diseases",pathology,"Diagnoses bacterial meningitis",400.00,62.50,"Daily & 2 days (11:00)","Requires lumbar puncture; process within 15 minutes",,1,0
+"Gram Stain - Ear swab",gram-stain-ear-swab,"Infectious Diseases",pathology,"Identifies ear infection pathogens",400.00,62.50,"Daily & 2 days (11:00)","Clean external ear first; collect before antibiotics",,1,0
+"Gram Stain - Eye swab",gram-stain-eye-swab,"Infectious Diseases",pathology,"Detects ocular infections",400.00,62.50,"Daily & 2 days (11:00)","No eye drops 1hr prior; collect from conjunctival sac",,1,0
+"Gram Stain - Miscellaneous",gram-stain-miscellaneous,"Infectious Diseases",pathology,"Bacterial screening for unusual samples",400.00,62.50,,"Follow specific collection guidelines per sample type",,1,0
+"Gram Stain - Nasal swab",gram-stain-nasal-swab,"Infectious Diseases",pathology,"Identifies nasal cavity infections",400.00,62.50,"Daily & 2 days (11:00)","Avoid nasal sprays 24hr before; sample both nostrils",,1,0
+"Gram Stain - Pericardial Fluid",gram-stain-pericardial-fluid,"Infectious Diseases",pathology,"Detects bacterial pericarditis",400.00,62.50,"Daily & 2 days (11:00)","Collected during pericardiocentesis; sterile technique critical",,1,0
+"Gram Stain - Pus",gram-stain-pus,"Infectious Diseases",pathology,"Identifies bacteria in wound infections",400.00,62.50,"Daily & 2 days (11:00)","Clean wound surface before collection; collect before antibiotics",,1,0
+"Gram Stain - Synovial  Fluid",gram-stain-synovial-fluid,"Infectious Diseases",pathology,"Diagnoses septic arthritis in joint fluid",400.00,62.50,"Daily & 2 days (11:00)","Collected during arthrocentesis; rest joint before procedure",,1,0
+"Gram Stain - Throat swab",gram-stain-throat-swab,"Infectious Diseases",pathology,"Screens for bacterial pharyngitis (strep throat)",400.00,62.50,"Daily & 2 days (11:00)","No eating/drinking 1hr before; avoid mouthwash",,1,0
+"Gram Stain - Tissue",gram-stain-tissue,"Infectious Diseases",pathology,"Identifies pathogens in biopsy specimens",400.00,62.50,"Daily & 2 days (11:00)","Proper tissue preservation; avoid contamination",,1,0
+"Gram Stain - Urine",gram-stain-urine,"Infectious Diseases",pathology,"Rapid UTI pathogen screening",400.00,62.50,"Daily & 2 days (11:00)","First morning urine; clean-catch midstream technique",,1,0
+"Gram Stain - vaginal swab",gram-stain-vaginal-swab,"Infectious Diseases",pathology,"Detects bacterial vaginosis",400.00,62.50,"Daily & 2 days (11:00)","Avoid douching 48hr prior; no intercourse 24hr before",,1,0
+"Rubellavirus IgG Antibody",rubellavirus-igg-antibody,"Infectious Diseases",pathology,"Checks immunity to rubella (German measles)",400.00,62.50,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Rubellavirus IgM Antibody",rubellavirus-igm-antibody,"Infectious Diseases",pathology,"Diagnoses acute rubella infection",400.00,62.50,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Smear for Gonococci (Endocervical Secretions)",smear-for-gonococci-endocervical-secretions-,"Infectious Diseases",pathology,"Microscopic detection of Neisseria gonorrhoeae",800.00,62.50,"Daily & Next Day (11:00)","No vaginal creams/douches 24hr before",,1,0
+"Smear for Gonococci (Slides)",smear-for-gonococci-slides-,"Infectious Diseases",pathology,"Gram stain for gonorrhea diagnosis",800.00,62.50,"Daily & Next Day (11:00)","Proper slide fixation required immediately",,1,0
+"Smear for Gonococci (Urine )",smear-for-gonococci-urine-,"Infectious Diseases",pathology,"Urine-based gonorrhea screening",800.00,62.50,"Daily & Next Day (11:00)","First-catch urine (first 10-30ml); no urination 1hr prior",,1,0
+"Toxoplasma gondii IgG Antibody",toxoplasma-gondii-igg-antibody,"Infectious Diseases",pathology,"Evaluates past toxoplasmosis exposure",400.00,62.50,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Toxoplasma gondii IgM Antibody",toxoplasma-gondii-igm-antibody,"Infectious Diseases",pathology,"Detects acute toxoplasmosis infection",400.00,62.50,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Salmonella typhi IgG (Typhidot)",salmonella-typhi-igg-typhidot-,"Infectious Diseases",pathology,"Typhoid fever immunity assessment",450.00,62.22,"Daily & Same day
+(19:00","Fasting not required; avoid antibiotics before testing",,1,0
+"Salmonella typhi IgM (TYPHI DOT)",salmonella-typhi-igm-typhi-dot-,"Infectious Diseases",pathology,"Acute typhoid fever diagnosis",450.00,62.22,"Daily & Same day (19:00
+)","Fasting not required; test during first week of fever",,1,0
+"Uric Acid - (24 hrs Urine)",uric-acid-24-hrs-urine-,"Routine Tests",pathology,"Evaluates gout/kidney stone risk",450.00,62.22,"Daily & 11:00/18:00","Avoid high-purine foods 3 days prior; complete 24hr collection",,1,0
+"G6PD, Quantitative,Blood",g6pd-quantitative-blood,"Genetic & Wellness",pathology,"Diagnoses G6PD deficiency (enzyme disorder)",950.00,62.11,"Daily & 11:00/18:00","Fasting not required; avoid oxidant drugs 1 week prior",,1,0
+"Hepatitis B surface Antibody Total (Anti HBs)",hepatitis-b-surface-antibody-total-anti-hbs-,"Infectious Diseases",pathology,"Checks HBV vaccination response/natural immunity",950.00,62.11,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Human Growth Hormone (hGH)",human-growth-hormone-hgh-,"Hormonal & Endocrine",pathology,"Assesses pituitary function/growth disorders",950.00,62.11,"Daily & 11:00/18:00","Fasting required; exercise/stress affects results",,1,0
+"Unconjugated Estriol (uE3)",unconjugated-estriol-ue3-,"Hormonal & Endocrine",pathology,"Prenatal screening for fetal abnormalities",1900.00,62.11,"Daily & 11:00/18:00","Fasting not required; optimal at 15-18 weeks gestation",,1,0
+"Anti Nuclear Antibody",anti-nuclear-antibody,"Allergy & Immunology",pathology,"Autoimmune disorder screening (SLE, rheumatoid arthritis)",600.00,61.67,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Hepatitis C Virus RNA - Quantitative - Viral
+Load",hepatitis-c-virus-rna-quantitative-viral-load,"Infectious Diseases",pathology,"Measures HCV viral load for treatment monitoring",6000.00,61.50,"Daily & 2 Days","Fasting not required",,1,0
+"Insulin - Fasting",insulin-fasting,"Cardiac & Diabetes",pathology,"Evaluates insulin production and resistance",700.00,61.43,"Daily & 11:00/18:00","8-12 hour fasting; morning test preferred",,1,0
+"Insulin-Post Prandial (PP)",insulin-post-prandial-pp-,"Cardiac & Diabetes",pathology,"Assesses insulin response after meals",700.00,61.43,"Daily & 11:00/18:00","Test 2 hours after standard meal; no snacks during",,1,0
+"Carbamazepine (Tegretol)",carbamazepine-tegretol-,"Specialized Tests",pathology,"Monitors anti-seizure medication levels",750.00,61.33,"Daily & 11:00/18:00","Take medication as normal; note timing of last dose",,1,0
+Lithium,lithium,"Specialized Tests",pathology,"Therapeutic drug monitoring for bipolar disorder",750.00,61.33,"Daily & 11:00/18:00","Trough level before morning dose; maintain hydration",,1,0
+"D-DIMER, QUANTITATIVE",d-dimer-quantitative,"Cardiac & Diabetes",pathology,"Evaluates blood clot formation/dissolution",1200.00,60.83,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Fibrinogen Degradation Product (FDP)",fibrinogen-degradation-product-fdp-,"Cardiac & Diabetes",pathology,"Detects abnormal clot breakdown (DIC)",1300.00,60.77,"Daily & 11:00/18:00","Fasting not required",,1,0
+"AML- t ( 15 ; 17 ) , MLL, Inv ( 16 ) t ( 8 ; 21 ) -
+Karyotyping+FISH",aml-t-15-17-mll-inv-16-t-8-21-karyotyping-fish,"Genetic & Wellness",pathology,"Chromosomal analysis for acute myeloid leukemia",4000.00,60.25,"Daily & 3 days (18:00)/14
+days (18:00)","Bone marrow sample; no special preparation",,1,0
+"Anti Mullerian Hormone (AMH)",anti-mullerian-hormone-amh-,"Hormonal & Endocrine",pathology,"Ovarian reserve assessment",1800.00,60.00,"Daily & 11:00/18:00","Fasting not required; cycle day irrelevant",,1,0
+"Aspartate Aminotransferase (AST/SGOT)",aspartate-aminotransferase-ast-sgot-,"Routine Tests",pathology,"Liver/heart muscle damage marker",150.00,60.00,"Daily & 11:00/18:00","Avoid strenuous exercise 24hr before; fasting preferred",,1,0
+"C-Reactive Protein (CRP)",c-reactive-protein-crp-,"Routine Tests",pathology,"General inflammation marker",400.00,60.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"CD4 Absolute Count",cd4-absolute-count,"Infectious Diseases",pathology,"Immune status monitoring (HIV)",1800.00,60.00,"Daily & 1&3&5 (18:00)","Fasting not required; consistent timing for serial tests",,1,0
+"Complete Urine Analysis (CUE)",complete-urine-analysis-cue-,"Routine Tests",pathology,"Comprehensive urine evaluation",100.00,60.00,"Daily & 11:00/18:00","First morning urine preferred; clean genital area",,1,0
+"Creatinine Phospho Kinase (CPK)",creatinine-phospho-kinase-cpk-,"Cardiac & Diabetes",pathology,"Muscle damage assessment",500.00,60.00,"Daily & 11:00/18:00","Avoid exercise 48hr prior; no intramuscular injections",,1,0
+"Differantial Leukocyte Count (DLC)",differantial-leukocyte-count-dlc-,"Routine Tests",pathology,"Evaluates white blood cell distribution",150.00,60.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+Fibrinogen,fibrinogen,"Cardiac & Diabetes",pathology,"Clotting factor measurement",1100.00,60.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Gamma Glutamyl Transferase (GGT)",gamma-glutamyl-transferase-ggt-,"Routine Tests",pathology,"Liver/biliary tract enzyme",200.00,60.00,"Daily & 11:00/18:00","Avoid alcohol 24hr before; fasting preferred",,1,0
+Globulin,globulin,"Routine Tests",pathology,"Blood protein fraction analysis",150.00,60.00,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Glycosylated Hemoglobin (HbA1c)",glycosylated-hemoglobin-hba1c-,"Cardiac & Diabetes",pathology,"3-month average blood glucose measurement",500.00,60.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Hemoglobin Variant Estimation by Hemoglobin
+Electrophoresis",hemoglobin-variant-estimation-by-hemoglobin-electrophoresis,"Genetic & Wellness",pathology,"Identifies abnormal hemoglobin variants (Thalassemia, Sickle Cell)",900.00,60.00,"Daily & Next day (18:00)","Fasting not required",,1,0
+Lipase-Serum,lipase-serum,"Cardiac & Diabetes",pathology,"Pancreatic enzyme assessment (pancreatitis)",550.00,60.00,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Prostate Specific Antigen (PSA) Total",prostate-specific-antigen-psa-total,"Cancer Markers",pathology,"Prostate cancer screening",550.00,60.00,"Daily & 11:00/18:00","Avoid ejaculation 48hr prior; no prostate massage",,1,0
+"Protein - Total With Albumin",protein-total-with-albumin,"Routine Tests",pathology,"Comprehensive protein evaluation",450.00,60.00,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Protein Total Quantitative-24hrs Urine",protein-total-quantitative-24hrs-urine,"Routine Tests",pathology,"Kidney function assessment",450.00,60.00,"Daily & 11:00/18:00","Complete 24-hour collection; avoid contamination",,1,0
+"TLC and DLC",tlc-and-dlc,"Routine Tests",pathology,"White blood cell count and differential",250.00,60.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"LBC PAP Smear",lbc-pap-smear,"Cancer Markers",pathology,"Liquid-based cervical cancer screening",1750.00,58.86,"Daily & Next Day
+(11:00)","Avoid during menstruation; no intercourse 48hr prior",,1,0
+"Thrombin Time",thrombin-time,"Cardiac & Diabetes",pathology,"Blood clotting evaluation",875.00,58.86,"Daily & 11:00/18:00","Inform if taking anticoagulants",,1,0
+"CA 125 - Ovarian Cancer Marker",ca-125-ovarian-cancer-marker,"Cancer Markers",pathology,"Ovarian cancer monitoring",800.00,58.75,"Daily & 11:00/18:00","Fasting not required",,1,0
+"BIOPSY-Small Specimen (< 2cm)",biopsy-small-specimen-2cm-,"Specialized Tests",pathology,"Microscopic examination of small tissue samples",700.00,58.57,"Daily & 5 days (18:00)","Follow surgical prep instructions",,1,0
+"Phospholipid Antibody IgG",phospholipid-antibody-igg,"Allergy & Immunology",pathology,"Antiphospholipid syndrome diagnosis",700.00,58.57,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Phospholipid Antibody IgM",phospholipid-antibody-igm,"Allergy & Immunology",pathology,"Autoimmune disorder screening",700.00,58.57,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Scrub Typhus IgM",scrub-typhus-igm,"Infectious Diseases",pathology,"Acute scrub typhus detection",2100.00,58.57,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+Microalbumin-Random,microalbumin-random,"Cardiac & Diabetes",pathology,"Early kidney damage screening",480.00,58.33,"Daily & 11:00/18:00","First morning urine preferred",,1,0
+"Hepatitis B Virus - Quantitative - Viral Load",hepatitis-b-virus-quantitative-viral-load,"Infectious Diseases",pathology,"HBV viral load measurement",5500.00,58.00,"Daily & 2 Days","Fasting not required",,1,0
+"Zinc - Serum",zinc-serum,"Routine Tests",pathology,"Zinc deficiency assessment",2000.00,58.00,"Daily & 11:00/18:00","Fasting required; avoid zinc supplements 24hr prior",,1,0
+"Dengue Fever IgG Antibody",dengue-fever-igg-antibody,"Infectious Diseases",pathology,"Past dengue infection detection",850.00,57.65,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Dengue Fever IgM Antibody",dengue-fever-igm-antibody,"Infectious Diseases",pathology,"Acute dengue diagnosis",850.00,57.65,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"High Sensitivity C-Reactive Protein(hsCRP)",high-sensitivity-c-reactive-protein-hscrp-,"Cardiac & Diabetes",pathology,"Cardiovascular risk assessment",850.00,57.65,"Daily & 11:00/18:00","Fasting preferred; avoid strenuous activity before test",,1,0
+"CA15.3 - Breast Cancer Marker",ca15-3-breast-cancer-marker,"Cancer Markers",pathology,"Monitors breast cancer treatment and recurrence",1200.00,57.50,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Gram Stain - Sputum",gram-stain-sputum,"Infectious Diseases",pathology,"Detects bacterial respiratory infections",350.00,57.14,"Daily & 2 days (11:00)","Early morning deep cough sample; rinse mouth before collection",,1,0
+"Hepatitis B Surface Antigen(Rapid)",hepatitis-b-surface-antigen-rapid-,"Infectious Diseases",pathology,"Rapid screening for HBV infection",350.00,57.14,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Retic Count",retic-count,"Routine Tests",pathology,"Evaluates bone marrow response to anemia",350.00,57.14,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Sodium - Urine Random",sodium-urine-random,"Routine Tests",pathology,"Assesses electrolyte balance and kidney function",350.00,57.14,"Daily & 11:00/18:00","Random urine sample; note dietary salt intake",,1,0
+"Anti ds- DNA Antibody",anti-ds-dna-antibody,"Allergy & Immunology",pathology,"Specific marker for systemic lupus erythematosus (SLE)",900.00,56.67,"Daily & Same day
+(19:00","Fasting not required",,1,0
+Cocaine-Urine,cocaine-urine,"Specialized Tests",pathology,"Detects cocaine metabolites in urine",1500.00,56.67,"Daily & 11:00/18:00","Random urine collection; avoid excessive fluid intake",,1,0
+"Bile Acids-Total - Serum",bile-acids-total-serum,"Routine Tests",pathology,"Evaluates liver function and bile acid metabolism",2000.00,56.50,"Daily & 11:00/18:00","Fasting required (12 hours)",,1,0
+"Herpes Simplex Virus (HSV) 1 IgG",herpes-simplex-virus-hsv-1-igg,"Infectious Diseases",pathology,"Detects past HSV-1 infection",550.00,56.36,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Herpes Simplex Virus (HSV) 1 IgM",herpes-simplex-virus-hsv-1-igm,"Infectious Diseases",pathology,"Identifies acute HSV-1 infection",550.00,56.36,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Herpes Simplex Virus (HSV) 2 IgG",herpes-simplex-virus-hsv-2-igg,"Infectious Diseases",pathology,"Detects past HSV-2 infection",550.00,56.36,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Herpes Simplex Virus (HSV) 2 IgM",herpes-simplex-virus-hsv-2-igm,"Infectious Diseases",pathology,"Identifies acute HSV-2 infection",550.00,56.36,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Anti Streptolysin O Titres ASO-Titers",anti-streptolysin-o-titres-aso-titers,"Allergy & Immunology",pathology,"Diagnoses recent streptococcal infection",500.00,56.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Dengue Fever NS1 Ag-ELISA",dengue-fever-ns1-ag-elisa,"Infectious Diseases",pathology,"Early detection of dengue infection",1000.00,56.00,"Daily & Same day
+(19:00","Fasting not required; collect during febrile phase",,1,0
+Hematuria,hematuria,"Routine Tests",pathology,"Detects blood in urine",250.00,56.00,"Daily & 11:00/18:00","First morning urine preferred; avoid menstruation contamination",,1,0
+Lactate-CSF,lactate-csf,"Specialized Tests",pathology,"Evaluates cerebral metabolism in meningitis/ischemia",1000.00,56.00,"Daily & 11:00/18:00","Requires lumbar puncture; process immediately",,1,0
+Lactate-Plasma,lactate-plasma,"Cardiac & Diabetes",pathology,"Assesses tissue oxygenation in shock states",1000.00,56.00,"Daily & 11:00/18:00","Avoid fist clenching during blood draw",,1,0
+"Malarial Falciparum and Vivax Antigen
+(Parasite V & F)",malarial-falciparum-and-vivax-antigen-parasite-v-f-,"Infectious Diseases",pathology,"Rapid detection of malaria parasites",500.00,56.00,"Daily & 11:00/18:00","Collect during febrile episode",,1,0
+"AMH Profile - AMH, LH, FSH, PRL, E2, TSH",amh-profile-amh-lh-fsh-prl-e2-tsh,"Hormonal & Endocrine",pathology,"Comprehensive fertility assessment",3000.00,56.00,"Daily & 10:30/17:30","Fasting not required; for women: day 2-5 of menstrual cycle preferred",,1,0
+"Cortisol -Evening (3 to 5 PM)",cortisol-evening-3-to-5-pm-,"Hormonal & Endocrine",pathology,"Assesses diurnal cortisol rhythm",650.00,55.38,"Daily & 11:00/18:00","Relax 30 minutes before test; avoid stress",,1,0
+"Cortisol -Morning  (7 to 9 AM)",cortisol-morning-7-to-9-am-,"Hormonal & Endocrine",pathology,"Evaluates adrenal function (peak cortisol)",650.00,55.38,"Daily & 11:00/18:00","Fasting preferred; avoid stress; collect within 1 hour of waking",,1,0
+"Urine for Dysmorphic RBC",urine-for-dysmorphic-rbc,"Routine Tests",pathology,"Identifies glomerular bleeding (kidney disease)",650.00,55.38,"Daily & 11:00/18:00","First morning urine; avoid contamination",,1,0
+"Culture, Aerobic, Blood (Pediatric Rapid)",culture-aerobic-blood-pediatric-rapid-,"Infectious Diseases",pathology,"Rapid detection of bloodstream infections in children",2100.00,55.24,"Daily & Interim:24 hrs Final:5 days","Collect during fever; proper skin antisepsis critical",,1,0
+"Culture, Aerobic, Blood (Rapid)",culture-aerobic-blood-rapid-,"Infectious Diseases",pathology,"Accelerated detection of bacteremia/sepsis",2100.00,55.24,"Daily & Interim:24 hrs Final:5 days","Two sets from different sites; collect before antibiotics",,1,0
+"Culture, Anaerobic, Body Fluid, Rapid",culture-anaerobic-body-fluid-rapid,"Infectious Diseases",pathology,"Fast identification of anaerobic infections in fluids",2100.00,55.24,"Daily & 7 days (18:00)","Maintain anaerobic transport conditions",,1,0
+"Biopsy-Medium Specimen (upto 5cm)",biopsy-medium-specimen-upto-5cm-,"Specialized Tests",pathology,"Histopathological examination of medium-sized tissues",800.00,55.00,"Daily & 6 days (18:00)","Follow surgical preparation protocols",,1,0
+Calcium-Ionized,calcium-ionized,"Routine Tests",pathology,"Measures physiologically active calcium",400.00,55.00,"Daily & 11:00/18:00","Fasting required; avoid tourniquet use during draw",,1,0
+"Carcino Embryonic Antigen (CEA)",carcino-embryonic-antigen-cea-,"Cancer Markers",pathology,"Monitors colorectal/other cancers",800.00,55.00,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Cholesterol VLDL - Serum",cholesterol-vldl-serum,"Cardiac & Diabetes",pathology,"Measures very low-density lipoprotein particles",200.00,55.00,"Daily & 11:00/18:00","12-hour fasting required",,1,0
+"Copper (Serum)",copper-serum-,"Routine Tests",pathology,"Evaluates Wilson's disease/nutritional status",800.00,55.00,"Daily & 11:00/18:00","Fasting required; use trace-element free tubes",,1,0
+"Dehydroepiandrosterone Sulphate (DHEA-S)",dehydroepiandrosterone-sulphate-dhea-s-,"Hormonal & Endocrine",pathology,"Assesses adrenal androgen production",800.00,55.00,"Daily & 11:00/18:00","Morning collection preferred",,1,0
+"HIV 1 & 2 Antibody Rapid (Chromatography)",hiv-1-2-antibody-rapid-chromatography-,"Infectious Diseases",pathology,"Point-of-care HIV screening",400.00,55.00,"Daily & Same day
+(19:00","Fasting not required; confirm positives with Western blot",,1,0
+Procalcitonin,procalcitonin,"Infectious Diseases",pathology,"Distinguishes bacterial vs viral infections",3200.00,55.00,"Daily & 11:00/18:00","Fasting not required; useful in sepsis evaluation",,1,0
+"Valproic Acid",valproic-acid,"Specialized Tests",pathology,"Monitors anti-seizure medication levels",800.00,55.00,"Daily & 11:00/18:00","Trough level before next dose",,1,0
+"Blood Urea Nitrogen (BUN)-Serum",blood-urea-nitrogen-bun-serum,"Routine Tests",pathology,"Kidney function assessment",175.00,54.29,"Daily & 11:00/18:00","Fasting preferred; avoid high-protein meals before test",,1,0
+"Blood Urea Nitrogen (BUN)-24 hrs Urine",blood-urea-nitrogen-bun-24-hrs-urine,"Routine Tests",pathology,"Comprehensive renal evaluation",175.00,54.29,"Daily & 11:00/18:00","Complete 24-hour collection; keep refrigerated",,1,0
+"VDRL- Syphilis Antibodies",vdrl-syphilis-antibodies,"Infectious Diseases",pathology,"Syphilis screening test",175.00,54.29,"Daily & Same day
+(19:00","Fasting not required; confirm positives with FTA-ABS",,1,0
+"Dehydroepiandrosterone (DHEA)",dehydroepiandrosterone-dhea-,"Hormonal & Endocrine",pathology,"Evaluates adrenal gland function",2200.00,54.09,"1&3&5 & 1&3&5 (18:00)","Morning collection preferred",,1,0
+"Potassium- 24 hrs Urine",potassium-24-hrs-urine,"Routine Tests",pathology,"Assesses electrolyte wasting disorders",325.00,53.85,"Daily & 11:00/18:00","Complete timed collection; avoid contamination",,1,0
+"Sodium - 24hrs Urine",sodium-24hrs-urine,"Routine Tests",pathology,"Evaluates salt balance/hypertension",325.00,53.85,"Daily & 11:00/18:00","Maintain normal diet during collection",,1,0
+"Chikungunya IgG",chikungunya-igg,"Infectious Diseases",pathology,"Detects past Chikungunya virus infection",1100.00,53.64,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Chikungunya IgM",chikungunya-igm,"Infectious Diseases",pathology,"Diagnoses acute Chikungunya infection",1100.00,53.64,"Daily & Same day
+(19:00","Collect during febrile phase (first week)",,1,0
+"C3 - Complement 3",c3-complement-3,"Allergy & Immunology",pathology,"Evaluates classical complement pathway activity",600.00,53.33,"Daily & 11:00/18:00","Fasting not required",,1,0
+"C4 - Complement 4",c4-complement-4,"Allergy & Immunology",pathology,"Assesses immune complex diseases",600.00,53.33,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Scl-70 Antibody",scl-70-antibody,"Allergy & Immunology",pathology,"Marker for systemic sclerosis",2300.00,53.04,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"AML- t ( 15 ; 17 ) , MLL, Inv ( 16 ) t ( 8 ; 21 ) -
+Karyotyping+FISH -Heparin",aml-t-15-17-mll-inv-16-t-8-21-karyotyping-fish-heparin,"Genetic & Wellness",pathology,"Chromosomal analysis for AML with heparinized sample",3000.00,52.00,"Daily & 3 days
+(18:00)/14 days (18:00)","Bone marrow aspirate in heparin tube; no fasting",,1,0
+"b2 (Beta)- GLYCOPROTEIN 1-IgA",b2-beta-glycoprotein-1-iga,"Allergy & Immunology",pathology,"Antiphospholipid syndrome marker",1500.00,52.00,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"b2 (Beta)- GLYCOPROTEIN 1-IgG",b2-beta-glycoprotein-1-igg,"Allergy & Immunology",pathology,"Thrombophilia evaluation",1500.00,52.00,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"b2 (Beta)- GLYCOPROTEIN 1-IgM",b2-beta-glycoprotein-1-igm,"Allergy & Immunology",pathology,"Autoimmune disorder screening",1500.00,52.00,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"Lactate Dehydrogenase (LDH) - Ascitic Fluid",lactate-dehydrogenase-ldh-ascitic-fluid,"Specialized Tests",pathology,"Distinguishes exudative vs transudative ascites",500.00,52.00,"Daily & 11:00/18:00","Collected during paracentesis",,1,0
+"Lactate Dehydrogenase (LDH) - CSF",lactate-dehydrogenase-ldh-csf,"Specialized Tests",pathology,"Evaluates CNS disorders",500.00,52.00,"Daily & 11:00/18:00","Requires lumbar puncture",,1,0
+"Lactate Dehydrogenase (LDH) - Pleural Fluid",lactate-dehydrogenase-ldh-pleural-fluid,"Specialized Tests",pathology,"Diagnoses pleural effusion causes",500.00,52.00,"Daily & 11:00/18:00","Collected during thoracentesis",,1,0
+"Lactate Dehydrogenase (LDH) - Serum",lactate-dehydrogenase-ldh-serum,"Routine Tests",pathology,"Nonspecific tissue damage marker",500.00,52.00,"Daily & 11:00/18:00","Avoid hemolysis; fasting preferred",,1,0
+"Testosterone - Free",testosterone-free,"Hormonal & Endocrine",pathology,"Measures bioavailable testosterone",1000.00,52.00,"Daily & Same day (19:00
+)","Morning sample (8-10 AM); fasting preferred",,1,0
+"Urine for Hemoglobunuria",urine-for-hemoglobunuria,"Routine Tests",pathology,"Detects intravascular hemolysis",750.00,52.00,"Daily & 11:00/18:00","First morning urine preferred",,1,0
+"Aspergillus fumigatus",aspergillus-fumigatus,"Infectious Diseases",pathology,"Diagnoses aspergillosis",2100.00,51.90,"Daily & Next Day
+(11:00)","Fasting not required",,1,0
+"Apolipoprotein (APO-B)",apolipoprotein-apo-b-,"Cardiac & Diabetes",pathology,"Cardiovascular risk assessment",600.00,51.67,"Daily & 11:00/18:00","12-hour fasting required",,1,0
+"Apolipoproteins A1 (APO-A1)",apolipoproteins-a1-apo-a1-,"Cardiac & Diabetes",pathology,"Evaluates HDL metabolism",600.00,51.67,"Daily & 11:00/18:00","12-hour fasting required",,1,0
+"Biopsy-AFB/ZN Stain",biopsy-afb-zn-stain,"Specialized Tests",pathology,"Detects acid-fast bacilli in tissue",600.00,51.67,"Daily & 2 days (18:00)","Proper tissue preservation; avoid contamination",,1,0
+"Biopsy-Alcian Blue stain",biopsy-alcian-blue-stain,"Specialized Tests",pathology,"Identifies mucins in tissue samples",600.00,51.67,"Daily & Next Day
+(11:00)","Depends on biopsy type",,1,0
+"Gram Stain - Peritoneal  Fluid",gram-stain-peritoneal-fluid,"Infectious Diseases",pathology,"Detects bacterial peritonitis in abdominal fluid",400.00,62.50,"Daily & 2 days (11:00)","Collected during paracentesis; sterile technique required",,1,0
+"Herpes Simplex Virus (HSV) 1 & 2 IgG",herpes-simplex-virus-hsv-1-2-igg,"Infectious Diseases",pathology,"Detects past herpes simplex virus infections",600.00,51.67,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Herpes Simplex Virus (HSV) 1 & 2 IgM",herpes-simplex-virus-hsv-1-2-igm,"Infectious Diseases",pathology,"Identifies acute herpes infections",600.00,51.67,"Daily & Same day
+(19:00","Fasting not required; collect during active lesions",,1,0
+"Hepatitis A virus IgM (HAV- IgM)",hepatitis-a-virus-igm-hav-igm-,"Infectious Diseases",pathology,"Diagnoses acute hepatitis A infection",1050.00,51.43,"Daily & Same day
+(19:00","Fasting not required; test during symptomatic phase",,1,0
+"Rheumatoid Factor, RA -Rapid",rheumatoid-factor-ra-rapid,"Allergy & Immunology",pathology,"Quick screening for rheumatoid arthritis",350.00,51.43,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Insulin Antibodies",insulin-antibodies,"Allergy & Immunology",pathology,"Detects antibodies causing insulin resistance",2950.00,51.19,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"Biopsy-PAS Stain",biopsy-pas-stain,"Specialized Tests",pathology,"Identifies glycogen/fungi in tissues",900.00,51.11,"Daily & Next Day (11:00)","Depends on biopsy procedure",,1,0
+"Biopsy-Reticulin Stain",biopsy-reticulin-stain,"Specialized Tests",pathology,"Evaluates liver fibrosis/bone marrow architecture",900.00,51.11,"Daily & Next Day (11:00)","Depends on biopsy procedure",,1,0
+"C - Peptide",c-peptide,"Cardiac & Diabetes",pathology,"Measures endogenous insulin production",900.00,51.11,"Daily & 11:00/18:00","Fasting required (12 hours)",,1,0
+"Negative Stain (India Ink)-CSF",negative-stain-india-ink-csf,"Infectious Diseases",pathology,"Screens for Cryptococcus in cerebrospinal fluid",450.00,51.11,"Daily & Next Day (11:00)","Requires lumbar puncture",,1,0
+"Urea - (24 hrs Urine)",urea-24-hrs-urine-,"Routine Tests",pathology,"Assesses protein metabolism and kidney function",450.00,51.11,"Daily & 11:00/18:00","Complete 24-hour collection; avoid excessive protein intake",,1,0
+Ceruloplasmin,ceruloplasmin,"Routine Tests",pathology,"Diagnoses Wilson's disease",950.00,50.53,"Daily & 11:00/18:00","Fasting preferred",,1,0
+Transferrin,transferrin,"Routine Tests",pathology,"Evaluates iron transport and metabolism",1450.00,50.34,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Brucella Antibody,IgG",brucella-antibody-igg,"Infectious Diseases",pathology,"Detects past Brucellosis infection",1750.00,50.29,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Brucella Antibody,IgM",brucella-antibody-igm,"Infectious Diseases",pathology,"Identifies acute Brucellosis",1750.00,50.29,"Daily & Same day (19:00
+)","Fasting not required; collect during febrile phase",,1,0
+"AFB Stain (ZN Stain)-  Miscellaneous",afb-stain-zn-stain-miscellaneous,"Infectious Diseases",pathology,"Screens for acid-fast bacilli in various samples",300.00,50.00,"Daily & Next Day (11:00)","Depends on sample type; avoid contamination",,1,0
+"Chloride-24 hrs Urine",chloride-24-hrs-urine,"Routine Tests",pathology,"Evaluates electrolyte balance",400.00,50.00,"Daily & 11:00/18:00","Complete timed collection",,1,0
+Chloride-CSF,chloride-csf,"Routine Tests",pathology,"Measures CSF electrolyte levels",400.00,50.00,"Daily & 11:00/18:00","Requires lumbar puncture",,1,0
+Chloride-Serum,chloride-serum,"Routine Tests",pathology,"Assesses acid-base/electrolyte status",400.00,50.00,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Chloride-Urine Random",chloride-urine-random,"Routine Tests",pathology,"Screens for renal tubular disorders",400.00,50.00,"Daily & 11:00/18:00","Random sample; note dietary intake",,1,0
+"Erythropoietin (EPO)",erythropoietin-epo-,"Routine Tests",pathology,"Evaluates anemia/polycythemia",1800.00,50.00,"Daily & 11:00/18:00","Fasting preferred; morning sample ideal",,1,0
+"Glucose (Sugar) Fasting",glucose-sugar-fasting,"Cardiac & Diabetes",pathology,"Measures baseline blood sugar levels",100.00,50.00,"Daily & 11:00/18:00","8-12 hour fasting; water only permitted",,1,0
+"Glucose Post Prandial (PP)",glucose-post-prandial-pp-,"Cardiac & Diabetes",pathology,"Assesses glucose response after meals",100.00,50.00,"Daily & 11:00/18:00","Test 2 hours after standard 75g carbohydrate meal",,1,0
+"Glucose Random",glucose-random,"Cardiac & Diabetes",pathology,"Screens for hyperglycemia",100.00,50.00,"Daily & 11:00/18:00","No fasting required; note time of last meal",,1,0
+"Glucose Urine Fasting",glucose-urine-fasting,"Cardiac & Diabetes",pathology,"Detects renal glycosuria",100.00,50.00,"Daily & 11:00/18:00","First morning urine after overnight fast",,1,0
+"Glucose Urine Post Prandial",glucose-urine-post-prandial,"Cardiac & Diabetes",pathology,"Evaluates post-meal glucosuria",100.00,50.00,"Daily & 11:00/18:00","Collect 2 hours after meal",,1,0
+"Glucose Urine Random",glucose-urine-random,"Cardiac & Diabetes",pathology,"General diabetes screening",100.00,50.00,"Daily & 11:00/18:00","Random urine sample",,1,0
+"Glucose, Fluid",glucose-fluid,"Specialized Tests",pathology,"Measures glucose in body fluids",100.00,50.00,"Daily & 11:00/18:00","Depends on fluid collection procedure",,1,0
+"Rapid Plasma Reagin (RPR Test)",rapid-plasma-reagin-rpr-test-,"Infectious Diseases",pathology,"Syphilis screening test",200.00,50.00,"Daily & Same day (19:00
+)","Fasting not required; confirm positives with treponemal tests",,1,0
+"Culture, Aerobic - Peritoneal  Fluid",culture-aerobic-peritoneal-fluid,"Infectious Diseases",pathology,"Diagnoses bacterial peritonitis",875.00,49.71,"Daily & 2 days (11:00)","Collected during paracentesis; sterile technique required",,1,0
+"Semen for Fructose",semen-for-fructose,"Hormonal & Endocrine",pathology,"Evaluates seminal vesicle function",875.00,49.71,"Daily & 11:00/18:00","2-5 days abstinence; complete collection in sterile container",,1,0
+"Jo-I antibody",jo-i-antibody,"Allergy & Immunology",pathology,"Myositis/pulmonary fibrosis marker",2300.00,49.57,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"Myoglobin Serum",myoglobin-serum,"Cardiac & Diabetes",pathology,"Detects muscle damage (heart attack/rhabdomyolysis)",2300.00,49.57,"Daily & Next day (18:00)","Avoid strenuous exercise before test",,1,0
+"Myoglobin Urine",myoglobin-urine,"Cardiac & Diabetes",pathology,"Evaluates muscle breakdown",2300.00,49.57,"Daily & Next day (18:00)","First morning urine preferred",,1,0
+Calcitonin,calcitonin,"Hormonal & Endocrine",pathology,"Medullary thyroid cancer marker",2000.00,49.50,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Biopsy-Extra Large",biopsy-extra-large,"Specialized Tests",pathology,"Histopathological exam of large tissue specimens",1500.00,49.33,"Daily & 10 days (18:00)","Follow surgical preparation protocols",,1,0
+"Anti Streptolysin O (ASO) (Rapid)",anti-streptolysin-o-aso-rapid-,"Allergy & Immunology",pathology,"Quick strep infection screening",350.00,48.57,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Hepatitis C Virus IgG",hepatitis-c-virus-igg,"Infectious Diseases",pathology,"Detects past HCV infection",2100.00,48.57,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"HLA B 27 - PCR - Qualitative",hla-b-27-pcr-qualitative,"Genetic & Wellness",pathology,"Ankylosing spondylitis/autoimmune disorder screening",2800.00,48.57,"Daily & 3 Days","Fasting not required",,1,0
+"Cortisol 24hrs Urine",cortisol-24hrs-urine,"Hormonal & Endocrine",pathology,"Evaluates adrenal function over 24 hours",850.00,48.24,"Daily & 11:00/18:00","Complete timed collection; avoid stress",,1,0
+"HCV - IgM Antibody",hcv-igm-antibody,"Infectious Diseases",pathology,"Identifies acute hepatitis C infection",2500.00,48.00,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required; test during early infection phase",,1,0
+"Bone Marrow Smear Examination",bone-marrow-smear-examination,"Specialized Tests",pathology,"Evaluates blood cell production and disorders",900.00,47.78,"Daily & 11:00/18:00","Local anesthesia required; no fasting needed",,1,0
+CD3/CD4/CD8,cd3-cd4-cd8,"Infectious Diseases",pathology,"T-cell subset analysis (HIV monitoring)",1800.00,47.78,"Daily & 1&3&5 (18:00)","Fasting not required",,1,0
+"Creatinine Clearance Test",creatinine-clearance-test,"Routine Tests",pathology,"Measures kidney filtration rate",900.00,47.78,"Daily & 11:00/18:00","24-hour urine collection + blood sample; avoid strenuous exercise",,1,0
+"Immunofixation Electrophoresis(IFE)",immunofixation-electrophoresis-ife-,"Specialized Tests",pathology,"Detects abnormal proteins (myeloma)",8000.00,47.75,"Daily & 5 days (18:00)","Fasting not required",,1,0
+"Antithyroglobulin Antibodies (ATG)",antithyroglobulin-antibodies-atg-,"Allergy & Immunology",pathology,"Autoimmune thyroid disease marker",1100.00,47.27,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Culture, Anaerobic , Blood, Rapid",culture-anaerobic-blood-rapid,"Infectious Diseases",pathology,"Detects anaerobic bloodstream infections",1100.00,47.27,"Daily & 7 days (18:00)","Collect before antibiotics; proper anaerobic transport",,1,0
+"Leptospira Detection-Urine",leptospira-detection-urine,"Infectious Diseases",pathology,"Diagnoses leptospirosis",1100.00,47.27,"Daily & Next Day (11:00)","First morning urine preferred",,1,0
+"Asthma/Rhintis Screening Panel - Pediatric",asthma-rhintis-screening-panel-pediatric,"Allergy & Immunology",pathology,"Screens for 20+ common allergens",6000.00,47.17,"Daily & Next Day (11:00)","Stop antihistamines 5-7 days prior",,1,0
+"Inhibin A",inhibin-a,"Hormonal & Endocrine",pathology,"Down syndrome screening (prenatal)",2450.00,46.94,"Daily & 18:00","Fasting not required",,1,0
+"Sm/RNP Antibody",sm-rnp-antibody,"Allergy & Immunology",pathology,"Mixed connective tissue disease marker",2450.00,46.94,"1&3&5 & 1&3&5 (18:00)","Fasting not required",,1,0
+"Bilirubin (Direct)",bilirubin-direct-,"Routine Tests",pathology,"Conjugated bilirubin measurement",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred; avoid sunlight exposure",,1,0
+"Bilirubin (Indirect)",bilirubin-indirect-,"Routine Tests",pathology,"Unconjugated bilirubin measurement",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Bilirubin (Total)",bilirubin-total-,"Routine Tests",pathology,"Total bilirubin assessment",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Blood Picture - Peripheral Smear Examination",blood-picture-peripheral-smear-examination,"Routine Tests",pathology,"Microscopic blood cell evaluation",150.00,46.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Calcium -Serum",calcium-serum,"Routine Tests",pathology,"Measures total blood calcium",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Cholesterol Total",cholesterol-total,"Cardiac & Diabetes",pathology,"Total cholesterol assessment",150.00,46.67,"Daily & 11:00/18:00","12-hour fasting required",,1,0
+"Creatinine - Serum",creatinine-serum,"Routine Tests",pathology,"Kidney function test",150.00,46.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"EBV IgM Antibody to Nuclear Antigen",ebv-igm-antibody-to-nuclear-antigen,"Infectious Diseases",pathology,"Epstein-Barr virus infection stage",2700.00,46.67,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"EBV IgM Antibody to Viral Antigen",ebv-igm-antibody-to-viral-antigen,"Infectious Diseases",pathology,"Acute EBV infection detection",2700.00,46.67,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"Erythrocyte Sedimentation Rate (ESR)",erythrocyte-sedimentation-rate-esr-,"Routine Tests",pathology,"Non-specific inflammation marker",150.00,46.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Lead Blood",lead-blood,"Specialized Tests",pathology,"Heavy metal toxicity screening",2700.00,46.67,"Daily & 3 days (18:00)","Use trace-metal free tubes; no special fasting",,1,0
+"Lupus Anticoagulant",lupus-anticoagulant,"Allergy & Immunology",pathology,"Antiphospholipid syndrome diagnosis",1350.00,46.67,"Daily & 11:00/18:00","Fasting not required; inform if on anticoagulants",,1,0
+"Malarial Parasite Identification",malarial-parasite-identification,"Infectious Diseases",pathology,"Microscopic diagnosis of malaria",150.00,46.67,"Daily & 11:00/18:00","Collect during febrile episode; thick and thin smears required",,1,0
+"Mumps IgG Antibody",mumps-igg-antibody,"Infectious Diseases",pathology,"Immunity to mumps verification",2700.00,46.67,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"Mumps IgM Antibody",mumps-igm-antibody,"Infectious Diseases",pathology,"Acute mumps infection detection",2700.00,46.67,"2&4&6 & 2&4&6 (18: 00 )","Collect during parotitis symptoms",,1,0
+"Potassium- Serum",potassium-serum,"Routine Tests",pathology,"Electrolyte balance assessment",150.00,46.67,"Daily & 11:00/18:00","Avoid fist clenching; handle sample gently to prevent hemolysis",,1,0
+"Potassium- Urine Random",potassium-urine-random,"Routine Tests",pathology,"Renal potassium handling evaluation",150.00,46.67,"Daily & 11:00/18:00","Random sample; note dietary intake",,1,0
+"Protein - Total",protein-total,"Routine Tests",pathology,"Overall protein status evaluation",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Sodium - Serum",sodium-serum,"Routine Tests",pathology,"Primary blood electrolyte measurement",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Total Leucocyte Count (TLC)",total-leucocyte-count-tlc-,"Routine Tests",pathology,"White blood cell quantitative analysis",150.00,46.67,"Daily & 11:00/18:00","Fasting not required",,1,0
+"Urea - Serum",urea-serum,"Routine Tests",pathology,"Kidney function and protein metabolism assessment",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred",,1,0
+"Uric Acid - Serum",uric-acid-serum,"Routine Tests",pathology,"Gout/kidney stone risk evaluation",150.00,46.67,"Daily & 11:00/18:00","Fasting preferred; avoid high-purine foods 3 days prior",,1,0
+"Urine -Bilirubin",urine-bilirubin,"Routine Tests",pathology,"Liver disease/obstruction screening",150.00,46.67,"Daily & 11:00/18:00","Protect from light; first morning urine preferred",,1,0
+"Urine- Ketone",urine-ketone,"Routine Tests",pathology,"Detects diabetic ketoacidosis/starvation",150.00,46.67,"Daily & 11:00/18:00","Random urine; test when symptoms present",,1,0
+"Urine -Protein",urine-protein,"Routine Tests",pathology,"Kidney disease screening",150.00,46.67,"Daily & 11:00/18:00","First morning urine preferred",,1,0
+"Widal Test (Slide Test)",widal-test-slide-test-,"Infectious Diseases",pathology,"Rapid typhoid fever screening",150.00,46.67,"Daily & Same day
+(19:00","Fasting not required; may cross-react with other infections",,1,0
+"HLA B-27",hla-b-27,"Genetic & Wellness",pathology,"Ankylosing spondylitis risk assessment",1750.00,46.29,"Daily & 13:00/18:00","Fasting not required",,1,0
+"Leptospira IgG Antibody",leptospira-igg-antibody,"Infectious Diseases",pathology,"Past leptospirosis exposure",1750.00,46.29,"Daily & Same day
+(19:00","Fasting not required",,1,0
+"Leptospira IgM Antibody",leptospira-igm-antibody,"Infectious Diseases",pathology,"Acute leptospirosis diagnosis",1750.00,46.29,"Daily & Same day
+(19:00","Collect during febrile phase",,1,0
+"Protein Fluid",protein-fluid,"Specialized Tests",pathology,"Total protein in body fluids",350.00,45.71,"Daily & 11:00/18:00","Depends on fluid collection procedure",,1,0
+"Sickling test",sickling-test,"Genetic & Wellness",pathology,"Detects sickle cell hemoglobin (HbS)",350.00,45.71,"Daily & Next Day
+(11:00)","Fasting not required; EDTA blood sample preferred",,1,0
+"Measles IgG Antibody",measles-igg-antibody,"Infectious Diseases",pathology,"Immunity verification to measles",2500.00,45.20,"2&4&6 & 2&4&6 (18: 00 )","Fasting not required",,1,0
+"Measles IgM Antibody",measles-igm-antibody,"Infectious Diseases",pathology,"Acute measles infection diagnosis",2500.00,45.20,"2&4&6 & 2&4&6 (18: 00 )","Collect during rash phase",,1,0
+"Bicarbonate (HCO3)-Serum",bicarbonate-hco3-serum,"Routine Tests",pathology,"Acid-base balance assessment",800.00,45.00,"Daily & 11:00/18:00","Fasting preferred; handle sample anaerobically",,1,0
+"Biopsy-Block and Slide Return",biopsy-block-and-slide-return,"Specialized Tests",pathology,"Histopathology specimen retrieval",400.00,45.00,"Daily & 3 days (18:00)","Depends on original biopsy procedure",,1,0
+"Creatinine - Urine Random",creatinine-urine-random,"Routine Tests",pathology,"Kidney function spot check",200.00,45.00,"Daily & 11:00/18:00","Random urine; avoid contamination",,1,0
+"HIV 1 & 2 Antibody-Elisa",hiv-1-2-antibody-elisa,"Infectious Diseases",pathology,"Standard HIV screening",400.00,45.00,"Daily & Same day
+(19:00","Fasting not required; confirm positives with Western blot",,1,0
+"Protein Electrophoresis -Serum",protein-electrophoresis-serum,"Specialized Tests",pathology,"Identifies abnormal protein patterns",800.00,45.00,"Daily & Next day (18:00)","Fasting preferred",,1,0
+"Stool for Occult Blood",stool-for-occult-blood,"Routine Tests",pathology,"Screens for GI bleeding",200.00,45.00,"Daily & 11:00/18:00","Avoid red meat, horseradish, and NSAIDs 3 days prior",,1,0
+"Total Iron Binding Capacity (TIBC)",total-iron-binding-capacity-tibc-,"Routine Tests",pathology,"Evaluates iron metabolism",400.00,45.00,"Daily & 11:00/18:00","Fasting required (12 hours)",,1,0
+Homocysteine-Plasma,homocysteine-plasma,"Cardiac & Diabetes",pathology,"Cardiovascular risk marker",1050.00,44.76,"Daily & 11:00/18:00","Fasting required; process within 1 hour",,1,0
+Homocysteine-Serum,homocysteine-serum,"Cardiac & Diabetes",pathology,"Alternative cardiovascular risk assessment",1050.00,44.76,"Daily & 11:00/18:00","Fasting required",,1,0
+"Cryoglobulin Qualitative",cryoglobulin-qualitative,"Allergy & Immunology",pathology,"Detects abnormal cold-precipitating proteins",1300.00,44.62,"Daily & Next day (18:00)","Keep sample warm (37 degree C) until processing",,1,0
+"Insulin like Growth factor (IGF- I( Somatomedin-
+C )",insulin-like-growth-factor-igf-i-somatomedin-c-,"Hormonal & Endocrine",pathology,"Growth hormone activity assessment",3900.00,44.62,"Daily & 11:00/18:00","Fasting not required",,1,0
+Lipase-Urine,lipase-urine,"Cardiac & Diabetes",pathology,"Pancreatic function evaluation",1300.00,44.62,"Daily & 11:00/18:00","Random urine sample",,1,0
+"Protein Urinary - Random Urine",protein-urinary-random-urine,"Routine Tests",pathology,"Kidney disease screening",325.00,44.62,"Daily & 11:00/18:00","First morning urine preferred",,1,0
+"Synovial fluid for Crystals",synovial-fluid-for-crystals,"Specialized Tests",pathology,"Diagnoses gout/pseudogout",650.00,44.62,"Daily & 11:00/18:00","Collected during arthrocentesis; examine fresh sample",,1,0
+"Bone Marrow Smear - Iron Stain",bone-marrow-smear-iron-stain,"Specialized Tests",pathology,"Evaluates iron stores in marrow",1150.00,43.48,"Daily & 11:00/18:00","Requires bone marrow aspirate",,1,0
+"Tissue Transglutaminase IgA Antibody",tissue-transglutaminase-iga-antibody,"Allergy & Immunology",pathology,"Celiac disease primary screening",900.00,43.33,"Daily & Same day
+(19:00","Must be on gluten-containing diet",,1,0
+"Tissue Transglutaminase IgG Antibody",tissue-transglutaminase-igg-antibody,"Allergy & Immunology",pathology,"Celiac screening for IgA-deficient patients",900.00,43.33,"Daily & Same day
+(19:00","Must be on gluten-containing diet",,1,0
+"Thyroid Profile - Total",thyroid-profile-total,"Hormonal & Endocrine",pathology,"T3, T4, TSH levels assessment",500.00,76.00,"Daily & 10:30/17:30","Fasting preferred; morning sample ideal",,1,0
+"Thyroid Profile - Free",thyroid-profile-free,"Hormonal & Endocrine",pathology,"FT3, FT4, TSH evaluation",1200.00,85.00,"Daily & 10:30/17:30","Fasting preferred; avoid biotin supplements",,1,0
+"Kidney Profile (KFT)",kidney-profile-kft-,"Routine Tests",pathology,"BUN, creatinine, electrolytes kidney function",700.00,74.29,"Daily & 10:30/17:30","Fasting preferred; avoid strenuous exercise",,1,0
+"Liver Function Test (LFT)",liver-function-test-lft-,"Routine Tests",pathology,"ALT, AST, ALP, bilirubin, protein liver health",700.00,74.29,"Daily & 10:30/17:30","Fasting preferred; avoid alcohol 24hr prior",,1,0
+"Lipid Profile",lipid-profile,"Cardiac & Diabetes",pathology,"Cholesterol, triglycerides, HDL, LDL heart risk",600.00,70.00,"Daily & 10:30/17:30","12-14 hour fasting required; no alcohol 24hr prior",,1,0
+"Iron Profile",iron-profile,"Routine Tests",pathology,"Iron, TIBC, transferrin, saturation anemia evaluation",550.00,67.27,"Daily & 10:30/17:30","Fasting required; morning sample preferred",,1,0
+"Tissue Transglutaminase IgM Antibody",tissue-transglutaminase-igm-antibody,"Allergy & Immunology",pathology,"Detects IgM antibodies for celiac disease diagnosis.",900.00,43.33,"Daily & Same day
+(19:00","No fasting required.",,1,0
+"IL-6 (INterleukin-6)",il-6-interleukin-6-,"Allergy & Immunology",pathology,"Measures inflammation in infections/autoimmune disorders.",2500.00,42.40," & ","No special preparation.",,1,0
+"RH Antibody - Titres",rh-antibody-titres,"Allergy & Immunology",pathology,"Screens for Rh incompatibility in pregnancy.",875.00,41.71,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Parietal Cell Antibody",parietal-cell-antibody,"Allergy & Immunology",pathology,"Diagnoses pernicious anemia (autoimmune gastritis).",2900.00,40.34,"1&3&5 & 1&3&5 (18:00)","No special preparation.",,1,0
+"Endomysial IgA Antibody",endomysial-iga-antibody,"Allergy & Immunology",pathology,"Detects celiac disease-specific antibodies.",2600.00,38.85,"Daily & Same day
+(19:00","No special preparation.",,1,0
+"Endomysial IgG Antibody",endomysial-igg-antibody,"Allergy & Immunology",pathology,"Detects celiac disease-specific antibodies.",2600.00,38.85,"Daily & Same day
+(19:00","No special preparation.",,1,0
+"Endomysial IgM Antibody",endomysial-igm-antibody,"Allergy & Immunology",pathology,"Detects celiac disease-specific antibodies.",2600.00,38.85,"Daily & Same day
+(19:00","No special preparation.",,1,0
+"JAK-2 Mutation (CMPD) Exon 12 Mutation",jak-2-mutation-cmpd-exon-12-mutation,"Cancer Markers",pathology,"Diagnoses myeloproliferative disorders (e.g., polycythemia vera).",18000.00,43.17,"Daily & 7 days (18:00)","No special preparation.",,1,0
+"Bence Jones Protein, Urine (BJ Protein)",bence-jones-protein-urine-bj-protein-,"Cancer Markers",pathology,"Detects multiple myeloma-related light chains in urine.",500.00,42.00,"Daily & 11:00/18:00","24-hour urine collection preferred.",,1,0
+"Protein Electrophoresis - 24hrs Urine",protein-electrophoresis-24hrs-urine,"Cancer Markers",pathology,"Identifies monoclonal proteins (multiple myeloma).",1100.00,40.91,"Daily & Next day (18:00)","24-hour urine collection; avoid contamination.",,1,0
+"PSA/FreePSA Ratio",psa-freepsa-ratio,"Cancer Markers",pathology,"Assesses prostate cancer risk.",1200.00,40.00,"Daily & 11:00/18:00","Avoid ejaculation/DRE 48 hours prior.",,1,0
+"Cholesterol - LDL",cholesterol-ldl,"Cardiac & Diabetes",pathology,"Evaluates cardiovascular risk.",250.00,40.00,"Daily & 11:00/18:00","Fasting 9-12 hours.",,1,0
+"Cholesterol HDL",cholesterol-hdl,"Cardiac & Diabetes",pathology,"Measures ""good"" cholesterol.",250.00,40.00,"Daily & 11:00/18:00","Fasting 9-12 hours.",,1,0
+"MTHFR (Methylenetetrahydrofolate Reductase) Gene Mutation (Homocysteinemia)",mthfr-methylenetetrahydrofolate-reductase-gene-mutation-homocysteinemia-,"Genetic & Wellness",pathology,"Links to elevated homocysteine (thrombosis/pregnancy risks).",5300.00,40.19,"Daily & 3 Days","No special preparation.",,1,0
+"Blood Grouping (A B O) and Rh Type",blood-grouping-a-b-o-and-rh-type,"Genetic & Wellness",pathology,"Determines blood type for transfusions/pregnancy.",100.00,40.00,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Pregnancy Test",pregnancy-test,"Hormonal & Endocrine",pathology,"Detects beta-hCG for pregnancy confirmation.",250.00,40.00,"Daily & 11:00/18:00","First-morning urine preferred.",,1,0
+"Calcium - Random Urine",calcium-random-urine,"Hormonal & Endocrine",pathology,"Assesses calcium metabolism (kidney stones/hyperparathyroidism).",250.00,40.00,"Daily & 11:00/18:00","Random urine: avoid calcium-rich foods.",,1,0
+"Calcium -24 Hrs Urine",calcium-24-hrs-urine,"Hormonal & Endocrine",pathology,"Assesses calcium metabolism (kidney stones/hyperparathyroidism).",250.00,40.00,"Daily & 11:00/18:00","24-hour urine: avoid calcium-rich foods.",,1,0
+"Stool Examination",stool-examination,"Infectious Diseases",pathology,"Screens for parasites/bacteria.",175.00,42.86,"Daily & 11:00/18:00","Fresh stool in sterile container.",,1,0
+"Weil - Felix Test",weil-felix-test,"Infectious Diseases",pathology,"Diagnoses rickettsial infections (e.g., typhus).",875.00,41.71,"Daily & Same day
+(19:00","No special preparation.",,1,0
+"Leptospira Detection-WB-Heparin",leptospira-detection-wb-heparin,"Infectious Diseases",pathology,"Confirms leptospirosis.",1100.00,40.91,"Daily & Next Day (11:00)","Heparinized blood sample.",,1,0
+"Microfilaria Antigen - Urine",microfilaria-antigen-urine,"Infectious Diseases",pathology,"Detects filariasis.",875.00,41.71,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Microfilaria Antigen - Serum",microfilaria-antigen-serum,"Infectious Diseases",pathology,"Detects filariasis.",875.00,41.71,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Bilirubin (Total + Direct)",bilirubin-total-direct-,"Routine Tests",pathology,"Evaluates liver function/jaundice.",150.00,40.00,"Daily & 11:00/18:00","Fasting preferred (4-6 hours).",,1,0
+"Urea - Spot Urine",urea-spot-urine,"Routine Tests",pathology,"Assesses kidney function.",325.00,41.54,"Daily & 11:00/18:00","Random urine sample.",,1,0
+Osmolality-Serum,osmolality-serum,"Routine Tests",pathology,"Checks fluid/electrolyte balance.",875.00,41.71,"Daily & 11:00/18:00","Fasting may be required for serum.",,1,0
+Osmolality-Urine,osmolality-urine,"Routine Tests",pathology,"Checks fluid/electrolyte balance.",875.00,41.71,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Biopsy-Special Stain",biopsy-special-stain,"Specialized Tests",pathology,"Advanced tissue analysis (e.g., amyloidosis).",875.00,41.71,"Daily & 2 days (18:00)","Provide previous biopsy slides.",,1,0
+"Biopsy-Second Opinion",biopsy-second-opinion,"Specialized Tests",pathology,"Advanced tissue analysis (e.g., amyloidosis).",1200.00,40.00,"Daily & 3 days (18:00)","Provide previous biopsy slides.",,1,0
+"Biopsy-Small Specimen (< 2cm)-Bone",biopsy-small-specimen-2cm-bone,"Specialized Tests",pathology,"Examines bone abnormalities.",1350.00,40.74,"Daily & 10 days (18:00)","Follow biopsy procedure instructions.",,1,0
+"Osmotic Fragility",osmotic-fragility,"Specialized Tests",pathology,"Diagnoses hemolytic anemias.",875.00,41.71,"Daily & 11:00/18:00","Fasting preferred.",,1,0
+"Urine for Fat Globulins",urine-for-fat-globulins,"Specialized Tests",pathology,"Detects chronic hemolysis/steatorrhea.",350.00,42.86,"Daily & 11:00/18:00","24-hour urine (fat).",,1,0
+"Urine For Hemosiderin",urine-for-hemosiderin,"Specialized Tests",pathology,"Detects chronic hemolysis/steatorrhea.",950.00,38.95,"Daily & 11:00/18:00","First-morning urine (hemosiderin)",,1,0
+"Sudan Red Stain",sudan-red-stain,"Specialized Tests",pathology,"Identifies fat in stool (malabsorption).",875.00,41.71,"Daily & 11:00/18:00","Fresh stool sample.",,1,0
+Marijuana-Urine-Random,marijuana-urine-random,"Specialized Tests",pathology,"Screens for drug abuse/therapeutic monitoring.",950.00,38.95,"Daily & 18:00","Random urine/blood; trough level for phenobarbital.",,1,0
+"Phencyclidine (PCP)",phencyclidine-pcp-,"Specialized Tests",pathology,"Screens for drug abuse/therapeutic monitoring.",950.00,38.95,"Daily & 18:00","Random urine/blood; trough level for phenobarbital.",,1,0
+"Phenobarbital (Gardinal)",phenobarbital-gardinal-,"Specialized Tests",pathology,"Screens for drug abuse/therapeutic monitoring.",950.00,38.95,"Daily & 11:00/18:00","Random urine/blood; trough level for phenobarbital.",,1,0
+"Urobilinogen, Urine",urobilinogen-urine,"Routine Tests",pathology,"Measures urobilinogen levels in urine to assess liver function and hemolysis.",350.00,42.86,"Daily & 11:00/18:00","No special preparation needed.",,1,0
+"RBC Folate",rbc-folate,"Genetic & Wellness",pathology,"Evaluates folate levels in red blood cells to detect deficiency.",2700.00,41.11,"Daily & 11:00/18:00","Fasting preferred; consult lab.",,1,0
+"Citrate-24 hrs Urine",citrate-24-hrs-urine,"Routine Tests",pathology,"Measures citrate excretion to assess kidney stone risk.",1200.00,40.00,"Daily & 11:00/18:00","24-hour urine collection; follow lab instructions.",,1,0
+"Oxalate-24 hrs Urine",oxalate-24-hrs-urine,"Routine Tests",pathology,"Measures oxalate excretion to evaluate kidney stone risk.",2600.00,38.85,"Daily & Next day (18:00)","24-hour urine collection; avoid high-oxalate foods.",,1,0
+"Protein Electrophoresis -CSF",protein-electrophoresis-csf,"Specialized Tests",pathology,"Analyzes cerebrospinal fluid proteins for neurological disorders.",2600.00,38.85,"Daily & Next day (18:00)","Requires lumbar puncture; follow physician instructions.",,1,0
+"SS-A (Ro) Antibody",ss-a-ro-antibody,"Allergy & Immunology",pathology,"Detects SS-A antibodies for diagnosing Sj?gren's syndrome and lupus.",2600.00,38.85,"1&3&5 & 1&3&5 (18:00)","No special preparation needed.",,1,0
+"SS-B (La) Antibody",ss-b-la-antibody,"Allergy & Immunology",pathology,"Detects SS-B antibodies for diagnosing Sj?gren's syndrome.",2600.00,38.85,"1&3&5 & 1&3&5 (18:00)","No special preparation needed.",,1,0
+"Culture Fungus -(Does Not Include Anti Fungal Sensitivity) Miscellaneous",culture-fungus-does-not-include-anti-fungal-sensitivity-miscellaneous,"Infectious Diseases",pathology,"Identifies fungal infections in various specimens.",1300.00,38.46,"Daily & 2 days (11:00)","Depends on specimen type; sterile collection required.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Body fluids",culture-fungus-does-not-include-anti-fungal-sensitivity-body-fluids,"Infectious Diseases",pathology,"Detects fungal infections in body fluids.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile collection of body fluid.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-CSF",culture-fungus-does-not-include-anti-fungal-sensitivity-csf,"Infectious Diseases",pathology,"Identifies fungal infections in cerebrospinal fluid.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Requires lumbar puncture; sterile collection.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Hair",culture-fungus-does-not-include-anti-fungal-sensitivity-hair,"Infectious Diseases",pathology,"Diagnoses fungal infections in hair samples.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Clean hair sample; avoid antifungal treatments.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Nails",culture-fungus-does-not-include-anti-fungal-sensitivity-nails,"Infectious Diseases",pathology,"Detects fungal infections in nail samples.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Clean nail clippings; avoid antifungal treatments.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Pus",culture-fungus-does-not-include-anti-fungal-sensitivity-pus,"Infectious Diseases",pathology,"Identifies fungal infections in pus samples.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile collection of pus.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Skin scrapings",culture-fungus-does-not-include-anti-fungal-sensitivity-skin-scrapings,"Infectious Diseases",pathology,"Diagnoses fungal infections in skin scrapings.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Clean skin area before scraping.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Sputum",culture-fungus-does-not-include-anti-fungal-sensitivity-sputum,"Infectious Diseases",pathology,"Detects fungal infections in sputum.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Early morning sputum sample preferred.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Swabs",culture-fungus-does-not-include-anti-fungal-sensitivity-swabs,"Infectious Diseases",pathology,"Identifies fungal infections from swab specimens.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile swab collection.",,1,0
+"Culture, Fungus (Does not include Anti fungal sensitivity)-Urine",culture-fungus-does-not-include-anti-fungal-sensitivity-urine,"Infectious Diseases",pathology,"Detects fungal infections in urine.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Clean-catch midstream urine preferred.",,1,0
+"Culture, Nocardia (Does not include Antibiotic Sensitivity)-Pus",culture-nocardia-does-not-include-antibiotic-sensitivity-pus,"Infectious Diseases",pathology,"Identifies Nocardia bacterial infections in pus.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile collection of pus.",,1,0
+"Culture, Nocardia (Does not include Antibiotic Sensitivity)-Sputum",culture-nocardia-does-not-include-antibiotic-sensitivity-sputum,"Infectious Diseases",pathology,"Detects Nocardia bacterial infections in sputum.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Early morning sputum sample preferred.",,1,0
+"Culture, Nocardia ,Tissue in Normal Saline(Does not include Antibiotic Sensitivity)",culture-nocardia-tissue-in-normal-saline-does-not-include-antibiotic-sensitivity-,"Infectious Diseases",pathology,"Identifies Nocardia infections in tissue samples.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile tissue collection in normal saline.",,1,0
+"Culture, Nocardia, Swabs (Does not include Antibiotic Sensitivity)",culture-nocardia-swabs-does-not-include-antibiotic-sensitivity-,"Infectious Diseases",pathology,"Identifies Nocardia bacterial infections from swab specimens.",1300.00,38.46,"Daily & Interim1:1week, 2week, Final:3rd week","Sterile swab collection.",,1,0
+"Infectious Mononucleosis",infectious-mononucleosis,"Infectious Diseases",pathology,"Detects Epstein-Barr virus (EBV) antibodies for mono diagnosis.",1300.00,38.46,"Daily & Same day
+(19:00","No special preparation.",,1,0
+"Lipoprotein (a) - Lp(a)",lipoprotein-a-lp-a-,"Cardiac & Diabetes",pathology,"Measures Lp(a) levels to assess cardiovascular risk.",1300.00,38.46,"Daily & 11:00/18:00","Fasting 9-12 hours.",,1,0
+"KOH Preparation for Fungal Elements Miscellaneous (Wet Mount)",koh-preparation-for-fungal-elements-miscellaneous-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Body fluids (Wet Mount)",koh-preparation-for-fungal-elements-body-fluids-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements CSF (Wet Mount)",koh-preparation-for-fungal-elements-csf-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements hair (Wet Mount)",koh-preparation-for-fungal-elements-hair-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Nails (Wet Mount)",koh-preparation-for-fungal-elements-nails-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Pus (Wet Mount)",koh-preparation-for-fungal-elements-pus-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Skin scrapings (Wet Mount)",koh-preparation-for-fungal-elements-skin-scrapings-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Sputum (Wet Mount)",koh-preparation-for-fungal-elements-sputum-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Swabs (Wet Mount)",koh-preparation-for-fungal-elements-swabs-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"KOH Preparation for Fungal Elements Urine (Wet Mount)",koh-preparation-for-fungal-elements-urine-wet-mount-,"Infectious Diseases",pathology,"Rapid microscopic detection of fungal elements in various specimens.",450.00,37.78,"Daily & Next Day (11:00)","Sterile collection (varies by specimen type).",,1,0
+"Protein C",protein-c,"Specialized Tests",pathology,"Evaluates Protein C activity for thrombophilia screening.",3450.00,37.39,"2&4&6 & 2&4&6 (18: 00 )","No special preparation.",,1,0
+"Protein S",protein-s,"Specialized Tests",pathology,"Measures Protein S activity for thrombophilia evaluation.",3450.00,37.39,"2&4&6 & 2&4&6 (18: 00 )","No special preparation.",,1,0
+"Estimated Glomerular Filtration Rate (eGFR)",estimated-glomerular-filtration-rate-egfr-,"Routine Tests",pathology,"Assesses kidney function based on creatinine levels.",350.00,37.14,"Daily & 11:00/18:00","No special preparation.",,1,0
+"TPMT Gene (Thiopurine Methyltransferase)",tpmt-gene-thiopurine-methyltransferase-,"Genetic & Wellness",pathology,"Identifies TPMT mutations for thiopurine drug metabolism.",9600.00,36.98,"Daily & 5 days (18:00)","No special preparation.",,1,0
+"Hepatitis B Virus - Genotyping",hepatitis-b-virus-genotyping,"Infectious Diseases",pathology,"Determines HBV genotype for treatment planning.",9500.00,36.32,"Daily & 5 days (18:00)","No special preparation.",,1,0
+"Inhibin - B",inhibin-b,"Hormonal & Endocrine",pathology,"Measures Inhibin B for ovarian reserve or testicular function.",2950.00,36.27,"2&4&6 & 2&4&6 (18: 00 )","Day 3 of menstrual cycle (if applicable).",,1,0
+"Cryptococcus Antigen",cryptococcus-antigen,"Infectious Diseases",pathology,"Detects Cryptococcus neoformans antigen (cryptococcosis).",2600.00,36.15,"Daily & Same day
+(19:00","Serum or CSF sample; no prep.",,1,0
+"Cryptococcus Antigen - CSF",cryptococcus-antigen-csf,"Infectious Diseases",pathology,"Detects Cryptococcus in cerebrospinal fluid for meningitis diagnosis.",2600.00,36.15,"Daily & Same day
+(19:00","CSF sample via lumbar puncture.",,1,0
+"HIV - 1 RNA Virus - Quantitative - Viral Load",hiv-1-rna-virus-quantitative-viral-load,"Infectious Diseases",pathology,"Measures HIV viral load for treatment monitoring.",5600.00,35.71,"Daily & 2 Days","No special preparation.",,1,0
+"Anti Neutrophilic Cytoplasmic Antibody - IFA (Qualitative)",anti-neutrophilic-cytoplasmic-antibody-ifa-qualitative-,"Allergy & Immunology",pathology,"Detects ANCA for vasculitis diagnosis.",900.00,35.56,"Daily & Next Day (11:00)","No special preparation.",,1,0
+"Anti Nuclear Antibody - IFA (Qualitative)",anti-nuclear-antibody-ifa-qualitative-,"Allergy & Immunology",pathology,"Screens for ANA in autoimmune disorders.",900.00,35.56,"1&3&5 & 2&4&6 (11:00)","No special preparation.",,1,0
+"LE Cells",le-cells,"Allergy & Immunology",pathology,"Identifies lupus erythematosus cells in SLE diagnosis.",450.00,35.56,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Intrinsic Factor IgG Antibody",intrinsic-factor-igg-antibody,"Allergy & Immunology",pathology,"Diagnoses pernicious anemia.",3350.00,35.52,"1&3&5 & 2&4&6 (18: 00 )","No special preparation.",,1,0
+"P1NP (Total)",p1np-total-,"Cancer Markers",pathology,"Measures bone formation in osteoporosis/metastases.",3350.00,35.52,"3 & 6 & 4 Days (18:00)","No special preparation.",,1,0
+"Parvovirus B19 Antibody IgG",parvovirus-b19-antibody-igg,"Infectious Diseases",pathology,"Detects past Parvovirus B19 infection.",3350.00,35.52,"1&3&5 & 1&3&5 (18:00)","No special preparation.",,1,0
+"Parvovirus B19 Antibody IgM",parvovirus-b19-antibody-igm,"Infectious Diseases",pathology,"Diagnoses acute Parvovirus B19 infection.",3350.00,35.52,"1&3&5 & 1&3&5 (18:00)","No special preparation.",,1,0
+Phenol,phenol,"Specialized Tests",pathology,"Measures phenol levels (toxicology/metabolic disorders).",3350.00,35.52,"1 & 8 Days (18:00 )","Consult lab for specific preparation.",,1,0
+"Neonatal Screen (Trisomy 21, 18, 13 , X, Y)-5
+Markers - FISH",neonatal-screen-trisomy-21-18-13-x-y-5-markers-fish,"Genetic & Wellness",pathology,"Screens for chromosomal abnormalities in neonates.",15000.00,34.67,"Daily & 3 days (18:00)","Blood sample from neonate.",,1,0
+"Beta Human Chorionic Gonadotropin - Urine",beta-human-chorionic-gonadotropin-urine,"Hormonal & Endocrine",pathology,"Qualitative hCG detection for pregnancy.",1100.00,34.55,"Daily & 11:00/18:00","First-morning urine preferred.",,1,0
+"Biopsy-Medium (upto 5 cm)-Bone",biopsy-medium-upto-5-cm-bone,"Specialized Tests",pathology,"Evaluates bone tissue for tumors/infections.",1100.00,34.55,"Daily & 11 days (18:00)","Follow biopsy procedure instructions.",,1,0
+Fructosamine-serum,fructosamine-serum,"Cardiac & Diabetes",pathology,"Measures average glucose over 2-3 weeks.",1100.00,34.55,"Daily & Next day (18:00)","No special preparation.",,1,0
+"Filaria Ab IgM",filaria-ab-igm,"Infectious Diseases",pathology,"Detects filarial infections.",1100.00,34.55,"Daily & 11:00/18:00","No special preparation.",,1,0
+"Rota Virus Antigen",rota-virus-antigen,"Infectious Diseases",pathology,"Diagnoses rotavirus gastroenteritis.",1100.00,34.55,"Daily & Same day
+(19:00","Stool sample in sterile container.",,1,0
+"Stone Analysis-Renal",stone-analysis-renal,"Specialized Tests",pathology,"Analyzes composition of kidney stones.",1100.00,34.55,"Daily & Next day (18:00)","Collect passed stone; clean container.",,1,0
+"Hepatitis B Virus - Qualitative",hepatitis-b-virus-qualitative,"Infectious Diseases",pathology,"Detects HBV infection.",3500.00,34.00,"Daily & 2 Days","No special preparation.",,1,0
+"Hepatitis C Virus RNA - Qualitative",hepatitis-c-virus-rna-qualitative,"Infectious Diseases",pathology,"Detects active HCV infection.",3500.00,34.00,"Daily & 2 Days","No special preparation.",,1,0
+Tacrolimus,tacrolimus,"Specialized Tests",pathology,"Monitors tacrolimus drug levels (post-transplant).",5300.00,33.40,"Daily & Next day (18:00)","Trough level (just before next dose).",,1,0
+"Deletion 20 q-FISH",deletion-20-q-fish,"Genetic & Wellness",pathology,"Detects 20q deletion in myelodysplastic syndromes",8000.00,33.38,"Daily & 6 days (18:00)","Blood sample; no special preparation",,1,0
+"Biopsy-Uterus with both Tubes and Ovaries",biopsy-uterus-with-both-tubes-and-ovaries,"Specialized Tests",pathology,"Evaluates gynecological tissues for abnormalities",1200.00,33.33,"Daily & 7 days (18:00)","Surgical procedure; follow physician instructions",,1,0
+"Urine -Albumin",urine-albumin,"Routine Tests",pathology,"Measures albumin in urine for kidney function assessment",150.00,33.33,"Daily & 11:00/18:00","Random or 24-hour urine collection",,1,0
+"Prader - Willi Syndrome-FISH",prader-willi-syndrome-fish,"Genetic & Wellness",pathology,"Diagnoses Prader-Willi syndrome",12500.00,33.12,"Daily & 6 days (18:00)","Blood sample; no special preparation",,1,0
+"EGFR Gene Amplification-FISH",egfr-gene-amplification-fish,"Cancer Markers",pathology,"Assesses EGFR amplification in tumors",18000.00,32.78,"Daily & 9 days (18:00)","Tissue biopsy required",,1,0
+"Chromosomal Analysis- Blood",chromosomal-analysis-blood,"Genetic & Wellness",pathology,"Analyzes chromosomes for genetic disorders",3200.00,32.50,"Daily & 10 days (18:00)","Blood sample; no special preparation",,1,0
+"GENEXPERT MTB WITH RIFAMPICIN
+RESISTANCE, QUALITATIVE, SPUTUM",genexpert-mtb-with-rifampicin-resistance-qualitative-sputum,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"GENEXPERT MTB WITH RIFAMPICIN
+RESISTANCE, QUALITATIVE, CSF",genexpert-mtb-with-rifampicin-resistance-qualitative-csf,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"GENEXPERT MTB WITH RIFAMPICIN
+RESISTANCE, QUALITATIVE, ASCITIC FLUID",genexpert-mtb-with-rifampicin-resistance-qualitative-ascitic-fluid,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"GENEXPERT MTB WITH RIFAMPICIN
+RESISTANCE, PLEURAL FLUID",genexpert-mtb-with-rifampicin-resistance-pleural-fluid,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"GENEXPERT (XPERT) MTB WITH RIFAMPICIN
+RESISTANCE, QUALITATIVE",genexpert-xpert-mtb-with-rifampicin-resistance-qualitative,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"GENEXPERT (XPERT) MTB WITH RIFAMPICIN RESISTANCE, QUALITATIVE,TISSUE",genexpert-xpert-mtb-with-rifampicin-resistance-qualitative-tissue,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"ENEXPERT (XPERT) MTB WITH RIFAMPICIN
+RESISTANCE, QUALITATIVE",enexpert-xpert-mtb-with-rifampicin-resistance-qualitative,"Infectious Diseases",pathology,"Detects Mycobacterium tuberculosis and rifampicin resistance",3200.00,32.50,"Daily & 3 Days","Sterile collection (sputum/CSF/fluid/tissue)",,1,0
+"Slide Return",slide-return,"Specialized Tests",pathology,"Returns pathology slides for review",325.00,32.31,"Daily & Next Day
+(11:00)","Requires previous slide identification",,1,0
+"Uric Acid-Spot Urine",uric-acid-spot-urine,"Routine Tests",pathology,"Measures uric acid levels in urine",325.00,32.31,"Daily & 11:00/18:00","Random urine sample",,1,0
+"Free Lite Chains (Kappa and Lambda) - Serum",free-lite-chains-kappa-and-lambda-serum,"Cancer Markers",pathology,"Detects abnormal light chains in multiple myeloma",5300.00,32.08,"Daily & 11:00/18:00","No special preparation",,1,0
+"Free Lite Chains (Kappa and Lambda) - Urine",free-lite-chains-kappa-and-lambda-urine,"Cancer Markers",pathology,"Measures light chains in urine for multiple myeloma",5300.00,32.08,"Daily & 11:00/18:00","24-hour urine collection preferred",,1,0
+"DMD-26 exons (Duchenne Muscular
+Dystrophy)",dmd-26-exons-duchenne-muscular-dystrophy-,"Genetic & Wellness",pathology,"Diagnoses Duchenne muscular dystrophy",11000.00,31.91,"Daily & 6 days (18:00)","Blood sample; no special preparation",,1,0
+"EGFR Mutation Study (10 Common Mutations)",egfr-mutation-study-10-common-mutations-,"Cancer Markers",pathology,"Identifies EGFR mutations for targeted cancer therapy",11000.00,31.91,"Daily & 6 days (18:00)","Tissue biopsy required",,1,0
+"KRAS (Colorectal Cancer Marker) Mutations",kras-colorectal-cancer-marker-mutations,"Cancer Markers",pathology,"Detects KRAS mutations for colorectal cancer treatment planning",11000.00,31.91,"Daily & 7 days (18:00)","Tissue biopsy required",,1,0
+"KRAS (Colorectal Cancer Marker) Mutations",kras-colorectal-cancer-marker-mutations,"Cancer Markers",pathology,"Detects KRAS mutations for colorectal cancer treatment planning",11000.00,100.00,"Daily & 7 days (18:00)","Tissue biopsy required",,1,0
+"Chromosomal Analysis- Products of
+Conception(POC)",chromosomal-analysis-products-of-conception-poc-,"Genetic & Wellness",pathology,"Analyzes fetal chromosomes after miscarriage.",7200.00,31.67,"Daily & 18 days (18:00)","Tissue sample from POC.",,1,0
+Methadone,methadone,"Specialized Tests",pathology,"Detects methadone for drug monitoring/therapy compliance.",950.00,31.58,"Daily & 18:00","Random urine or blood sample.",,1,0
+"Methamphetamine Amine Screen",methamphetamine-amine-screen,"Specialized Tests",pathology,"Screens for methamphetamine use.",950.00,31.58,"Daily & 18:00","Random urine sample.",,1,0
+"Opiates Screen:Urine",opiates-screen-urine,"Specialized Tests",pathology,"Detects opiate drugs in urine.",950.00,31.58,"Daily & Same day
+(18:00)","Random urine sample.",,1,0
+"CA 72.4- Gastic Cancer Marker",ca-72-4-gastic-cancer-marker,"Cancer Markers",pathology,"Measures CA 72-4 for gastric cancer monitoring.",3500.00,31.43,"Daily & Same day (18:00)","No special preparation.",,1,0
+"del 13q-FISH",del-13q-fish,"Genetic & Wellness",pathology,"Detects 13q deletion in multiple myeloma/CLL.",7300.00,30.96,"Daily & 6 days (18:00)","Blood or bone marrow sample.",,1,0
+"del 13q-FISH",del-13q-fish,"Genetic & Wellness",pathology,"Detects 13q deletion in multiple myeloma/CLL.",7300.00,30.96,"Daily & 6 days (18:00)","Blood or bone marrow sample.",,1,0
+"Biopsy-Uterus Cervix with Both Tubes Only",biopsy-uterus-cervix-with-both-tubes-only,"Specialized Tests",pathology,"Evaluates cervical and tubal tissues.",1100.00,30.91,"Daily & 7 days (18:00)","Surgical procedure; follow physician instructions.",,1,0
+"Biopsy-Uterus with One Tube and Ovary",biopsy-uterus-with-one-tube-and-ovary,"Specialized Tests",pathology,"Examines uterine, tubal, and ovarian tissues.",1100.00,30.91,"Daily & 7 days (18:00)","Surgical procedure; follow physician instructions.",,1,0
+"Biopsy-Uterus without Tubes and Ovaries",biopsy-uterus-without-tubes-and-ovaries,"Specialized Tests",pathology,"Analyzes uterine tissue only.",1100.00,30.91,"Daily & 7 days (18:00)","Surgical procedure; follow physician instructions.",,1,0
+"Chlamydia Trachomatis IgA",chlamydia-trachomatis-iga,"Infectious Diseases",pathology,"Detects acute/recent Chlamydia infection.",2500.00,30.80,"2&5 & 2&5 (18 :00)","No special preparation.",,1,0
+"Chlamydia Trachomatis IgG",chlamydia-trachomatis-igg,"Infectious Diseases",pathology,"Indicates past Chlamydia infection.",2500.00,30.80,"2&5 & 2&5 (18 :00)","No special preparation.",,1,0
+"Chlamydia Trachomatis IgM",chlamydia-trachomatis-igm,"Infectious Diseases",pathology,"Detects early Chlamydia infection.",2500.00,30.80,"2&5 & 2&5 (18 :00)","No special preparation.",,1,0
+"Immunoglobulin Fixation Electrophoresis-
+Urine",immunoglobulin-fixation-electrophoresis-urine,"Specialized Tests",pathology,"Identifies monoclonal proteins in urine.",8000.00,29.75,"Daily & 18:00","24-hour urine collection preferred.",,1,0
+"JAK2 (Janus Kinase 2) V617F for MPDs",jak2-janus-kinase-2-v617f-for-mpds,"Cancer Markers",pathology,"Diagnoses myeloproliferative disorders.",8000.00,29.75,"Daily & 3 Days","Blood or bone marrow sample.",,1,0
+"Prenatal Aneuploidy Detection- Amnio (2
+probes- Trisomy 21 & 13)-FISH",prenatal-aneuploidy-detection-amnio-2-probes-trisomy-21-13-fish,"Genetic & Wellness",pathology,"Screens for fetal chromosomal abnormalities.",8000.00,29.75,"Daily & 3 days (18:00)","Amniotic fluid sample.",,1,0
+"Prenatal Aneuploidy Detection-POC(2 probes-
+Trisomy 21 & 13)-FISH",prenatal-aneuploidy-detection-poc-2-probes-trisomy-21-13-fish,"Genetic & Wellness",pathology,"Analyzes chromosomal abnormalities in miscarried tissue.",8000.00,29.75,"Daily & 3 days (18:00)","Tissue sample from POC.",,1,0
+Cyclosporine,cyclosporine,"Specialized Tests",pathology,"Monitors cyclosporine drug levels.",3900.00,29.74,"Daily & 5 days (18:00)","Trough level (before next dose).",,1,0
+"Diptheria IgG",diptheria-igg,"Infectious Diseases",pathology,"Measures immunity to diphtheria.",3900.00,29.74,"2&4&6 & 2&4&6 (18: 00 )","No special preparation.",,1,0
+"Nor Metanephrines-Free",nor-metanephrines-free,"Hormonal & Endocrine",pathology,"Evaluates for pheochromocytoma/paraganglioma.",3900.00,29.74,"1&3&5 & 1&3&5 (18:00)","24-hour urine collection; avoid stress/exercise.",,1,0
+"t (11:14) or LSI IGH / CCND1-FISH",t-11-14-or-lsi-igh-ccnd1-fish,"Genetic & Wellness",pathology,"Detects translocation in multiple myeloma/MCL",7800.00,29.74,"Daily & 6 days (18:00)","Blood or bone marrow sample",,1,0
+"Toxoplasma DNA PCR - Qualitative",toxoplasma-dna-pcr-qualitative,"Infectious Diseases",pathology,"Diagnoses active Toxoplasma gondii infection",3900.00,29.74,"Daily & 3 Days","Blood, CSF, or amniotic fluid sample",,1,0
+"Fish for 18, X & Y",fish-for-18-x-y,"Genetic & Wellness",pathology,"Detects aneuploidy of chromosomes 18, X, and Y",12500.00,29.68,"Daily & 4 Days (18:00)","Blood or tissue sample",,1,0
+"HIV 1 Western Blot",hiv-1-western-blot,"Infectious Diseases",pathology,"Confirms HIV-1 infection",2450.00,29.39,"Daily & Same day
+(19:00","No special preparation",,1,0
+"Renin Activity",renin-activity,"Hormonal & Endocrine",pathology,"Evaluates hypertension or aldosteronism",3200.00,29.06,"2 & 5 & 2 & 5 (18:00)","Sodium-restricted diet may be required",,1,0
+"U1-nRNP antibodies",u1-nrnp-antibodies,"Allergy & Immunology",pathology,"Detects antibodies in mixed connective tissue disease",2600.00,28.08,"1&3&5 & 1&3&5 (18:00)","No special preparation",,1,0
+MPV,mpv,"Routine Tests",pathology,"Measures platelet size in blood disorders",250.00,28.00,"Daily & 11:00/18:00","No special preparation",,1,0
+"Prenatal Aneuploidy Detection- Amnio (5
+probes- Trisomy 21, 18, 13; X, Y)-FISH",prenatal-aneuploidy-detection-amnio-5-probes-trisomy-21-18-13-x-y-fish,"Genetic & Wellness",pathology,"Screens for common fetal chromosomal abnormalities",13000.00,28.00,"Daily & 3 days (18:00)","Amniotic fluid sample",,1,0
+"Prenatal Aneuploidy Detection- Cord Blood (5
+probes- Trisomy 21, 18, 13; X, Y)-FISH",prenatal-aneuploidy-detection-cord-blood-5-probes-trisomy-21-18-13-x-y-fish,"Genetic & Wellness",pathology,"Detects chromosomal abnormalities in fetal blood",13000.00,28.00,"Daily & 3 days (18:00)","Cord blood sample",,1,0
+"Red Cell Indices",red-cell-indices,"Routine Tests",pathology,"Evaluates RBC characteristics (MCV, MCH, etc.)",250.00,28.00,"Daily & 11:00/18:00","No special preparation",,1,0
+"Cytomegalo Virus (CMV) DNA - Quantitative",cytomegalo-virus-cmv-dna-quantitative,"Infectious Diseases",pathology,"Measures CMV viral load for infection monitoring",8800.00,27.95,"Daily & 2 Days","Blood, urine, or tissue sample",,1,0
+"Cytomegalo Virus(CMV) DNA Quantitative PCR",cytomegalo-virus-cmv-dna-quantitative-pcr,"Infectious Diseases",pathology,"Measures CMV viral load for infection monitoring",8800.00,27.95,"Daily & 2 Days","Blood, urine, or tissue sample",,1,0
+"Cytomegalo Virus (CMV)DNA - Qualitative",cytomegalo-virus-cmv-dna-qualitative,"Infectious Diseases",pathology,"Measures CMV viral load for infection monitoring",8800.00,27.95,"Daily & 2 Days","Blood, urine, or tissue sample",,1,0
+"HIV-DNA Virus - Qualitative",hiv-dna-virus-qualitative,"Infectious Diseases",pathology,"Detects HIV proviral DNA in latent infection",3900.00,27.95,"Daily & 2 Days","Blood sample",,1,0
+"Mercury Random Urine",mercury-random-urine,"Specialized Tests",pathology,"Assesses mercury exposure",3900.00,27.95,"Daily & 3 Days 18:00","Random urine sample",,1,0
+"Mercury- Serum",mercury-serum,"Specialized Tests",pathology,"Measures acute mercury exposure",3900.00,27.95,"Daily & 3 Days 18:00","Blood sample",,1,0
+Mercury-Hair,mercury-hair,"Specialized Tests",pathology,"Evaluates chronic mercury exposure",3900.00,27.95,"Daily & 3 Days 18:00","Hair sample from nape of neck",,1,0
+Mercury-Nails,mercury-nails,"Specialized Tests",pathology,"Assesses long-term mercury exposure",3900.00,27.95,"Daily & 3 Days 18:00","Clean nail clippings",,1,0
+"Anti Sperm Antibody",anti-sperm-antibody,"Allergy & Immunology",pathology,"Detects antibodies against sperm (infertility evaluation)",900.00,27.78,"1&3&5 & 1&3&5 (18:00)","Semen or blood sample",,1,0
+"Biopsy-Large(> 5 cm)-Bone",biopsy-large-5-cm-bone,"Specialized Tests",pathology,"Evaluates large bone lesions for tumors/infections",1800.00,27.78,"Daily & 12 days (18:00)","Surgical procedure; follow physician instructions",,1,0
+"Bleeding Time (BT) &amp; Clotting Time (CT)",bleeding-time-bt-clotting-time-ct-,Pathology,Pathology,"Bleeding Time (BT) and Clotting Time (CT) tests are used to evaluate blood clotting function, helping diagnose bleeding disorders and monitor anticoagulant therapy.",400.00,52.50,"Daily & 11:00/18:00","Need to visit lab","Need to visit lab",1,0
+"Alanine Aminotransferase (ALT/SGPT)",alanine-aminotransferase-alt-sgpt-,Pathology,Pathology,"SGPT is an abbreviation of Serum Glutamate Pyruvate Transaminase, also referred to as Alanine Aminotransferase (ALT). It is a liver-secreted enzyme. SGPT assists in breaking down proteins and plays a crucial role in fuelling the body with energy derived from food.",150.00,60.00,"Daily & 11:00/18:00",,,1,0
+"TORCH Profile (IgM)",torch-profile-igm-,Pathology,Pathology,"The TORCH Profile – 4 IgM is a diagnostic blood test used to detect recent or active infections that may pose risks during pregnancy. It screens for Toxoplasma IgM, Rubella IgM, Cytomegalovirus (CMV) IgM, and Herpes Simplex Virus type 2 (HSV-2) IgM antibodies. The presence of IgM antibodies indicates a recent infection, helping clinicians assess potential causes of infertility, recurrent pregnancy loss, or congenital infections. Early identification through this profile supports timely medical intervention, monitoring, and appropriate treatment to reduce complications for both mother and fetus.",1000.00,50.00,"Daily & 11:00/18:00","No special preparation is required for this test. Fasting is not necessary, and you may eat and drink normally unless advised otherwise by your doctor. Inform your healthcare provider about any medications, supplements, or recent vaccinations you are taking, as these may influence test results. If you are pregnant or suspect pregnancy, please notify the laboratory staff. The test requires a simple blood sample, typically drawn from a vein in the arm. Follow any additional instructions provided by your physician or diagnostic center.",,1,0

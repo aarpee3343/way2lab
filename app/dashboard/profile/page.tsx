@@ -11,14 +11,17 @@ import { toast } from '@/lib/safe-toast';
 import { useDashboard } from '@/hooks/useDashboard';
 import type { Customer } from '@/lib/types/dashboard';
 
+type ProfileForm = Omit<Partial<Customer>, 'dateOfBirth'> & {
+  dateOfBirth?: string | Date | null;
+};
+
 export default function ProfilePage() {
   const router = useRouter();
   const { user: dashboardUser, refresh } = useDashboard();
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const [user, setUser] = useState<Partial<Customer>>({
+  const [user, setUser] = useState<ProfileForm>({
     name: '',
     email: '',
     phone: '',
@@ -70,12 +73,15 @@ export default function ProfilePage() {
     setSaving(true);
     try {
       const token = localStorage.getItem('token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
+        credentials: 'include',
         body: JSON.stringify(user)
       });
 
@@ -99,7 +105,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handleChange = (field: keyof Customer, value: string) => {
+  const handleChange = (field: keyof ProfileForm, value: string) => {
     setUser(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -370,7 +376,7 @@ export default function ProfilePage() {
               onClick={() => router.push('/dashboard/settings?tab=privacy')}
               className="text-sm text-blue-400 hover:text-blue-300 font-medium"
             >
-              Learn more about our privacy policy →
+              Learn more about our privacy policy {'>'}
             </button>
           </div>
         </div>

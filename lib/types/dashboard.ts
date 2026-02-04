@@ -39,7 +39,15 @@ export type OrderWithFullDetails = Prisma.OrderGetPayload<{
 // 2. CUSTOM API INTERFACES (Keep these)
 // ==========================================
 
-export type Role = 'USER' | 'ADMIN' | 'LAB' | 'TECHNICIAN' | 'CORP_ADMIN';
+export type Role =
+  | 'USER'
+  | 'ADMIN'
+  | 'LAB'
+  | 'TECHNICIAN'
+  | 'CORP_ADMIN'
+  | 'CORP_SUB_ADMIN';
+
+export type CorporateRole = 'SUPER_ADMIN' | 'DEPT_HEAD' | 'LOCATION_MANAGER';
 
 export interface DashboardStats {
   totalOrders: number;
@@ -57,6 +65,10 @@ export interface DashboardResponse {
     name?: string | null;
     email?: string | null;
     avatar?: string | null;
+    phone?: string | null;
+    gender?: string | null;
+    dateOfBirth?: Date | string | null;
+    createdAt?: Date | string | null;
   };
 }
 

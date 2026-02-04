@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 
 export default function ReviewOrderPage() {
   const router = useRouter();
-  const { items, totals } = useCartStore();
+  const { items, totals, lab } = useCartStore();
   const { patientType, selectedAddressId, selectedFamilyMemberId, collectionType, scheduleDate, scheduleTime } = useBookingStore();
 
   const [loading, setLoading] = useState(true); // Start as true
@@ -61,7 +61,7 @@ export default function ReviewOrderPage() {
 
     // Run load
     loadDetails();
-  }, []);
+  }, [patientType, router, selectedAddressId, selectedFamilyMemberId]);
 
   const handlePlaceOrder = async () => {
     router.push('/checkout/confirm');
@@ -86,7 +86,9 @@ export default function ReviewOrderPage() {
       </div>
   );
 
-  const homeCharge = collectionType === 'home_collection' ? 200 : 0;
+  const homeCharge = collectionType === 'home_collection'
+    ? Number(lab?.homeCollectionCharges || 0)
+    : 0;
   // Use safe totals (fallback to 0)
   const finalAmt = totals?.finalAmount || 0;
   const grandTotal = finalAmt + homeCharge;

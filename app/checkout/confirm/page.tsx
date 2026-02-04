@@ -44,7 +44,7 @@ export default function ConfirmOrderPage() {
   const router = useRouter();
 
   /* ---------- STORES ---------- */
-  const { items, totals, clearCart } = useCartStore();
+  const { items, totals, clearCart, lab, coupon } = useCartStore();
   const {
     patientType,
     selectedFamilyMemberId,
@@ -115,7 +115,11 @@ export default function ConfirmOrderPage() {
           }
         }
 
-        if (collectionType === 'home_collection') setHomeCharge(200);
+        if (collectionType === 'home_collection') {
+          setHomeCharge(Number(lab?.homeCollectionCharges || 0));
+        } else {
+          setHomeCharge(0);
+        }
 
       } catch (e: any) {
         // ✅ Handle Auth Failure Here
@@ -131,7 +135,7 @@ export default function ConfirmOrderPage() {
     };
 
     if (items.length > 0) load();
-  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType, items.length, router]);
+  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType, items.length, lab?.homeCollectionCharges, router]);
 
   if (loading) {
     return (
@@ -205,7 +209,8 @@ export default function ConfirmOrderPage() {
           discount: testDiscount + couponDiscount,
           homeCollection: homeCharge,
           final: isCorporateCovered ? 0 : finalTotal
-        }
+        },
+        couponCode: coupon?.code || null
       };
 
       // ✅ AUTOMATIC COOKIE HANDLING (No Headers)

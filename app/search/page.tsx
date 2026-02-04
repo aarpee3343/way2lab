@@ -170,7 +170,7 @@ function SearchContent() {
       };
       fetchInitialItem();
     }
-  }, [searchParams]); 
+  }, [searchParams, selectedItems.length]); 
 
   // Autocomplete Dropdown
   useEffect(() => {
@@ -242,7 +242,7 @@ function SearchContent() {
 
   const addItem = (item: any) => {
     setSelectedItems(prev => {
-      if (prev.some(i => i.id === item.id)) return prev;
+      if (prev.some(i => i.id === item.id && i.type === item.type)) return prev;
       return [...prev, item];
     });
     setQuery('');
@@ -264,6 +264,7 @@ function SearchContent() {
       type: item.type,
       price: Number(item.labItemPrice),
       basePrice: Number(item.labItemMRP),
+      isCorporate: Boolean(item.isCorporate),
       labId: labData.lab.id,
       labName: labData.lab.labName,
     }));
@@ -274,6 +275,7 @@ function SearchContent() {
         labId: labData.lab.id,
         labName: labData.lab.labName,
         servicePincode: location.pincode,
+        homeCollectionCharges: Number(labData.lab.homeCollectionCharges || 0),
       },
       cartItems
     );

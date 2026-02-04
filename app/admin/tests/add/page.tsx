@@ -3,6 +3,7 @@
 
 import { useState, useRef } from 'react';
 import { createTestAction, bulkCreateTestsAction } from '@/app/actions/adminInventoryActions';
+import Papa from 'papaparse';
 import {
   Save,
   ArrowLeft,
@@ -46,15 +47,30 @@ export default function AddTestPage() {
   };
 
   const parseCSV = (text: string) => {
-    const lines = text.split('\n').filter(Boolean);
-    const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-
-    return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.replace(/"/g, '').trim());
-      const obj: any = {};
-      headers.forEach((h, i) => (obj[h] = values[i] || ''));
-      return obj;
+    const result = Papa.parse<Record<string, string>>(text, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+      transformHeader: (h) => h.replace(/^\uFEFF/, '').trim(),
     });
+
+    if (result.errors?.length) {
+      const firstError = result.errors[0];
+      throw new Error(firstError?.message || 'Invalid CSV format');
+    }
+
+    return result.data
+      .map((row) => {
+        const cleaned: Record<string, string> = {};
+        Object.keys(row || {}).forEach((key) => {
+          const value = row[key];
+          cleaned[key] = typeof value === 'string'
+            ? value.replace(/\r?\n/g, ' ').trim()
+            : String(value ?? '');
+        });
+        return cleaned;
+      })
+      .filter((row) => row.testName);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

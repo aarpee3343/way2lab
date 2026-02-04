@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useCartStore } from '@/store/useCartStore';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -88,6 +89,7 @@ export default function Header() {
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tests', href: '/search', icon: Search },
     { name: 'Packages', href: '/packages', icon: Package },
+    { name: 'Labs', href: '/labs', icon: Stethoscope },
     { name: 'Health Blog', href: '/blogs', icon: Heart },
     { name: 'About Us', href: '/about', icon: Info },
     { name: 'Contact', href: '/contact', icon: Phone },
@@ -100,13 +102,13 @@ export default function Header() {
 
   { name: 'My Orders', href: '/dashboard/orders', icon: ClipboardList },
 
-  { name: 'Health Reports', href: '/dashboard/reports', icon: FileText },
+  // { name: 'Health Reports', href: '/dashboard/reports', icon: FileText },
 
   { name: 'My Profile', href: '/dashboard/profile', icon: User },
 
-  { name: 'My Address', href: '/dashboard/addresses', icon: MapPin },
+  // { name: 'My Address', href: '/dashboard/addresses', icon: MapPin },
 
-  { name: 'My Family', href: '/dashboard/family', icon: Users },
+  // { name: 'My Family', href: '/dashboard/family', icon: Users },
 ];
 
   const currentLinks = isDashboard ? dashboardLinks : publicLinks;
@@ -125,10 +127,13 @@ export default function Header() {
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative">
-              <img 
-                src="/logo.png" 
-                alt="WayToLab Logo" 
-                className="h-10 w-auto object-contain transition-transform group-hover:scale-105 duration-300" 
+              <Image
+                src="/logo.png"
+                alt="WayToLab Logo"
+                width={160}
+                height={40}
+                className="h-10 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
+                priority
               />
             </div>
             <div className="hidden md:flex flex-col">
@@ -265,7 +270,7 @@ export default function Header() {
             >
               <div className="p-6 border-b border-teal-100 bg-gradient-to-r from-teal-50 to-white flex justify-between items-center">
                  <div className="flex items-center gap-3">
-                    <img src="/logo.png" className="h-9 w-auto" alt="WayToLab" />
+                    <Image src="/logo.png" alt="WayToLab" width={140} height={36} className="h-9 w-auto" priority />
                     <span className="font-bold text-lg text-slate-800">WayToLab</span>
                  </div>
                  <button onClick={() => setIsMobileOpen(false)} className="p-2 bg-white text-teal-600 rounded-full hover:bg-teal-50 border border-teal-200">

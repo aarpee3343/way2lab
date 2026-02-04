@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { 
   Facebook, Twitter, Linkedin, Instagram, ArrowUpRight, 
   MessageCircle, Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award
@@ -78,7 +79,13 @@ export default function Footer() {
           {/* Brand & Address */}
           <div className="md:col-span-5 space-y-8">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="WayToLab Logo" className="h-12 w-auto brightness-0 invert opacity-90" />
+              <Image
+                src="/logo.png"
+                alt="WayToLab Logo"
+                width={200}
+                height={48}
+                className="h-12 w-auto brightness-0 invert opacity-90"
+              />
               <div className="flex flex-col">
                 <span className="text-xl font-bold tracking-tight text-white leading-none">WayToLab</span>
                 <span className="text-xs font-bold text-teal-400 uppercase tracking-widest leading-none">Advanced Diagnostics</span>
@@ -117,8 +124,9 @@ export default function Footer() {
               {[
                 { name: 'Diagnostic Tests', href: '/tests' },
                 { name: 'Health Packages', href: '/packages' },
-                { name: 'Corporate Health', href: '/corporate' },
-                { name: 'Home Collection', href: '/home-collection' }
+                { name: 'Our Labs', href: '/labs' },
+                { name: 'Corporate Login', href: '/corp-login' },
+                { name: 'Home Collection', href: '/search' }
               ].map((item) => (
                 <li key={item.name}>
                   <Link href={item.href} className="text-slate-300 hover:text-teal-400 transition-colors text-sm font-medium flex items-center gap-2">

@@ -1,5 +1,5 @@
 // lib/db.ts
-import { PrismaClient, Prisma } from '@prisma/client';
+import { PrismaClient, Prisma, OrderStatus } from '@prisma/client';
 import type { 
   Customer, Order, Lab, FamilyMember, CustomerAddress,
   DashboardStats, DashboardResponse, ApiResponse 
@@ -419,7 +419,7 @@ export const db = {
       };
     },
 
-    updateStatus: async (id: number, status: string) => {
+    updateStatus: async (id: number, status: OrderStatus) => {
       return await prisma.order.update({
         where: { id },
         data: { status },
@@ -610,15 +610,3 @@ export const db = {
 // ===================== EXPORT ALL UTILITIES =====================
 // For backward compatibility
 export default prisma;
-
-// Export everything needed
-export { 
-  DBService, 
-  db, 
-  successResponse, 
-  errorResponse, 
-  handlePrismaError,
-  isPrismaError,
-  orderIncludes,
-  customerIncludes 
-};

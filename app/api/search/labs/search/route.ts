@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { safeData } from '@/lib/utils';
+import { getAuthUser } from '@/lib/auth';
 
 // Helper: Calculate Distance
 function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -23,6 +24,17 @@ function deg2rad(deg: number) {
 
 export async function POST(req: Request) {
   try {
+    const user = await getAuthUser(req);
+    let corporateId = user?.corporateId ?? null;
+
+    if (user?.id && corporateId == null) {
+      const dbUser = await prisma.customer.findUnique({
+        where: { id: user.id },
+        select: { corporateId: true }
+      });
+      corporateId = dbUser?.corporateId ?? null;
+    }
+
     const { items, pincode, userLat, userLng } = await req.json();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -50,6 +62,7 @@ export async function POST(req: Request) {
         let sellingPrice = 0;
         let found = false;
         let labItemId = null;
+        let isCorporate = false;
 
         if (item.type === 'test') {
           const lt = await prisma.labTest.findFirst({
@@ -63,14 +76,23 @@ export async function POST(req: Request) {
           }
         } else if (item.type === 'package') {
           const lp = await prisma.labPackage.findFirst({
-            where: { labId: lab.id, packageId: Number(item.id), available: true }
+            where: { labId: lab.id, packageId: Number(item.id), available: true, package: { isActive: true } },
+            include: {
+              package: { select: { isCorporate: true, corporateId: true } }
+            }
           });
           if (lp) {
-            basePrice = Number(lp.price);
-            discount = Number(lp.discount);
-            labItemId = lp.id;
-            found = true;
-          }
+            const pkg = lp.package;
+            const isCorporatePackage = Boolean(pkg?.isCorporate);
+            const isAllowed = !isCorporatePackage || (corporateId && pkg?.corporateId === corporateId);
+            if (isAllowed) {
+              basePrice = Number(lp.price);
+              discount = Number(lp.discount);
+              labItemId = lp.id;
+              found = true;
+              isCorporate = isCorporatePackage;
+            }
+          }          
         }
 
         if (found) {
@@ -84,7 +106,8 @@ export async function POST(req: Request) {
             labItemPrice: sellingPrice,
             labItemMRP: basePrice,
             labItemDiscount: discount,
-            labItemId
+            labItemId,
+            isCorporate
           });
         } else {
           missingItems.push(item);

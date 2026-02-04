@@ -1,11 +1,14 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
 
 // 1. Get Lab Form Data (Packages & Tests for selection)
 export async function getLabFormData() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [packages, tests] = await Promise.all([
     prisma.package.findMany({
       where: { isActive: true },
@@ -56,6 +59,7 @@ export async function getLabFormData() {
 
 // 2. Create Lab (Wizard Logic)
  export async function createLabAction(data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.$transaction(async (tx) => {
       // A. CREATE LAB
@@ -71,7 +75,7 @@ export async function getLabFormData() {
           email: data.email,
 
           password: data.password || 'password123',
-          activeStatus: true,
+          activeStatus: typeof data.activeStatus === 'boolean' ? data.activeStatus : true,
           status: 'Pending',
 
           latitude: data.latitude ?? null,
@@ -147,6 +151,7 @@ export async function getLabFormData() {
 
 // 3. Get Lab by ID (FIXED: Converts Decimals to Numbers)
 export async function getLabById(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const lab = await prisma.lab.findUnique({
     where: { id },
     include: {
@@ -215,6 +220,7 @@ export async function getLabById(id: number) {
 
 // 4. Update Lab
 export async function updateLabAction(id: number, data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     // 1️⃣ TRANSACTION (FAST)
     await prisma.$transaction(async (tx) => {
@@ -307,6 +313,7 @@ export async function updateLabAction(id: number, data: any) {
 
 // 5. Delete Lab
 export async function deleteLabAction(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.lab.delete({ where: { id } });
     revalidatePath('/admin/labs');
@@ -318,6 +325,7 @@ export async function deleteLabAction(id: number) {
 
 // 6. Generate Partner Link (Fixed Table Name)
 export async function generatePartnerLink(labName: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const token = crypto.randomBytes(16).toString('hex');
   // Check your schema: usually it's LabInvitation or Invitation
   // Assuming 'LabInvitation' based on context

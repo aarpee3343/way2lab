@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShieldCheck, Scale, FileText, HeartPulse } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface LegalLayoutProps {
   title: string;
@@ -149,7 +150,7 @@ export default function LegalLayout({ title, subtitle, updatedAt, icon, children
             <div className="flex flex-col md:flex-row justify-between items-center gap-6">
               <div>
                 <div className="flex items-center gap-3">
-                  <img src="/logo.png" alt="WayToLab" className="h-8 w-auto opacity-80" />
+                  <Image src="/logo.png" alt="WayToLab" width={140} height={32} className="h-8 w-auto opacity-80" />
                   <span className="font-bold text-slate-800">WayToLab Healthcare</span>
                 </div>
                 <p className="text-sm text-slate-500 mt-1">Trusted Diagnostic Service Provider</p>

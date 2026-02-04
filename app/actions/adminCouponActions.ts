@@ -1,11 +1,14 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 // 1. Fetch Form Data (Labs, Tests, Packages)
 export async function getCouponFormData() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [labs, tests, packages] = await Promise.all([
     prisma.lab.findMany({ where: { activeStatus: true }, select: { id: true, labName: true, city: true } }),
     prisma.test.findMany({ where: { isActive: true }, select: { id: true, testName: true } }),
@@ -16,6 +19,7 @@ export async function getCouponFormData() {
 
 // 2. Create Coupon
 export async function createCouponAction(data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     // Basic Validation
     const existing = await prisma.coupon.findUnique({ where: { code: data.code } });
@@ -59,6 +63,7 @@ export async function createCouponAction(data: any) {
 
 // 3. Get Stats & List
 export async function getCouponStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const now = new Date();
   const [total, active, expired] = await Promise.all([
     prisma.coupon.count(),
@@ -69,6 +74,7 @@ export async function getCouponStats() {
 }
 
 export async function getCoupons() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   return await prisma.coupon.findMany({ 
     orderBy: { createdAt: 'desc' },
     include: {
@@ -79,6 +85,7 @@ export async function getCoupons() {
 
 // 4. Delete
 export async function deleteCouponAction(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.coupon.delete({ where: { id } });
     revalidatePath('/admin/coupons');

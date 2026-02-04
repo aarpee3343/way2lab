@@ -4,10 +4,16 @@ import { NextResponse } from 'next/server';
 import fs from 'fs/promises';
 import path from 'path';
 import zlib from 'zlib';
+import { requireAdmin } from '@/lib/admin-auth';
 
 const PAGE_SIZE = 1000;
 
 export async function POST() {
+  try {
+    await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  } catch {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

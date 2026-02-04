@@ -36,7 +36,7 @@ export async function POST(req: Request) {
 
     // Generate Token
     const token = jwt.sign(
-      { id: user.id, role: user.role, email: user.email, name: user.name },
+      { id: user.id, role: user.role, email: user.email, name: user.name, corporateId: user.corporateId },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     const response = NextResponse.json({
       success: true,
       message: 'Logged in successfully',
-      user: { id: user.id, name: user.name, email: user.email, role: user.role }
+      user: { id: user.id, name: user.name, email: user.email, role: user.role, corporateId: user.corporateId }
     });
 
     // 2. Attach the cookie

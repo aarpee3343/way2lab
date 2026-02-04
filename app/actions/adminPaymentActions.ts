@@ -1,9 +1,12 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 
 export async function collectPaymentAction(orderId: number, amount: number, method: string, txnId: string, notes: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     // 1. Get Order
     const order = await prisma.order.findUnique({ where: { id: orderId } });
@@ -14,7 +17,7 @@ export async function collectPaymentAction(orderId: number, amount: number, meth
       where: { orderId },
       _sum: { amount: true }
     });
-    const currentPaid = paidSum._sum.amount || 0;
+    const currentPaid = Number(paidSum._sum.amount ?? 0);
     const remaining = Number(order.finalAmount) - currentPaid;
 
     if (amount > remaining * 1.1) {

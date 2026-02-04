@@ -4,16 +4,21 @@
 
 import { useState, useEffect } from 'react';
 import { 
-  FileText, Download, Eye, Calendar, 
-  Search, AlertCircle, RefreshCw,
-  Shield, CheckCircle2, FlaskConical,
-  User, ChevronDown, Loader2
+  FileText,
+  Download,
+  Search,
+  AlertCircle,
+  Shield,
+  CheckCircle2,
+  FlaskConical,
+  User,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from '@/lib/safe-toast';
 import axios from 'axios';
 
-// ✅ Interface matches the specific API response
+// OK Interface matches the specific API response
 interface ReportItem {
   id: number;
   orderNumber: string;
@@ -190,7 +195,7 @@ export default function ReportsPage() {
                   <div>
                     <p className="font-bold text-slate-800 text-sm">{order.patientName}</p>
                     <p className="text-xs text-slate-500">
-                      {order.patientGender} • {getAge(order.patientDob)} • {order.patientRelation}
+                      {order.patientGender} - {getAge(order.patientDob)} - {order.patientRelation}
                     </p>
                   </div>
                 </div>

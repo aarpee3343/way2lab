@@ -1,25 +1,38 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, use, useCallback } from 'react';
 import axios from 'axios';
 import AiHealthDashboard from './AiHealthDashboard';
 import {
-  Calendar, Clock, MapPin, Home, Building2, User, Phone, FileText, Receipt,
-  X, RefreshCcw, Ban, FlaskConical, FileDown, UserCog, Activity, AlertTriangle,
-  Microscope, Package
+  Calendar,
+  Clock,
+  Building2,
+  User,
+  Phone,
+  FileText,
+  Receipt,
+  X,
+  RefreshCcw,
+  Ban,
+  FlaskConical,
+  FileDown,
+  UserCog,
+  Activity,
+  Microscope,
+  Package
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 /* ---------------- HELPERS ---------------- */
 // ... (Keep your existing formatDate, getAgeLabel, isRescheduleAllowed helpers here) ...
 const formatDate = (dateStr: string) => {
-  if (!dateStr) return '—';
+  if (!dateStr) return '-';
   const [y, m, d] = dateStr.split('T')[0].split('-');
   return `${d}/${m}/${y}`;
 };
 
 const getAgeLabel = (dob?: string | null) => {
-  if (!dob) return '—';
+  if (!dob) return '-';
   const age = Math.floor((Date.now() - new Date(dob).getTime()) / 31557600000);
   if (age < 1) return 'Infant';
   if (age < 18) return 'Minor';
@@ -41,6 +54,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   // Reschedule State
   const [open, setOpen] = useState(false);
@@ -48,19 +62,25 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [newTime, setNewTime] = useState('');
   const [newType, setNewType] = useState<'home_collection' | 'center_visit'>('home_collection');
 
-  const fetchOrder = async () => {
+  const fetchOrder = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/order/${id}`);
+      const res = await axios.get(`/api/order/${id}`, { withCredentials: true });
       setOrder(res.data);
       setNewType(res.data.collectionType);
-    } catch {
-      toast.error('Failed to load order');
+    } catch (err: any) {
+      const message = err?.response?.data?.message || 'Failed to load order';
+      setError(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  useEffect(() => { fetchOrder(); }, [id]);
+  useEffect(() => {
+    fetchOrder();
+  }, [fetchOrder]);
 
   // ... (Keep your existing Handlers: onRescheduleClick, handleConfirmReschedule, handleCancel) ...
   const onRescheduleClick = () => {
@@ -77,7 +97,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
       return;
     }
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/reschedule`, { date: newDate, time: newTime, collectionType: newType });
+      await axios.put(`/api/order/${order.id}/reschedule`, { date: newDate, time: newTime, collectionType: newType }, { withCredentials: true });
       toast.success('Order rescheduled');
       setOpen(false);
       fetchOrder();
@@ -89,7 +109,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const handleCancel = async () => {
     if (!confirm('Are you sure you want to cancel this order?')) return;
     try {
-      await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/order/${order.id}/cancel`, {});
+      await axios.put(`/api/order/${order.id}/cancel`, {}, { withCredentials: true });
       toast.success('Order cancelled');
       fetchOrder();
     } catch (e: any) {
@@ -97,13 +117,35 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  if (loading || !order) return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading order...</div>;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading order...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-slate-500">
+        <div className="text-center space-y-3">
+          <p className="font-medium">Unable to load this order.</p>
+          <p className="text-sm text-slate-400">{error}</p>
+          <button
+            onClick={fetchOrder}
+            className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-black"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return <div className="min-h-screen flex items-center justify-center text-slate-400">Order not found.</div>;
+  }
 
   const mrp = Number(order.totalAmount || 0);
   const discount = Number(order.discountAmount || 0);
   const home = Number(order.homeCollectionCharges || 0);
   const final = Number(order.finalAmount || 0);
-  const savings = (mrp + home) - final;
 
   return (
     <div className="min-h-screen bg-slate-100 relative">
@@ -123,7 +165,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         {/* 1. PATIENT */}
         <Card title="Patient Details" icon={<User />}>
           <p className="font-bold">{order.patientName}</p>
-          <p className="text-sm text-slate-600">{getAgeLabel(order.patientDob)} • {order.patientGender}</p>
+          <p className="text-sm text-slate-600">{getAgeLabel(order.patientDob)} - {order.patientGender}</p>
           {order.patientPhone && <p className="text-sm mt-1 text-slate-500 flex items-center gap-2"><Phone size={14}/> {order.patientPhone}</p>}
         </Card>
 
@@ -141,7 +183,7 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
                     <span className="text-[10px] font-bold uppercase text-slate-400 bg-slate-50 px-2 py-0.5 rounded">{item.itemType}</span>
                   </div>
                 </div>
-                <p className="font-bold text-slate-700 text-sm">₹{item.price}</p>
+                <p className="font-bold text-slate-700 text-sm">INR {item.price}</p>
               </div>
             ))}
           </div>
@@ -289,6 +331,6 @@ const Card = ({ title, icon, children }: any) => (
 const Row = ({ label, value, bold }: any) => (
   <div className={`flex justify-between text-sm ${bold ? 'font-extrabold text-slate-900 text-lg' : 'text-slate-600 mb-1'}`}>
     <span>{label}</span>
-    <span>₹{Math.abs(value).toLocaleString()}</span>
+    <span>INR {Math.abs(value).toLocaleString()}</span>
   </div>
 );

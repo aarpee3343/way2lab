@@ -1,7 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   Users,
@@ -11,11 +13,13 @@ import {
   Bell,
   LogOut,
   UserPlus,
-  MessageSquare
+  MessageSquare,
 } from 'lucide-react';
+import { corporateLogoutAction } from '@/app/actions/corporateAuthActions';
+import { getCorporateProfile } from '@/app/actions/corporatePortalActions';
 
 /* ----------------------------------
-   TYPES (adjust if needed)
+   TYPES
 ----------------------------------- */
 type Corporate = {
   companyName: string;
@@ -23,7 +27,7 @@ type Corporate = {
 };
 
 /* ==================================
-   LAYOUT
+   CORPORATE LAYOUT
 ================================== */
 
 export default function CorporateLayout({
@@ -31,19 +35,49 @@ export default function CorporateLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const router = useRouter();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [corp, setCorp] = useState<Corporate>({
+    companyName: 'Corporate',
+    logoUrl: '/default-corp.png',
+  });
+  const [userLabel, setUserLabel] = useState('Corporate User');
 
-  /* 🔐 These should come from auth/session */
-  const corp: Corporate = {
-    companyName: 'Acme Corp',
-    logoUrl: '/logos/acme-logo.png',
-  };
+  /**
+   * Routes that should NOT show dashboard shell
+   * (login / auth pages)
+   */
+  const isLoginPage = pathname === '/corp-login';
+
+  /* These should later come from auth/session */
+  useEffect(() => {
+    if (isLoginPage) return;
+    const loadProfile = async () => {
+      const profile = await getCorporateProfile();
+      if (profile?.corp) {
+        setCorp({
+          companyName: profile.corp.companyName,
+          logoUrl: '/default-corp.png',
+        });
+      }
+      if (profile?.user?.role) {
+        setUserLabel(profile.user.role.replace('_', ' '));
+      }
+    };
+    loadProfile();
+  }, [isLoginPage]);
+
+  // Render auth pages without sidebar/header
+  if (isLoginPage) {
+    return <div className="min-h-screen bg-white">{children}</div>;
+  }
 
   const wayToLabLogo = '/logos/wtl-logo.png';
 
   const menuItems = [
     { name: 'Analytics Hub', icon: LayoutDashboard, href: '/corp' },
-    { name: 'Employee Directory', icon: Users, href: '/corp-employees' },
+    { name: 'Employee Directory', icon: Users, href: '/employees' },
     { name: 'Health Records', icon: FileBarChart, href: '/corp-reports' },
     { name: 'Team Access', icon: UserPlus, href: '/corp-users' },
     { name: 'Support', icon: MessageSquare, href: '/corp-support' },
@@ -58,16 +92,18 @@ export default function CorporateLayout({
           isSidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
-        <div className="h-20 flex items-center px-6 gap-3 border-b border-slate-100 bg-white">
-          <img src="/logo.png" alt="WTL" className="h-6 w-auto flex-shrink-0" />
+        {/* Logo */}
+        <div className="h-20 flex items-center px-6 gap-3 border-b border-slate-100">
+          <Image src="/logo.png" alt="WTL" width={96} height={24} className="h-6 w-auto" priority />
           <div className="h-4 w-[1px] bg-slate-200" />
           {isSidebarOpen && (
             <span className="text-[10px] font-black uppercase text-slate-400 leading-none">
-              Enterprise <br/> Portal
+              Enterprise <br /> Portal
             </span>
           )}
         </div>
 
+        {/* Menu */}
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => (
             <Link
@@ -81,8 +117,15 @@ export default function CorporateLayout({
           ))}
         </nav>
 
+        {/* Logout */}
         <div className="p-4 border-t border-slate-100">
-          <button className="flex items-center gap-3 px-3 py-3 w-full text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all">
+          <button
+            onClick={async () => {
+              await corporateLogoutAction();
+              router.push('/corp-login');
+            }}
+            className="flex items-center gap-3 px-3 py-3 w-full text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-all"
+          >
             <LogOut size={20} />
             {isSidebarOpen && <span>Sign Out</span>}
           </button>
@@ -91,7 +134,7 @@ export default function CorporateLayout({
 
       {/* ================= MAIN ================= */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* -------- HEADER (Merged from code-2) -------- */}
+        {/* -------- HEADER -------- */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
           <button
             onClick={() => setSidebarOpen(!isSidebarOpen)}
@@ -103,16 +146,22 @@ export default function CorporateLayout({
           <div className="flex items-center gap-6">
             {/* Branding */}
             <div className="flex items-center gap-4">
-              <img
+              <Image
                 src={wayToLabLogo}
+                width={140}
+                height={32}
                 className="h-8 w-auto grayscale opacity-70 hover:grayscale-0 transition-all"
                 alt="WayToLab"
+                priority
               />
               <div className="h-6 w-px bg-slate-200" />
-              <img
+              <Image
                 src={corp.logoUrl || '/default-corp.png'}
+                width={160}
+                height={40}
                 className="h-10 w-auto object-contain"
                 alt={corp.companyName}
+                unoptimized={Boolean(corp.logoUrl && !corp.logoUrl.startsWith('/'))}
               />
             </div>
 
@@ -128,7 +177,7 @@ export default function CorporateLayout({
             <div className="flex items-center gap-3">
               <div className="text-right hidden sm:block">
                 <p className="text-xs font-black text-slate-900 leading-none">
-                  Super Admin
+                  {userLabel}
                 </p>
                 <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-1">
                   {corp.companyName}

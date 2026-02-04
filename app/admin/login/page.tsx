@@ -46,11 +46,11 @@ export default function AdminLoginPage() {
 
         <form onSubmit={handleSubmit} className="admin-space-y">
           <div>
-            <label className="admin-form-label text-slate-400">Username</label>
+            <label className="admin-form-label text-slate-400">Email or Phone</label>
             <input 
               type="text" 
               className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
-              placeholder="admin"
+              placeholder="admin@company.com"
               value={form.username}
               onChange={e => setForm({...form, username: e.target.value})}
             />
@@ -62,10 +62,10 @@ export default function AdminLoginPage() {
               <input 
                 type="password" 
                 className="admin-form-input bg-slate-900/50 border border-slate-700 text-white placeholder:text-slate-400"
-                placeholder="••••••••"
-                value={form.password}
-                onChange={e => setForm({...form, password: e.target.value})}
-              />
+              placeholder="••••••••"
+              value={form.password}
+              onChange={e => setForm({...form, password: e.target.value})}
+            />
               <Lock className="absolute right-4 top-3.5 text-slate-600" size={18} />
             </div>
           </div>
@@ -77,6 +77,13 @@ export default function AdminLoginPage() {
             {loading ? <Loader2 className="animate-spin" /> : "Sign In"}
           </button>
         </form>
+
+        <div className="mt-6 text-center text-xs text-slate-400">
+          Need to create an admin account?{' '}
+          <a href="/admin/register" className="text-blue-400 hover:text-blue-300 font-semibold">
+            Register here
+          </a>
+        </div>
       </div>
     </div>
   );

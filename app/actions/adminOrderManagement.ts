@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
@@ -21,6 +23,7 @@ export async function getAdminOrders(params: {
   payment?: string;
   source?: string;
 }) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const page = Number(params.page) || 1;
   const limit = 20;
   const skip = (page - 1) * limit;
@@ -60,7 +63,34 @@ export async function getAdminOrders(params: {
     prisma.order.count({ where }),
     prisma.order.findMany({
       where,
-      include: { customer: true, lab: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        createdAt: true,
+        bookingDate: true,
+        preferredDate: true,
+        preferredTimeSlot: true,
+        patientName: true,
+        patientPhone: true,
+        collectionType: true,
+        status: true,
+        paymentStatus: true,
+        totalAmount: true,
+        discountAmount: true,
+        homeCollectionCharges: true,
+        finalAmount: true,
+        customer: {
+          select: {
+            name: true,
+            phone: true
+          }
+        },
+        lab: {
+          select: {
+            labName: true
+          }
+        }
+      },
       orderBy: { id: 'desc' },
       skip,
       take: limit
@@ -89,8 +119,19 @@ export async function getAdminOrders(params: {
     })
   ]);
 
+  const normalizedOrders = orders.map(order => ({
+    ...order,
+    createdAt: order.createdAt?.toISOString(),
+    bookingDate: order.bookingDate?.toISOString(),
+    preferredDate: order.preferredDate?.toISOString(),
+    totalAmount: Number(order.totalAmount ?? 0),
+    discountAmount: Number(order.discountAmount ?? 0),
+    homeCollectionCharges: Number(order.homeCollectionCharges ?? 0),
+    finalAmount: Number(order.finalAmount ?? 0)
+  }));
+
   return {
-    orders,
+    orders: normalizedOrders,
     total,
     totalPages: Math.ceil(total / limit),
     stats: {
@@ -107,6 +148,7 @@ export async function getAdminOrders(params: {
 ============================================================================= */
 
 export async function updateOrderStatusAction(formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const orderId = Number(formData.get('orderId'));
   const newStatus = formData.get('status') as OrderStatus;
 
@@ -172,6 +214,7 @@ export async function updateOrderStatusAction(formData: FormData) {
 ============================================================================= */
 
 export async function assignTechnicianAction(formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const orderId = Number(formData.get('orderId'));
   const technicianId = Number(formData.get('technicianId'));
 
@@ -213,6 +256,7 @@ export async function uploadReportAction(
   _prevState: any,
   formData: FormData
 ) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     const file = formData.get('file');
     const orderId = Number(formData.get('orderId'));

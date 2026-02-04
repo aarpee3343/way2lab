@@ -15,7 +15,6 @@ import {
   Building,
   X,
   CheckCircle2,
-  Trash2,
   Check
 } from 'lucide-react';
 import Link from 'next/link';
@@ -88,87 +87,69 @@ export default function AddPackagePage() {
   const finalPrice = basePrice - (basePrice * discount) / 100;
 
   return (
-    <div className="max-w-6xl mx-auto pb-32 animate-in fade-in zoom-in-95 duration-500">
-      
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+    <div className="admin-space-y pb-24">
+      <div className="admin-page-header flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="bg-purple-100 text-purple-700 px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border border-purple-200">
-              New Bundle
-            </div>
-          </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">
-            Create Health Package
-          </h1>
+          <h1 className="admin-page-title">Create Package</h1>
+          <p className="admin-page-subtitle">Build test bundles for users or corporate plans.</p>
         </div>
-
-        <Link
-          href="/admin/packages"
-          className="group flex items-center gap-2 px-4 py-2 rounded-xl text-slate-500 hover:bg-white hover:text-slate-800 hover:shadow-sm transition-all border border-transparent hover:border-slate-200"
-        >
-          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" />
-          Cancel
+        <Link href="/admin/packages" className="admin-btn-secondary">
+          <ArrowLeft size={18} /> Back to Packages
         </Link>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* ✅ HIDDEN INPUTS: This ensures FormData captures selected IDs regardless of search filter */}
         {selectedTestIds.map(id => (
           <input key={id} type="hidden" name="test_ids" value={id} />
         ))}
 
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 admin-space-y">
           
           {/* 1. Package Info Card */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-            <h3 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-              <span className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Box size={18} />
-              </span>
-              Package Details
+          <div className="admin-form-section">
+            <h3 className="admin-form-title">
+              <Box size={16} /> Package Details
             </h3>
 
-            <div className="space-y-5">
-              <div>
-                <label className="label">Package Name *</label>
-                <input name="package_name" required className="input-field text-lg font-semibold" />
+            <div className="admin-form-grid">
+              <div className="col-span-2">
+                <label className="admin-form-label">Package Name *</label>
+                <input name="package_name" required className="admin-form-input" />
               </div>
 
               {/* Corporate Toggle */}
-              <div className="flex items-center gap-3 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                <input 
-                  type="checkbox" 
-                  name="isCorporate" 
-                  id="corpToggle"
-                  className="w-5 h-5 rounded accent-purple-600"
-                  checked={isCorporate}
-                  onChange={(e) => setIsCorporate(e.target.checked)}
-                />
-                <label htmlFor="corpToggle" className="text-sm font-bold text-purple-900 cursor-pointer">
-                  Is this a Corporate Specific Package?
-                </label>
+              <div className="col-span-2">
+                <label className="admin-form-label">Corporate Package</label>
+                <div className="admin-form-checkbox">
+                  <input
+                    type="checkbox"
+                    name="isCorporate"
+                    id="corpToggle"
+                    checked={isCorporate}
+                    onChange={(e) => setIsCorporate(e.target.checked)}
+                  />
+                  <span>Corporate specific package</span>
+                </div>
               </div>
 
               {/* Corporate Settings */}
               {isCorporate && (
-                <div className="grid grid-cols-2 gap-5 py-6 border-y border-slate-100 animate-in slide-in-from-top-4 duration-300">
-                  <div className="space-y-3">
-                    <label className="label flex items-center gap-2">
+                <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-slate-200 pt-4">
+                  <div>
+                    <label className="admin-form-label">
                       <Building size={14} /> Corporate Settings
                     </label>
-                    <div className="flex items-center gap-6 p-3 bg-slate-50 rounded-xl border border-slate-200">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="isPreEmployment" className="w-4 h-4" />
-                        <span className="text-sm font-bold text-slate-700">Pre-Employment</span>
-                      </label>
+                    <div className="admin-form-checkbox">
+                      <input type="checkbox" name="isPreEmployment" />
+                      <span>Pre-Employment</span>
                     </div>
                   </div>
 
-                  <div className="space-y-3">
-                    <label className="label">Package Category</label>
-                    <select name="category" className="input-field">
+                  <div>
+                    <label className="admin-form-label">Package Category</label>
+                    <select name="category" className="admin-form-select">
                       <option value="ANNUAL">Annual Health Checkup</option>
                       <option value="PRE_EMPLOYMENT">Pre-Employment Checkup</option>
                       <option value="EXECUTIVE">Executive Health Check</option>
@@ -178,14 +159,14 @@ export default function AddPackagePage() {
                 </div>
               )}
               
-              <div className="grid grid-cols-2 gap-5">
+              <div className="col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Description</label>
-                  <textarea name="description" rows={3} className="input-field resize-none" placeholder="Summary..." />
+                  <label className="admin-form-label">Description</label>
+                  <textarea name="description" rows={3} className="admin-form-textarea resize-none" placeholder="Summary..." />
                 </div>
                 <div>
-                  <label className="label">Preparation</label>
-                  <textarea name="preparation" rows={3} className="input-field resize-none" placeholder="Instructions..." />
+                  <label className="admin-form-label">Preparation</label>
+                  <textarea name="preparation" rows={3} className="admin-form-textarea resize-none" placeholder="Instructions..." />
                 </div>
               </div>
             </div>
@@ -193,145 +174,147 @@ export default function AddPackagePage() {
 
           {/* ✅ 2. SELECTED TESTS CONTAINER (The "Cart") */}
           {selectedTestIds.length > 0 && (
-            <div className="bg-indigo-50 border border-indigo-100 p-6 rounded-2xl animate-in slide-in-from-bottom-2">
-              <h3 className="font-bold text-indigo-900 mb-3 flex items-center justify-between">
-                <span className="flex items-center gap-2">
+            <div className="admin-card">
+              <div className="admin-card-header flex items-center justify-between">
+                <div className="admin-card-title">
                   <CheckCircle2 size={18} /> Selected Tests ({selectedTestIds.length})
-                </span>
-                <button 
+                </div>
+                <button
                   type="button"
                   onClick={() => setSelectedTestIds([])}
-                  className="text-xs text-indigo-500 hover:text-indigo-700 font-semibold"
+                  className="admin-btn-secondary text-xs"
                 >
                   Clear All
                 </button>
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {selectedTestsData.map(test => (
-                  <div key={test.id} className="bg-white pl-3 pr-2 py-1.5 rounded-lg border border-indigo-100 flex items-center gap-2 shadow-sm">
-                    <span className="text-sm font-bold text-slate-700">{test.testName}</span>
-                    <button 
-                      type="button"
-                      onClick={() => toggleTest(test.id)}
-                      className="p-1 hover:bg-red-50 text-slate-400 hover:text-red-500 rounded-md transition-colors"
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
+              </div>
+              <div className="admin-card-body">
+                <div className="flex flex-wrap gap-2">
+                  {selectedTestsData.map(test => (
+                    <div key={test.id} className="admin-chip">
+                      <span>{test.testName}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTest(test.id)}
+                        className="admin-chip-remove"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
           {/* 3. TEST SELECTOR (The "Inventory") */}
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[500px]">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+          <div className="admin-card flex flex-col h-[500px]">
+            <div className="admin-card-header flex items-center justify-between gap-4">
+              <div className="admin-card-title">
                 <FileText size={18} /> Available Tests
-              </h3>
-              <div className="relative">
-                <Search size={16} className="absolute left-3 top-2.5 text-slate-400" />
+              </div>
+              <div className="admin-search-container max-w-[220px]">
+                <Search size={16} className="admin-search-icon" />
                 <input
                   placeholder="Search tests..."
-                  className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="admin-search-input"
                   onChange={e => setSearchQuery(e.target.value)}
                   value={searchQuery}
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto bg-slate-50 rounded-xl p-2 space-y-1">
-              {filteredTests.map(test => {
-                const isSelected = selectedTestIds.includes(test.id);
-                return (
-                  <div
-                    key={test.id}
-                    onClick={() => toggleTest(test.id)}
-                    className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all ${
-                      isSelected 
-                        ? 'bg-blue-50 border-blue-200 ring-1 ring-blue-200' 
-                        : 'bg-white border-slate-200 hover:border-blue-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      {/* Controlled Checkbox */}
-                      <div className={`w-5 h-5 rounded border flex items-center justify-center transition-colors ${
-                        isSelected ? 'bg-blue-600 border-blue-600' : 'bg-white border-slate-300'
-                      }`}>
-                         {isSelected && <Check size={12} className="text-white" />}
+            <div className="admin-card-body flex-1">
+              <div className="flex-1 overflow-y-auto admin-scrollbar space-y-1">
+                {filteredTests.map(test => {
+                  const isSelected = selectedTestIds.includes(test.id);
+                  return (
+                    <div
+                      key={test.id}
+                      onClick={() => toggleTest(test.id)}
+                      className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer ${
+                        isSelected ? 'bg-slate-50 border-slate-300' : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center ${
+                          isSelected ? 'bg-slate-900 border-slate-900' : 'bg-white border-slate-300'
+                        }`}>
+                          {isSelected && <Check size={10} className="text-white" />}
+                        </div>
+                        <span className={`font-semibold ${isSelected ? 'text-slate-900' : 'text-slate-700'}`}>
+                          {test.testName}
+                        </span>
                       </div>
-                      <span className={`font-bold ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
-                        {test.testName}
-                      </span>
+                      <span className="text-sm font-semibold text-slate-500">Rs. {test.price}</span>
                     </div>
-                    <span className="text-sm font-bold text-slate-500">₹{test.price}</span>
+                  );
+                })}
+
+                {filteredTests.length === 0 && (
+                  <div className="text-center py-10 text-slate-400 text-sm">
+                    No tests found matching "{searchQuery}"
                   </div>
-                );
-              })}
-              
-              {filteredTests.length === 0 && (
-                <div className="text-center py-10 text-slate-400 text-sm">
-                  No tests found matching "{searchQuery}"
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN – PRICING */}
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 sticky top-4">
-            <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
-              <Calculator size={18} /> Pricing
-            </h3>
-
-            <input
-              type="number"
-              name="price"
-              className="input-field mb-3"
-              placeholder="Base Price"
-              onChange={e => setBasePrice(+e.target.value || 0)}
-            />
-
-            <input
-              type="number"
-              name="discount"
-              className="input-field"
-              placeholder="Discount %"
-              onChange={e => setDiscount(+e.target.value || 0)}
-            />
-
-            <div className="mt-6 pt-4 border-t border-slate-100">
-              <div className="flex justify-between text-sm text-slate-500 mb-1">
-                <span>Total Items:</span>
-                <span>{selectedTestIds.length}</span>
-              </div>
-              <div className="flex justify-between font-bold text-lg text-slate-900">
-                 <span>Final Price:</span>
-                 <span>₹{Math.round(finalPrice)}</span>
+        {/* RIGHT COLUMN - PRICING */}
+        <div className="admin-space-y">
+          <div className="admin-card sticky top-4">
+            <div className="admin-card-header">
+              <div className="admin-card-title">
+                <Calculator size={18} /> Pricing
               </div>
             </div>
-            
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex justify-center gap-2 mt-6 hover:bg-slate-800 transition-colors shadow-lg shadow-slate-200"
-            >
-              {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
-              Save & Publish
-            </button>
+            <div className="admin-card-body admin-space-y">
+              <div>
+                <label className="admin-form-label">Base Price</label>
+                <input
+                  type="number"
+                  name="price"
+                  className="admin-form-input"
+                  placeholder="Base Price"
+                  onChange={e => setBasePrice(+e.target.value || 0)}
+                />
+              </div>
+
+              <div>
+                <label className="admin-form-label">Discount (%)</label>
+                <input
+                  type="number"
+                  name="discount"
+                  className="admin-form-input"
+                  placeholder="Discount %"
+                  onChange={e => setDiscount(+e.target.value || 0)}
+                />
+              </div>
+
+              <div className="pt-4 border-t border-slate-100">
+                <div className="flex justify-between text-sm text-slate-500 mb-1">
+                  <span>Total Items:</span>
+                  <span>{selectedTestIds.length}</span>
+                </div>
+                <div className="flex justify-between font-bold text-lg text-slate-900">
+                   <span>Final Price:</span>
+                   <span>Rs. {Math.round(finalPrice)}</span>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="admin-btn-primary w-full"
+              >
+                {loading ? <Loader2 className="animate-spin" /> : <Save size={20} />}
+                Save & Publish
+              </button>
+            </div>
           </div>
         </div>
       </form>
 
-      <style jsx>{`
-        .label {
-          @apply block text-xs font-bold text-slate-500 uppercase mb-1;
-        }
-        .input-field {
-          @apply w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all;
-        }
-      `}</style>
     </div>
   );
 }

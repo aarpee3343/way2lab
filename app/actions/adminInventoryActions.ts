@@ -1,5 +1,7 @@
 'use server';
 
+import { requireAdmin } from '@/lib/admin-auth';
+
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
@@ -13,28 +15,41 @@ import { redirect } from 'next/navigation';
 // ==========================================
 
 export async function bulkCreateTestsAction(testsData: any[]) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const toNumber = (value: unknown, fallback = 0) => {
+      const raw = typeof value === 'string' ? value.replace(/,/g, '').trim() : value;
+      const num = typeof raw === 'number' ? raw : parseFloat(String(raw ?? ''));
+      return Number.isFinite(num) ? num : fallback;
+    };
+
+    const cleanText = (value: unknown) => {
+      if (typeof value !== 'string') return value;
+      return value.replace(/\r?\n/g, ' ').trim();
+    };
+
     const formattedTests = testsData.map((t) => {
       // 1. Auto-generate Slug if missing (Clean & Readable)
-      const slug = t.slug?.trim() || t.testName
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '');
+      const baseSlug = (cleanText(t.slug) as string | undefined) || (cleanText(t.testName) as string | undefined) || '';
+      const slug = baseSlug
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)+/g, '');
 
       // 2. Direct Mapping (Types Converted)
       return {
-        testName: t.testName,
+        testName: cleanText(t.testName),
         slug: slug,
-        category: t.category,
-        specialty: t.specialty,
-        description: t.description,
-        scheduleReporting: t.scheduleReporting,
-        preparation: t.preparation,
-        specialInstruction: t.specialInstruction,
+        category: cleanText(t.category),
+        specialty: cleanText(t.specialty),
+        description: cleanText(t.description),
+        scheduleReporting: cleanText(t.scheduleReporting),
+        preparation: cleanText(t.preparation),
+        specialInstruction: cleanText(t.specialInstruction),
         
         // Type Conversions (CSV strings -> Prisma types)
-        price: parseFloat(t.price || '0'),
-        discount: parseFloat(t.discount || '0'),
+        price: toNumber(t.price, 0),
+        discount: toNumber(t.discount, 0),
         isActive: t.isActive == '1' || t.isActive === 'true' || t.isActive === true,
         showOnHomepage: t.showOnHomepage == '1' || t.showOnHomepage === 'true' || t.showOnHomepage === true,
       };
@@ -55,6 +70,7 @@ export async function bulkCreateTestsAction(testsData: any[]) {
 }
 
 export async function getTestStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [total, active, categories, specialties] = await Promise.all([
     prisma.test.count(),
     prisma.test.count({ where: { isActive: true } }),
@@ -65,11 +81,25 @@ export async function getTestStats() {
   return { total, active, categories: categories.length, specialties: specialties.length };
 }
 
-export async function getTests() {
-  return await prisma.test.findMany({ orderBy: { id: 'desc' } });
+export async function getTests(search?: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  const query = (search || '').trim();
+  return await prisma.test.findMany({
+    where: query
+      ? {
+          OR: [
+            { testName: { contains: query, mode: 'insensitive' } },
+            { category: { contains: query, mode: 'insensitive' } },
+            { specialty: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      : undefined,
+    orderBy: { id: 'desc' }
+  });
 }
 
 export async function createTestAction(formData: FormData) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const name = formData.get('test_name') as string;
   const price = parseFloat(formData.get('price') as string);
   const discount = parseFloat((formData.get('discount') as string) || '0');
@@ -118,6 +148,7 @@ export async function createTestAction(formData: FormData) {
 // ==========================================
 
 export async function getPackageStats() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [total, active] = await Promise.all([
     prisma.package.count(),
     prisma.package.count({ where: { isActive: true } })
@@ -126,8 +157,18 @@ export async function getPackageStats() {
   return { total, active };
 }
 
-export async function getPackages() {
+export async function getPackages(search?: string) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  const query = (search || '').trim();
   return await prisma.package.findMany({
+    where: query
+      ? {
+          OR: [
+            { packageName: { contains: query, mode: 'insensitive' } },
+            { description: { contains: query, mode: 'insensitive' } }
+          ]
+        }
+      : undefined,
     orderBy: { id: 'desc' },
     include: { _count: { select: { tests: true } } } // Count included tests
   });
@@ -135,6 +176,7 @@ export async function getPackages() {
 
 // Get Data for "Add Package" form (Available Tests & Packages)
 export async function getPackageFormData() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const [tests, packages] = await Promise.all([
     prisma.test.findMany({ where: { isActive: true }, select: { id: true, testName: true, price: true } }),
     prisma.package.findMany({ where: { isActive: true }, select: { id: true, packageName: true, price: true } })
@@ -143,6 +185,7 @@ export async function getPackageFormData() {
 }
 
 export async function getTestById(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const test = await prisma.test.findUnique({ where: { id } });
   
   if (!test) return null;
@@ -156,6 +199,7 @@ export async function getTestById(id: number) {
 
 // Update Test
 export async function updateTestAction(id: number, data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.test.update({
       where: { id },
@@ -177,6 +221,7 @@ export async function updateTestAction(id: number, data: any) {
 
 // Delete Test
 export async function deleteTestAction(id: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.test.delete({ where: { id } });
     return { success: true };
@@ -186,6 +231,7 @@ export async function deleteTestAction(id: number) {
 }
 
 export async function createPackageAction(data: any) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.package.create({
       data: {

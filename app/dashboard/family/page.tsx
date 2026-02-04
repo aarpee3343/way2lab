@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Plus, Trash2, UserCircle } from 'lucide-react';
+import { Users, Plus, Trash2 } from 'lucide-react';
 
 export default function FamilyPage() {
   const [members, setMembers] = useState([]);
@@ -14,27 +14,49 @@ export default function FamilyPage() {
   });
 
   const fetchMembers = async () => {
-    const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/family`);
-    setMembers(res.data);
+    try {
+      const res = await axios.get('/api/user/family', { withCredentials: true });
+      setMembers(res.data);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to load family members');
+    }
   };
 
   useEffect(() => { fetchMembers(); }, []);
 
   const handleDelete = async (id: number) => {
     if(!confirm("Delete this family member?")) return;
-    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/user/family/${id}`);
-    fetchMembers();
+    try {
+      await axios.delete(`/api/user/family/${id}`, { withCredentials: true });
+      fetchMembers();
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to delete family member');
+    }
   };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/user/family`, formData);
+      await axios.post('/api/user/family', formData, { withCredentials: true });
       setShowModal(false);
       setFormData({ name: '', relationship: 'Parent', gender: 'Male', date_of_birth: '', phone: '' });
       fetchMembers();
-    } catch (err) { alert('Failed to add member'); }
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        window.location.href = '/login';
+        return;
+      }
+      alert('Failed to add member');
+    }
     finally { setLoading(false); }
   };
 
@@ -56,8 +78,8 @@ export default function FamilyPage() {
               </div>
               <div>
                 <h4 className="font-bold text-gray-800">{mem.name}</h4>
-                <p className="text-xs text-gray-500">{mem.relationship} • {mem.gender}</p>
-                <p className="text-xs text-gray-400 mt-0.5">DOB: {new Date(mem.dateOfBirth).toLocaleDateString()}</p>
+                <p className="text-xs text-gray-500">{mem.relationship} - {mem.gender}</p>
+                <p className="text-xs text-gray-400 mt-0.5">DOB: {mem.dateOfBirth ? new Date(mem.dateOfBirth).toLocaleDateString() : '-'}</p>
               </div>
             </div>
             <button onClick={() => handleDelete(mem.id)} className="text-gray-300 hover:text-red-500 transition-colors p-2">

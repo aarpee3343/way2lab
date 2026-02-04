@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { labId, items, patientDetails, addressId, schedule, paymentMode, totals, couponCode } = body;
+    const { labId, items, patientDetails, addressId, schedule, paymentMode, paymentStatus, totals, couponCode } = body;
 
     // Basic Validation
     if (!items?.length) return NextResponse.json({ success: false, message: 'No items' }, { status: 400 });
@@ -120,6 +120,7 @@ export async function POST(req: Request) {
           
           couponId,
           paymentMode,
+          paymentStatus: paymentStatus || null,
           status: 'PENDING',
 
           items: {
@@ -161,8 +162,9 @@ export async function POST(req: Request) {
       }))?.phone;
       
       if (mobileToSend) {
+        const orderRef = order.orderNumber || String(order.id);
         // Run without awaiting to keep response fast
-        sendSMS(mobileToSend, 'ORDER_PLACED', [order.orderNumber]).catch(e => console.error(e));
+        sendSMS(mobileToSend, 'ORDER_PLACED', [orderRef]).catch(e => console.error(e));
       }
     } catch (smsError) {
       console.error("Failed to send Order SMS:", smsError);

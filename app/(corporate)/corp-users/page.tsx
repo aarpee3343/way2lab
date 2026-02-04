@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { UserPlus, Eye, EyeOff } from 'lucide-react';
@@ -8,32 +8,45 @@ import {
   getCorporateSubAdmins,
   toggleMaskingAction,
 } from '@/app/actions/corporateAuthActions';
-
-/* ==================================
-   PAGE
-================================== */
+import { createCorporateUser, getCorporateProfile } from '@/app/actions/corporatePortalActions';
 
 export default function CorporateUserManagement() {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreate, setShowCreate] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'DEPT_HEAD',
+    accessDept: '',
+    accessLocation: '',
+    canEdit: false,
+    maskContactInfo: true
+  });
 
-  /* ---------- LOAD USERS ---------- */
+  const loadUsers = async () => {
+    try {
+      const res = await getCorporateSubAdmins();
+      setUsers(res || []);
+    } catch (e) {
+      toast.error('Failed to load sub-admins');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
-      try {
-        // corporateId usually comes from session / middleware
-        const res = await getCorporateSubAdmins();
-        setUsers(res || []);
-      } catch (e) {
-        toast.error('Failed to load sub-admins');
-      } finally {
-        setLoading(false);
-      }
+      await loadUsers();
+      const profile = await getCorporateProfile();
+      const isEditor = Boolean(profile?.user?.canEdit || profile?.user?.role === 'SUPER_ADMIN');
+      setCanEdit(isEditor);
     };
     load();
   }, []);
 
-  /* ---------- TOGGLE MASKING ---------- */
   const handleToggleMasking = async (userId: number, currentStatus: boolean) => {
     const res = await toggleMaskingAction(userId, currentStatus);
 
@@ -51,20 +64,129 @@ export default function CorporateUserManagement() {
     }
   };
 
+  const handleCreate = async () => {
+    if (!form.name || !form.email || !form.password) {
+      toast.error('Fill all required fields');
+      return;
+    }
+    const res = await createCorporateUser({
+      name: form.name,
+      email: form.email,
+      password: form.password,
+      role: form.role as any,
+      accessDept: form.accessDept || undefined,
+      accessLocation: form.accessLocation || undefined,
+      canEdit: form.canEdit,
+      maskContactInfo: form.maskContactInfo
+    });
+
+    if (res.success) {
+      toast.success('Sub-admin created');
+      setShowCreate(false);
+      setForm({
+        name: '',
+        email: '',
+        password: '',
+        role: 'DEPT_HEAD',
+        accessDept: '',
+        accessLocation: '',
+        canEdit: false,
+        maskContactInfo: true
+      });
+      loadUsers();
+    } else {
+      toast.error(res.error || 'Create failed');
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center text-slate-500 py-20">
-        Loading access controls…
+        Loading access controls...
       </div>
     );
   }
 
-  /* ==================================
-     UI
-  ================================== */
-
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {showCreate && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl w-full max-w-xl p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-black text-slate-800">Create Sub-Admin</h3>
+              <button onClick={() => setShowCreate(false)} className="text-slate-400 hover:text-slate-600">Close</button>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              <input
+                placeholder="Full Name"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+              <input
+                placeholder="Email"
+                type="email"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+              <input
+                placeholder="Password"
+                type="password"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <select
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  value={form.role}
+                  onChange={(e) => setForm({ ...form, role: e.target.value })}
+                >
+                  <option value="SUPER_ADMIN">Super Admin</option>
+                  <option value="DEPT_HEAD">Dept Head</option>
+                  <option value="LOCATION_MANAGER">Location Manager</option>
+                </select>
+                <input
+                  placeholder="Access Department (optional)"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                  value={form.accessDept}
+                  onChange={(e) => setForm({ ...form, accessDept: e.target.value })}
+                />
+              </div>
+              <input
+                placeholder="Access Location (optional)"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3"
+                value={form.accessLocation}
+                onChange={(e) => setForm({ ...form, accessLocation: e.target.value })}
+              />
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={form.canEdit}
+                  onChange={(e) => setForm({ ...form, canEdit: e.target.checked })}
+                />
+                Allow editing permissions
+              </label>
+              <label className="flex items-center gap-2 text-sm font-bold text-slate-600">
+                <input
+                  type="checkbox"
+                  checked={form.maskContactInfo}
+                  onChange={(e) => setForm({ ...form, maskContactInfo: e.target.checked })}
+                />
+                Mask employee contact info
+              </label>
+              <button
+                onClick={handleCreate}
+                className="bg-slate-900 text-white py-3 rounded-2xl font-black text-sm"
+              >
+                Create User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-black text-slate-900">
@@ -75,7 +197,16 @@ export default function CorporateUserManagement() {
           </p>
         </div>
 
-        <button className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100">
+        <button
+          onClick={() => {
+            if (!canEdit) {
+              toast.error('You do not have permission to create users');
+              return;
+            }
+            setShowCreate(true);
+          }}
+          className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-black text-sm flex items-center gap-2 hover:bg-blue-700 shadow-lg shadow-blue-100"
+        >
           <UserPlus size={18} /> New Sub-Admin
         </button>
       </div>
@@ -108,7 +239,14 @@ export default function CorporateUserManagement() {
                   Access Boundary
                 </span>
                 <span className="text-slate-800 font-black">
-                  {u.accessLocation || u.accessDept || '—'}
+                  {u.accessLocation || u.accessDept || '-'}
+                </span>
+              </div>
+
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-slate-500 font-bold">Edit Rights</span>
+                <span className="text-slate-800 font-black">
+                  {u.canEdit ? 'Yes' : 'No'}
                 </span>
               </div>
 
@@ -145,3 +283,4 @@ export default function CorporateUserManagement() {
     </div>
   );
 }
+

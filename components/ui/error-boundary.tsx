@@ -3,7 +3,6 @@
 
 import { Component, ReactNode } from 'react';
 import { AlertCircle, RefreshCw, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -60,23 +59,21 @@ export class ErrorBoundary extends Component<Props, State> {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button
+            <button
               onClick={this.resetError}
-              variant="default"
-              className="gap-2"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-900 text-white hover:bg-black transition-colors"
             >
               <RefreshCw className="w-4 h-4" />
               Try Again
-            </Button>
+            </button>
             
-            <Button
+            <button
               onClick={() => window.location.href = '/'}
-              variant="outline"
-              className="gap-2"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 transition-colors"
             >
               <Home className="w-4 h-4" />
               Go Home
-            </Button>
+            </button>
           </div>
           
           {/* Show stack trace in development */}

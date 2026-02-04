@@ -4,8 +4,15 @@ import { getTechnicians, getTechnicianStats, deleteTechnicianAction } from '@/ap
 import { Plus, Users, CheckCircle, PauseCircle, Building2, Search, Edit } from 'lucide-react';
 import DeleteRowButton from '@/components/admin/DeleteRowButton';
 
-export default async function TechniciansPage() {
-  const technicians = await getTechnicians();
+export const dynamic = 'force-dynamic';
+
+export default async function TechniciansPage({
+  searchParams
+}: {
+  searchParams?: { q?: string };
+}) {
+  const query = typeof searchParams?.q === 'string' ? searchParams.q.trim() : '';
+  const technicians = await getTechnicians(query);
   const stats = await getTechnicianStats();
 
   return (
@@ -32,10 +39,15 @@ export default async function TechniciansPage() {
       {/* Data Table */}
       <div className="admin-table-container">
         <div className="admin-table-toolbar">
-          <div className="admin-search-container">
+          <form className="admin-search-container" method="get">
             <Search className="admin-search-icon" size={18}/>
-            <input className="admin-search-input" placeholder="Search technicians..." />
-          </div>
+            <input
+              name="q"
+              defaultValue={query}
+              className="admin-search-input"
+              placeholder="Search technicians..."
+            />
+          </form>
         </div>
 
         <table className="admin-table">
@@ -93,6 +105,14 @@ export default async function TechniciansPage() {
                 </td>
               </tr>
             ))}
+            {technicians.length === 0 && (
+              <tr>
+                <td colSpan={5} className="text-center py-12 text-slate-400">
+                  <Users size={48} className="mx-auto mb-3 opacity-20" />
+                  {query ? `No technicians found for "${query}".` : 'No technicians found. Add one to get started.'}
+                </td>
+              </tr>
+            )}
             {technicians.length === 0 && (
               <tr>
                 <td colSpan={5} className="text-center py-12 text-slate-400">

@@ -1,14 +1,20 @@
-'use client';
-import { ShieldCheck, UserMinus, FileDown, LogIn, Clock, MessageSquare } from 'lucide-react'; 
+﻿'use client';
+import { useEffect, useState } from 'react';
+import { Clock } from 'lucide-react';
+import { getCorporateActivities } from '@/app/actions/corporatePortalActions';
 
 export default function ActivityLogsPage() {
-  const logs = [
-    { id: 1, user: 'Sanya Iyer', action: 'DEACTIVATED_USER', details: 'Deactivated Amit Kumar (IT)', time: '2 mins ago', icon: UserMinus, color: 'text-rose-500', bg: 'bg-rose-50' },
-    { id: 2, user: 'Rahul Sharma', action: 'REPORT_DOWNLOAD', details: 'Downloaded Pre-Employment Batch #2', time: '45 mins ago', icon: FileDown, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { id: 3, user: 'Sanya Iyer', action: 'LOGIN', details: 'Logged in from 192.168.1.1', time: '2 hours ago', icon: LogIn, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    // If you plan to use MessageSquare later, add an entry like this:
-    // { id: 4, user: 'Support', action: 'TICKET_REPLY', details: 'Replied to ticket #123', time: '5 hours ago', icon: MessageSquare, color: 'text-purple-500', bg: 'bg-purple-50' },
-  ];
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      const res = await getCorporateActivities();
+      setLogs(res || []);
+      setLoading(false);
+    };
+    load();
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -21,16 +27,22 @@ export default function ActivityLogsPage() {
 
       <div className="bg-white rounded-[32px] border border-slate-200 shadow-sm overflow-hidden">
         <div className="divide-y divide-slate-100">
+          {loading && (
+            <div className="p-5 text-slate-400 text-sm">Loading activity...</div>
+          )}
+          {!loading && logs.length === 0 && (
+            <div className="p-5 text-slate-400 text-sm">No activity yet.</div>
+          )}
           {logs.map((log) => (
             <div key={log.id} className="p-5 flex items-start gap-4 hover:bg-slate-50 transition-colors">
-              <div className={`${log.bg} ${log.color} p-3 rounded-2xl shrink-0`}>
-                <log.icon size={20} />
+              <div className="bg-slate-100 text-slate-600 p-3 rounded-2xl shrink-0">
+                <Clock size={20} />
               </div>
               <div className="flex-1">
                 <div className="flex justify-between items-start">
-                  <p className="text-sm font-black text-slate-800">{log.user}</p>
+                  <p className="text-sm font-black text-slate-800">{log.performedBy}</p>
                   <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase">
-                    <Clock size={12}/> {log.time}
+                    <Clock size={12}/> {new Date(log.createdAt).toLocaleString()}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{log.details}</p>
@@ -41,12 +53,8 @@ export default function ActivityLogsPage() {
             </div>
           ))}
         </div>
-        <div className="p-4 bg-slate-50 text-center border-t border-slate-100">
-          <button className="text-xs font-black text-blue-600 uppercase tracking-widest hover:underline">
-            Load Older Activities
-          </button>
-        </div>
       </div>
     </div>
   );
 }
+

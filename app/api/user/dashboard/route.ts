@@ -35,6 +35,7 @@ export async function GET(req: Request) {
       db.dashboard.getRecentOrders(user.id, 5),
       db.dashboard.getLatestCompletedOrder(user.id),
       db.dashboard.getRecentFamilyMembers(user.id, 3),
+      db.customers.findById(user.id),
     ]);
 
     // Add timeout to prevent hanging requests
@@ -42,7 +43,7 @@ export async function GET(req: Request) {
       setTimeout(() => reject(new AppError('Request timeout', 'TIMEOUT', 408)), 10000);
     });
 
-    const [stats, recentOrders, latestCompletedOrder, members] = 
+    const [stats, recentOrders, latestCompletedOrder, members, profile] = 
       await Promise.race([dashboardPromise, timeoutPromise]) as any[];
 
     // Validate response
@@ -56,8 +57,12 @@ export async function GET(req: Request) {
       latestCompletedOrder,
       members,
       user: {
-        name: user.name,
-        email: user.email,
+        name: profile?.name || user.name,
+        email: profile?.email || user.email,
+        phone: profile?.phone,
+        gender: profile?.gender,
+        dateOfBirth: profile?.dateOfBirth,
+        createdAt: profile?.createdAt,
       },
     };
 
@@ -69,7 +74,7 @@ export async function GET(req: Request) {
 
   } catch (error: any) {
     // Handle known errors
-    const { message, code, statusCode, ...rest } = handleApiError(error);
+    const { message, code, statusCode, success: _success, ...rest } = handleApiError(error);
     
     // Log full error in development
     if (process.env.NODE_ENV === 'development') {

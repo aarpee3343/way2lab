@@ -18,7 +18,15 @@ const AVAILABLE_FIELDS = [
   { key: 'gender', label: 'Gender', required: false, sample: 'Male' },
 ];
 
-export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corporateId: number, onSuccess: () => void }) {
+export default function BulkEmployeeUpload({
+  corporateId,
+  onSuccess,
+  uploadAction
+}: {
+  corporateId: number;
+  onSuccess: () => void;
+  uploadAction?: (corporateId: number, employees: any[]) => Promise<any>;
+}) {
   const [uploading, setUploading] = useState(false);
   const [stats, setStats] = useState<{ success: number; fail: number } | null>(null);
   const [showTemplateOptions, setShowTemplateOptions] = useState(false);
@@ -93,10 +101,11 @@ export default function BulkEmployeeUpload({ corporateId, onSuccess }: { corpora
           return;
         }
         
-        const res = await uploadCorporateEmployees(corporateId, cleanData);
+        const action = uploadAction || uploadCorporateEmployees;
+        const res = await action(corporateId, cleanData);
         setUploading(false);
         
-        if (res.success) {
+        if (res.success && res.stats) {
           setStats({ success: res.stats.created + res.stats.mapped, fail: 0 });
           toast.success(`Processed: ${res.stats.created} Created, ${res.stats.mapped} Mapped`);
           onSuccess();

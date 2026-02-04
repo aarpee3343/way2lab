@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const { name, relationship, gender, date_of_birth } = await req.json();
+    const { name, relationship, gender, date_of_birth, phone, email } = await req.json();
 
     // Generate UHID
     const randomSuffix = Math.floor(100000 + Math.random() * 900000);
@@ -38,7 +38,9 @@ export async function POST(req: Request) {
         name,
         relationship,
         gender,
-        dateOfBirth: new Date(date_of_birth)
+        dateOfBirth: date_of_birth ? new Date(date_of_birth) : null,
+        phone: phone || null,
+        email: email || null
       }
     });
 

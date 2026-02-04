@@ -5,10 +5,11 @@ import { useActionState } from 'react';
 import { uploadReportAction } from '@/app/actions/adminOrderManagement';
 import { useFormStatus } from 'react-dom';
 
-const initialState = { success: false, error: null };
+type UploadState = { success: boolean; error?: string };
+const initialState: UploadState = { success: false };
 
 export default function UploadReportForm({ orderId }: { orderId: number }) {
-  const [state, formAction] = useActionState(
+  const [state, formAction] = useActionState<UploadState, FormData>(
     uploadReportAction,
     initialState
   );

@@ -3,13 +3,17 @@ import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 
 // UPDATE Address
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
     const { address_line1, address_line2, city, state, pincode, type } = await req.json();
-    const id = parseInt(params.id);
+    const { id: rawId } = await params;
+    const id = parseInt(rawId);
 
     // Verify ownership
     const exists = await prisma.customerAddress.findFirst({
@@ -37,12 +41,16 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // DELETE Address
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
   const user = await getAuthUser(req);
   if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
 
   try {
-    const id = parseInt(params.id);
+    const { id: rawId } = await params;
+    const id = parseInt(rawId);
 
     // Verify ownership
     const exists = await prisma.customerAddress.findFirst({

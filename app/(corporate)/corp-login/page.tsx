@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from '@/lib/safe-toast';
+import Image from "next/image";
 import {
   Building2,
   Lock,
@@ -44,14 +45,20 @@ export default function CorporateLoginPage() {
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-2 text-white">
-            <Building2 className="text-blue-500" size={32} />
+          <div className="flex items-center gap-3 text-white">
+            <Image
+              src="/logo.png"
+              alt="WayToLab Healthcare"
+              width={36}
+              height={36}
+              className="object-contain"
+              priority
+            />
             <span className="text-2xl font-black tracking-tighter">
-              WayToLab <span className="text-blue-500">Corp</span>
+              WayToLab <span className="text-blue-500">Healthcare</span>
             </span>
           </div>
         </div>
-
         <div className="relative z-10">
           <h1 className="text-5xl font-black text-white leading-tight mb-6">
             Enterprise Health <br />
