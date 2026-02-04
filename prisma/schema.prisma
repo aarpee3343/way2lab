@@ -18,6 +18,8 @@ model Admin {
   phone       String?   @unique @db.VarChar(20)
   role        AdminRole @default(SUPER_ADMIN)
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  onsiteCamps  OnsiteCamp[]
+  onsiteEntries OnsiteEntry[]
 
   @@map("admins")
 }
@@ -94,6 +96,7 @@ model Customer {
   assignedPackages    EmployeePackage[]
   familyMembers       FamilyMember[]
   orders              Order[]
+  onsiteEntries       OnsiteEntry[]
 
   @@map("customers")
 }
@@ -254,6 +257,9 @@ model Package {
   tests               PackageTest[]
   corporate           Corporate?         @relation(fields: [corporateId], references: [id])
   coupons             Coupon[]           @relation("PackageCoupons")
+  onsiteTemplates     OnsiteTemplate[]
+  onsiteEntries       OnsiteEntry[]
+  onsiteCampPackages  OnsiteCampPackage[]
 
   @@map("packages")
 }
@@ -353,6 +359,7 @@ model Order {
   patientRelation        String?             @map("patient_relation")
   userId                 Int                 @map("user_id")
   labId                  Int?                @map("lab_id")
+  onsiteLabName          String?             @map("onsite_lab_name")
   addressId              Int?                @map("address_id")
   associateId            Int?                @map("associate_id")
   collectionType         String?             @map("collection_type")
@@ -388,6 +395,7 @@ model Order {
   technician             Technician?         @relation(fields: [technicianId], references: [id])
   customer               Customer            @relation(fields: [userId], references: [id])
   payments               Payment[]
+  onsiteEntry            OnsiteEntry?
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -480,6 +488,7 @@ model Corporate {
   panNumber     String?
   gstin         String?
   employeeCount Int                 @default(0)
+  logoUrl       String?             @map("logo_url")
   domains       String[]
   isActive      Boolean             @default(true)
   createdAt     DateTime            @default(now())
@@ -489,8 +498,71 @@ model Corporate {
   users         CorporateUser[]
   employees     Customer[]          @relation("CorporateEmployees")
   packages      Package[]
+  onsiteCamps   OnsiteCamp[]
 
   @@map("corporates")
+}
+
+model OnsiteCamp {
+  id                 Int              @id @default(autoincrement())
+  corporateId        Int              @map("corporate_id")
+  title              String
+  status             OnsiteCampStatus @default(PLANNED)
+  expectedHeadcount  Int?             @map("expected_headcount")
+  startedAt          DateTime?        @map("started_at")
+  endedAt            DateTime?        @map("ended_at")
+  createdAt          DateTime         @default(now()) @map("created_at")
+  createdByAdminId   Int?             @map("created_by_admin_id")
+  corporate          Corporate        @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  createdBy          Admin?           @relation(fields: [createdByAdminId], references: [id])
+  entries            OnsiteEntry[]
+  packages           OnsiteCampPackage[]
+
+  @@map("onsite_camps")
+}
+
+model OnsiteCampPackage {
+  id        Int        @id @default(autoincrement())
+  campId    Int        @map("camp_id")
+  packageId Int        @map("package_id")
+  camp      OnsiteCamp @relation(fields: [campId], references: [id], onDelete: Cascade)
+  package   Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([campId, packageId])
+  @@map("onsite_camp_packages")
+}
+
+model OnsiteTemplate {
+  id        Int      @id @default(autoincrement())
+  packageId Int      @map("package_id")
+  title     String
+  fields    Json
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  entries   OnsiteEntry[]
+
+  @@map("onsite_templates")
+}
+
+model OnsiteEntry {
+  id               Int        @id @default(autoincrement())
+  campId           Int        @map("camp_id")
+  customerId       Int        @map("customer_id")
+  packageId        Int        @map("package_id")
+  orderId          Int?       @unique @map("order_id")
+  templateId       Int?       @map("template_id")
+  data             Json?
+  createdAt        DateTime   @default(now()) @map("created_at")
+  createdByAdminId Int?       @map("created_by_admin_id")
+  camp             OnsiteCamp @relation(fields: [campId], references: [id], onDelete: Cascade)
+  customer         Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  package          Package    @relation(fields: [packageId], references: [id])
+  order            Order?     @relation(fields: [orderId], references: [id])
+  template         OnsiteTemplate? @relation(fields: [templateId], references: [id])
+  createdBy        Admin?     @relation(fields: [createdByAdminId], references: [id])
+
+  @@map("onsite_entries")
 }
 
 model CorporateService {
@@ -686,6 +758,12 @@ enum LabStatus {
 enum OrderBookingSource {
   Customer
   Admin
+}
+
+enum OnsiteCampStatus {
+  PLANNED
+  ACTIVE
+  COMPLETED
 }
 
 enum OrderStatus {

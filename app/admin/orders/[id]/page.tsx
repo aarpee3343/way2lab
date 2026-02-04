@@ -88,12 +88,14 @@ export default async function OrderDetailsPage({
 
   if (!order) return notFound();
 
-  const technicians = await prisma.technician.findMany({
-    where: {
-      isActive: true,
-      labs: { some: { labId: order.labId! } }
-    }
-  });
+  const technicians = order.labId
+    ? await prisma.technician.findMany({
+        where: {
+          isActive: true,
+          labs: { some: { labId: order.labId! } }
+        }
+      })
+    : [];
   
   const assignedTechnician = order.technician;
 
@@ -453,7 +455,7 @@ export default async function OrderDetailsPage({
 
           {/* LAB */}
           <Card title="Lab Information" icon={FlaskConical}>
-            <Row label="Lab Name" value={order.lab?.labName || 'N/A'} />
+            <Row label="Lab Name" value={order.lab?.labName || order.onsiteLabName || 'N/A'} />
             <Row label="Phone" value={order.lab?.contactNo || 'N/A'} />
             <Row label="Address" value={order.lab?.address || 'N/A'} />
           </Card>

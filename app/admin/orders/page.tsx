@@ -190,10 +190,10 @@ export default async function OrdersPage({
                   {/* LAB */}
                   <td>
                     <div className="admin-table-row-primary">
-                      {order.lab?.labName}
+                      {order.lab?.labName || order.onsiteLabName || 'Onsite Lab'}
                     </div>
                     <span className="admin-badge-default text-[10px] uppercase tracking-wide mt-1">
-                      {order.collectionType?.replace('_', ' ')}
+                      {order.collectionType?.replace('_', ' ') || 'onsite'}
                     </span>
                   </td>
 

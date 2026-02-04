@@ -77,6 +77,7 @@ export async function getCorporateProfile() {
         city: true,
         state: true,
         pincode: true,
+        logoUrl: true,
         domains: true,
         isActive: true
       }
@@ -296,6 +297,44 @@ export async function getCorporateOverview(filter?: {
       category: r.order.package?.isPreEmployment
         ? 'PRE_EMPLOYMENT'
         : (r.order.isReportSharedWithCorp ? 'SHARED_BY_EMPLOYEE' : 'ANNUAL_CHECKUP')
+    }))
+  };
+}
+
+export async function getCorporateOnsiteActivities() {
+  const session = await getSession();
+  if (!session) return null;
+
+  const camps = await prisma.onsiteCamp.findMany({
+    where: { corporateId: session.corporateId },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      _count: { select: { entries: true } }
+    }
+  });
+
+  const active = camps.filter((c) => c.status === 'ACTIVE');
+  const completed = camps.filter((c) => c.status === 'COMPLETED');
+  const planned = camps.filter((c) => c.status === 'PLANNED');
+
+  return {
+    active: active.map((c) => ({
+      ...c,
+      createdAt: c.createdAt.toISOString(),
+      startedAt: c.startedAt ? c.startedAt.toISOString() : null,
+      endedAt: c.endedAt ? c.endedAt.toISOString() : null
+    })),
+    completed: completed.map((c) => ({
+      ...c,
+      createdAt: c.createdAt.toISOString(),
+      startedAt: c.startedAt ? c.startedAt.toISOString() : null,
+      endedAt: c.endedAt ? c.endedAt.toISOString() : null
+    })),
+    planned: planned.map((c) => ({
+      ...c,
+      createdAt: c.createdAt.toISOString(),
+      startedAt: c.startedAt ? c.startedAt.toISOString() : null,
+      endedAt: c.endedAt ? c.endedAt.toISOString() : null
     }))
   };
 }

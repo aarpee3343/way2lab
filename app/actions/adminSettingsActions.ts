@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 import { revalidatePath } from 'next/cache';
 import { getAppSettingValue, setAppSettingValue } from '@/lib/app-settings';
-import { DEFAULT_SMS_TEMPLATES, SMSType } from '@/lib/sms';
+import { DEFAULT_SMS_TEMPLATES, SmsTemplate as SmsTemplateType, DefaultSMSType } from '@/lib/sms';
 
 export type PaymentModesSetting = {
   modes: string[];
@@ -16,11 +16,7 @@ export type DefaultsSetting = {
   homeCharge: number;
 };
 
-export type SmsTemplate = {
-  type: SMSType;
-  id: string;
-  message: string;
-};
+export type SmsTemplate = SmsTemplateType;
 
 export type SmsTemplatesSetting = {
   templates: SmsTemplate[];
@@ -30,6 +26,7 @@ export type AdminSettingsData = {
   paymentModes: PaymentModesSetting;
   defaults: DefaultsSetting;
   smsTemplates: SmsTemplatesSetting;
+  smsTemplateTypes: DefaultSMSType[];
 };
 
 const DEFAULT_PAYMENT_MODES = ['Pay Upon Service', 'Online', 'Corporate Credit'];
@@ -58,15 +55,28 @@ export async function getAdminSettings(): Promise<AdminSettingsData> {
     templates: DEFAULT_SMS_TEMPLATES
   });
 
-  const byType = new Map(smsTemplatesRaw.templates?.map(t => [t.type, t]));
+  const sanitized = (smsTemplatesRaw.templates || [])
+    .map((t) => ({
+      type: String(t.type || '').trim(),
+      id: String(t.id || '').trim(),
+      message: String(t.message || '').trim()
+    }))
+    .filter((t) => t.type && t.id && t.message);
+
+  const byType = new Map<string, SmsTemplate>(sanitized.map(t => [t.type, t]));
+  const defaultTypes = new Set<string>(DEFAULT_SMS_TEMPLATES.map(t => t.type));
+  const defaultTemplates = DEFAULT_SMS_TEMPLATES.map(def => byType.get(def.type) || def);
+  const customs = Array.from(byType.values()).filter(t => !defaultTypes.has(t.type));
+
   const smsTemplates: SmsTemplatesSetting = {
-    templates: DEFAULT_SMS_TEMPLATES.map(def => byType.get(def.type) || def)
+    templates: [...defaultTemplates, ...customs]
   };
 
   return {
     paymentModes: { modes, defaultMode },
     defaults,
-    smsTemplates
+    smsTemplates,
+    smsTemplateTypes: DEFAULT_SMS_TEMPLATES.map(t => t.type)
   };
 }
 
@@ -113,23 +123,23 @@ export async function updateDefaultsAction(data: DefaultsSetting) {
 export async function updateSmsTemplatesAction(templates: SmsTemplate[]) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
-    const allowedTypes = new Set<SMSType>(DEFAULT_SMS_TEMPLATES.map(t => t.type));
-    const byType = new Map<SMSType, SmsTemplate>();
+    const byType = new Map<string, SmsTemplate>();
 
     for (const t of templates || []) {
-      if (!allowedTypes.has(t.type)) continue;
+      const type = String(t.type || '').trim();
       const id = String(t.id || '').trim();
       const message = String(t.message || '').trim();
-      if (!id || !message) continue;
-      byType.set(t.type, { type: t.type, id, message });
+      if (!type || !id || !message) continue;
+      byType.set(type, { type, id, message });
     }
 
-    const merged = DEFAULT_SMS_TEMPLATES.map((def) => {
-      const override = byType.get(def.type);
-      return override || def;
-    });
+    for (const def of DEFAULT_SMS_TEMPLATES) {
+      if (!byType.has(def.type)) {
+        byType.set(def.type, def);
+      }
+    }
 
-    await setAppSettingValue('sms_templates', { templates: merged });
+    await setAppSettingValue('sms_templates', { templates: Array.from(byType.values()) });
     revalidatePath('/admin/settings');
     return { success: true };
   } catch (error: any) {

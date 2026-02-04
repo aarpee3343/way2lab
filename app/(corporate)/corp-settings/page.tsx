@@ -7,6 +7,10 @@ import { getCorporateProfile, updateCorporateProfile } from '@/app/actions/corpo
 export default function CorpSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [canEdit, setCanEdit] = useState(false);
+  const [logoUrl, setLogoUrl] = useState('');
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState('');
+  const [logoUploading, setLogoUploading] = useState(false);
   const [form, setForm] = useState({
     companyName: '',
     contactPerson: '',
@@ -30,6 +34,7 @@ export default function CorpSettingsPage() {
           state: profile.corp.state || '',
           pincode: profile.corp.pincode || ''
         });
+        setLogoUrl(profile.corp.logoUrl || '');
       }
       const isEditor = Boolean(profile?.user?.canEdit || profile?.user?.role === 'SUPER_ADMIN');
       setCanEdit(isEditor);
@@ -37,6 +42,46 @@ export default function CorpSettingsPage() {
     };
     load();
   }, []);
+
+  useEffect(() => {
+    if (!logoFile) {
+      setLogoPreview('');
+      return;
+    }
+    const nextPreview = URL.createObjectURL(logoFile);
+    setLogoPreview(nextPreview);
+    return () => URL.revokeObjectURL(nextPreview);
+  }, [logoFile]);
+
+  const handleLogoUpload = async () => {
+    if (!canEdit) {
+      toast.error('You do not have permission to edit settings');
+      return;
+    }
+    if (!logoFile) {
+      toast.error('Select a logo file first');
+      return;
+    }
+
+    setLogoUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', logoFile);
+      const res = await fetch('/api/corp/logo', { method: 'POST', body: formData });
+      const data = await res.json();
+      if (data?.success) {
+        setLogoUrl(data.logoUrl || '');
+        setLogoFile(null);
+        toast.success('Logo updated');
+      } else {
+        toast.error(data?.error || 'Logo upload failed');
+      }
+    } catch (error) {
+      toast.error('Logo upload failed');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
 
   const handleSave = async () => {
     if (!canEdit) {
@@ -65,6 +110,42 @@ export default function CorpSettingsPage() {
       )}
 
       <div className="bg-white rounded-[32px] border border-slate-200 p-8 shadow-sm space-y-8">
+        <div className="space-y-4">
+          <div>
+            <h2 className="text-lg font-black text-slate-900">Organization Logo</h2>
+            <p className="text-xs text-slate-500">This logo appears on the corporate portal header.</p>
+          </div>
+          <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <div className="w-40 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
+              {logoPreview || logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={logoPreview || logoUrl}
+                  alt="Corporate Logo"
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-xs text-slate-400 font-semibold">No Logo</span>
+              )}
+            </div>
+            <div className="flex-1 space-y-3">
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                disabled={!canEdit || logoUploading}
+              />
+              <button
+                onClick={handleLogoUpload}
+                disabled={!canEdit || logoUploading || !logoFile}
+                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-60"
+              >
+                {logoUploading ? 'Uploading...' : 'Upload Logo'}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2 col-span-2">

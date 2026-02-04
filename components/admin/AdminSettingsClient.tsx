@@ -14,6 +14,7 @@ export default function AdminSettingsClient({ initialSettings }: { initialSettin
   const [homeCharge, setHomeCharge] = useState(String(initialSettings.defaults.homeCharge ?? 0));
 
   const [smsTemplates, setSmsTemplates] = useState<SmsTemplate[]>(initialSettings.smsTemplates.templates || []);
+  const systemSmsTypes = new Set<string>(initialSettings.smsTemplateTypes || []);
 
   const [pending, startTransition] = useTransition();
 
@@ -63,6 +64,14 @@ export default function AdminSettingsClient({ initialSettings }: { initialSettin
 
   const updateSmsTemplate = (index: number, patch: Partial<SmsTemplate>) => {
     setSmsTemplates(prev => prev.map((t, i) => (i === index ? { ...t, ...patch } : t)));
+  };
+
+  const addSmsTemplate = () => {
+    setSmsTemplates(prev => [...prev, { type: '', id: '', message: '' }]);
+  };
+
+  const removeSmsTemplate = (index: number) => {
+    setSmsTemplates(prev => prev.filter((_, i) => i !== index));
   };
 
   const saveSmsTemplates = () => {
@@ -175,12 +184,47 @@ export default function AdminSettingsClient({ initialSettings }: { initialSettin
           </p>
         </div>
 
+        <div className="flex items-center justify-between">
+          <div className="text-xs text-slate-400">
+            Add custom templates for new SMS flows. Default templates cannot be removed.
+          </div>
+          <button onClick={addSmsTemplate} className="admin-btn-secondary flex items-center gap-2">
+            <Plus size={16} /> Add Template
+          </button>
+        </div>
+
         <div className="space-y-4">
           {smsTemplates.map((template, index) => (
-            <div key={template.type} className="border border-slate-200 rounded-xl p-4 space-y-3">
+            <div
+              key={`${template.type || 'custom'}-${index}`}
+              className="border border-slate-200 rounded-xl p-4 space-y-3"
+            >
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                  <p className="text-sm font-bold text-slate-700">{template.type}</p>
+                  <p className="text-sm font-bold text-slate-700">Template Type</p>
+                  <p className="text-xs text-slate-400">Use a unique key (e.g. FOLLOW_UP)</p>
+                </div>
+                <div className="flex flex-col md:flex-row gap-2 md:items-center">
+                  <input
+                    className="admin-form-input md:w-64"
+                    value={template.type}
+                    onChange={(e) => updateSmsTemplate(index, { type: e.target.value })}
+                    disabled={systemSmsTypes.has(template.type)}
+                    placeholder="Template Type"
+                  />
+                  {!systemSmsTypes.has(template.type) && (
+                    <button
+                      type="button"
+                      onClick={() => removeSmsTemplate(index)}
+                      className="admin-btn-secondary text-slate-500"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
                   <p className="text-xs text-slate-400">DLT Template ID</p>
                 </div>
                 <input

@@ -6,7 +6,7 @@ const SENDER_ID = process.env.SMS_SENDER_ID;
 const BASE_URL = process.env.SMS_BASE_URL;
 
 // 1. Define Supported Template Types
-export type SMSType = 
+export type DefaultSMSType = 
   | 'OTP'
   | 'ORDER_PLACED'
   | 'HOME_COLLECTION_SCHEDULED'
@@ -18,7 +18,15 @@ export type SMSType =
   | 'PAYMENT_PENDING'
   | 'REFUND_INITIATED';
 
-export const DEFAULT_SMS_TEMPLATES: Array<{ type: SMSType; id: string; message: string }> = [
+export type SMSType = DefaultSMSType | (string & {});
+
+export type SmsTemplate = {
+  type: string;
+  id: string;
+  message: string;
+};
+
+export const DEFAULT_SMS_TEMPLATES: Array<{ type: DefaultSMSType; id: string; message: string }> = [
   {
     type: 'OTP',
     id: "1707176917094757100",
@@ -93,21 +101,21 @@ export async function sendSMS(mobile: string, type: SMSType, vars: string[]) {
   }
 
   try {
-    let templates = DEFAULT_SMS_TEMPLATES;
+    let templates: SmsTemplate[] = DEFAULT_SMS_TEMPLATES;
     try {
-      const settings = await getAppSettingValue<{ templates?: typeof DEFAULT_SMS_TEMPLATES } | null>(
+      const settings = await getAppSettingValue<{ templates?: SmsTemplate[] } | null>(
         'sms_templates',
         null
       );
       if (settings?.templates?.length) {
-        templates = settings.templates as typeof DEFAULT_SMS_TEMPLATES;
+        templates = settings.templates as SmsTemplate[];
       }
     } catch (error) {
       console.warn('Failed to load SMS template overrides. Using defaults.', error);
     }
 
     const override = templates.find(t => t.type === type);
-    const template = override || DEFAULT_TEMPLATE_MAP.get(type);
+    const template = override || DEFAULT_TEMPLATE_MAP.get(type as DefaultSMSType);
     if (!template) throw new Error(`Invalid SMS Template Type: ${type}`);
 
     // Generate the final message string using the variables

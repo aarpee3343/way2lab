@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Users,
   FileBarChart,
+  Activity,
   Settings,
   Menu,
   Bell,
@@ -58,7 +59,7 @@ export default function CorporateLayout({
       if (profile?.corp) {
         setCorp({
           companyName: profile.corp.companyName,
-          logoUrl: '/default-corp.png',
+          logoUrl: profile.corp.logoUrl || '/default-corp.png',
         });
       }
       if (profile?.user?.role) {
@@ -73,12 +74,13 @@ export default function CorporateLayout({
     return <div className="min-h-screen bg-white">{children}</div>;
   }
 
-  const wayToLabLogo = '/logos/wtl-logo.png';
+  const wayToLabLogo = '/logo.png';
 
   const menuItems = [
     { name: 'Analytics Hub', icon: LayoutDashboard, href: '/corp' },
     { name: 'Employee Directory', icon: Users, href: '/employees' },
     { name: 'Health Records', icon: FileBarChart, href: '/corp-reports' },
+    { name: 'Onsite Activity', icon: Activity, href: '/corp-onsite' },
     { name: 'Team Access', icon: UserPlus, href: '/corp-users' },
     { name: 'Support', icon: MessageSquare, href: '/corp-support' },
     { name: 'Settings', icon: Settings, href: '/corp-settings' },
@@ -136,34 +138,33 @@ export default function CorporateLayout({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* -------- HEADER -------- */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
-          <button
-            onClick={() => setSidebarOpen(!isSidebarOpen)}
-            className="p-2 hover:bg-slate-100 rounded-lg"
-          >
-            <Menu size={20} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setSidebarOpen(!isSidebarOpen)}
+              className="p-2 hover:bg-slate-100 rounded-lg"
+            >
+              <Menu size={20} />
+            </button>
+            <Image
+              src={wayToLabLogo}
+              width={140}
+              height={32}
+              className="h-8 w-auto"
+              alt="WayToLab"
+              priority
+            />
+          </div>
 
           <div className="flex items-center gap-6">
-            {/* Branding */}
-            <div className="flex items-center gap-4">
-              <Image
-                src={wayToLabLogo}
-                width={140}
-                height={32}
-                className="h-8 w-auto grayscale opacity-70 hover:grayscale-0 transition-all"
-                alt="WayToLab"
-                priority
-              />
-              <div className="h-6 w-px bg-slate-200" />
-              <Image
-                src={corp.logoUrl || '/default-corp.png'}
-                width={160}
-                height={40}
-                className="h-10 w-auto object-contain"
-                alt={corp.companyName}
-                unoptimized={Boolean(corp.logoUrl && !corp.logoUrl.startsWith('/'))}
-              />
-            </div>
+            {/* Corporate Logo */}
+            <Image
+              src={corp.logoUrl || '/default-corp.png'}
+              width={160}
+              height={40}
+              className="h-10 w-auto object-contain"
+              alt={corp.companyName}
+              unoptimized={Boolean(corp.logoUrl && !corp.logoUrl.startsWith('/'))}
+            />
 
             {/* Notifications */}
             <button className="p-2 text-slate-400 hover:text-blue-600 relative">

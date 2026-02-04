@@ -92,6 +92,7 @@ export async function getAdminOrders(params: {
         patientName: true,
         patientPhone: true,
         collectionType: true,
+        onsiteLabName: true,
         status: true,
         paymentStatus: true,
         totalAmount: true,
