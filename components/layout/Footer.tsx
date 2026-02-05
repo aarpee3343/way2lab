@@ -176,11 +176,12 @@ export default function Footer() {
           </div>
 
           {/* Health Newsletter */}
-          <div className="md:col-span-3">
+          <div className="md:col-span-3 flex flex-col items-center text-center">
             <h4 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
               <Award size={14} /> Health Updates
             </h4>
-            <div className="relative">
+
+            <div className="relative w-full max-w-sm">
               <input 
                 type="email" 
                 placeholder="Enter your email" 
@@ -190,10 +191,36 @@ export default function Footer() {
                 <ArrowUpRight size={16} />
               </button>
             </div>
-            <p className="text-xs text-teal-600 mt-3">
+
+            <p className="text-xs text-teal-600 mt-3 max-w-sm">
               Subscribe for health tips, offers, and medical insights.
             </p>
+
+            {/* Divider */}
+            <div className="my-6 h-px w-full max-w-sm bg-gradient-to-r from-transparent via-teal-700/50 to-transparent" />
+            {/* Social Icons */}
+              <div className="flex gap-4 justify-center">
+                {[
+                  { icon: Facebook, label: 'Facebook', url: 'https://www.facebook.com/way2lab' },
+                  { icon: Twitter, label: 'X', url: 'https://x.com/way2lab' },
+                  { icon: Linkedin, label: 'LinkedIn', url: 'https://in.linkedin.com/company/way2lab' },
+                  { icon: Instagram, label: 'Instagram', url: 'https://www.instagram.com/way2lab' }
+                ].map(({ icon: Icon, label, url }) => (
+                  <a
+                    key={label}
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="w-10 h-10 bg-teal-900/30 border border-teal-800 rounded-full flex items-center justify-center
+                              hover:bg-teal-800 hover:border-teal-600 transition-all hover:scale-110"
+                  >
+                    <Icon size={18} className="text-teal-400 hover:text-white" />
+                  </a>
+                ))}
+              </div>
           </div>
+          
         </div>
 
         {/* BOTTOM SECTION */}
@@ -204,24 +231,6 @@ export default function Footer() {
               <div className="w-1 h-1 bg-teal-600 rounded-full"></div>
               <span>Committed to your health</span>
             </div>
-          </div>
-          
-          {/* Social Icons */}
-          <div className="flex gap-4">
-            {[
-              { icon: Facebook, label: 'Facebook' },
-              { icon: Twitter, label: 'Twitter' },
-              { icon: Linkedin, label: 'LinkedIn' },
-              { icon: Instagram, label: 'Instagram' }
-            ].map(({ icon: Icon, label }) => (
-              <a 
-                key={label}
-                href="#" 
-                className="w-10 h-10 bg-teal-900/30 border border-teal-800 rounded-full flex items-center justify-center hover:bg-teal-800 hover:border-teal-600 transition-all hover:scale-110"
-              >
-                <Icon size={18} className="text-teal-400 hover:text-white" />
-              </a>
-            ))}
           </div>
         </div>
 

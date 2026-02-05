@@ -2,12 +2,25 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { prisma } from '@/lib/db';
 import crypto from 'crypto';
+import { getAuthUser } from '@/lib/auth';
+import { parseHealthProfile } from '@/lib/ai/healthProfile';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const PROMPT_VERSION = '2026-02-05-v1';
+const TIME_WINDOW_DAYS = 30;
 
 export async function POST(req: Request) {
   try {
-    const { orderId } = await req.json();
+    const body = await req.json().catch(() => null);
+    const orderId = Number(body?.orderId);
+    const forceRefresh = Boolean(body?.forceRefresh);
+
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return NextResponse.json({ error: 'Invalid orderId' }, { status: 400 });
+    }
+
+    const user = await getAuthUser(req);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     // 1. Get Current Order
     const currentOrder = await prisma.order.findUnique({
@@ -16,10 +29,13 @@ export async function POST(req: Request) {
     });
 
     if (!currentOrder) return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    if (currentOrder.userId !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
 
     // 2. Fetch History (Strict 30 Days Limit)
     const timeLimit = new Date();
-    timeLimit.setDate(timeLimit.getDate() - 30);
+    timeLimit.setDate(timeLimit.getDate() - TIME_WINDOW_DAYS);
 
     const history = await prisma.order.findMany({
       where: {
@@ -38,36 +54,86 @@ export async function POST(req: Request) {
     const sortedHistory = history.sort((a, b) => a.id - b.id);
     let combinedContext = "";
     let analyzedCount = 0;
+    const sourceOrderIds: number[] = [];
 
     sortedHistory.forEach(order => {
+      sourceOrderIds.push(order.id);
       const date = order.createdAt.toISOString().split('T')[0];
-      if (order.reportSummary?.content) {
-        analyzedCount++;
-        try {
-          const json = JSON.parse(order.reportSummary.content);
-          const abnormal = json.results?.filter((r: any) => r.status !== 'Normal') || [];
-          if (abnormal.length > 0) {
-            combinedContext += `|${date}:${JSON.stringify(abnormal)}`;
-          }
-        } catch (e) {}
-      }
+      if (!order.reportSummary?.content) return;
+
+      try {
+        const json = JSON.parse(order.reportSummary.content);
+        const results = Array.isArray(json.results) ? json.results : [];
+        const compactResults = results
+          .map((r: any) => ({
+            name: r.testName || r.name || r.parameter || r.component || r.title,
+            value: r.value ?? r.result ?? r.reading ?? r.observed,
+            unit: r.unit,
+            status: r.status || r.flag
+          }))
+          .filter((r: any) => r.name)
+          .slice(0, 12);
+
+        if (compactResults.length > 0) {
+          analyzedCount++;
+          combinedContext += `|${date}:${JSON.stringify(compactResults)}`;
+          return;
+        }
+
+        if (json.summary) {
+          analyzedCount++;
+          combinedContext += `|${date}:summary=${String(json.summary).slice(0, 500)}`;
+        }
+      } catch (e) {}
     });
 
     // 4. THE SMART LOCK (Hashing)
-    const currentDataHash = crypto.createHash('md5').update(combinedContext || "empty").digest('hex');
+    const hashPayload = `${orderId}|${combinedContext || 'no-signal'}|reports:${reportCount}|analyzed:${analyzedCount}`;
+    const currentDataHash = crypto.createHash('md5').update(hashPayload).digest('hex');
 
     const existingSummaryRaw = await prisma.orderReportSummary.findUnique({
       where: { orderId: currentOrder.id }
     });
 
     // If Data Hasn't Changed, Return Cache
-    if (existingSummaryRaw) {
+    if (existingSummaryRaw && !forceRefresh) {
        try {
-         const existingJson = JSON.parse(existingSummaryRaw.content);
-         if (existingJson.dataHash === currentDataHash && existingJson.healthScore) {
+         const existingJson = parseHealthProfile(JSON.parse(existingSummaryRaw.content));
+         if (existingJson.dataHash === currentDataHash) {
            return NextResponse.json({ ...existingJson, cached: true });
          }
        } catch(e) {}
+    }
+
+    const nowIso = new Date().toISOString();
+
+    if (analyzedCount === 0) {
+      const fallback = parseHealthProfile({
+        healthScore: 0,
+        summaryHeadline: 'Report data not available yet.',
+        lifestyle: [],
+        dietPlan: { include: [], avoid: [], plan: [] },
+        recommendations: [],
+        reportCount,
+        analyzedCount,
+        dataHash: currentDataHash,
+        lastUpdated: nowIso,
+        generatedAt: nowIso,
+        model: 'n/a',
+        promptVersion: PROMPT_VERSION,
+        sourceOrderId: currentOrder.id,
+        sourceOrderIds,
+        timeWindowDays: TIME_WINDOW_DAYS,
+        warnings: ['No report summaries available for analysis yet.']
+      });
+
+      await prisma.orderReportSummary.upsert({
+        where: { orderId: currentOrder.id },
+        update: { content: JSON.stringify(fallback) },
+        create: { orderId: currentOrder.id, content: JSON.stringify(fallback) }
+      });
+
+      return NextResponse.json({ ...fallback, cached: false });
     }
 
     // --- RUN AI --- //
@@ -99,7 +165,7 @@ export async function POST(req: Request) {
           role: "system",
           content: `
 You are a Medical Analysis Engine. 
-Input: ${reportCount} lab reports.
+Input: ${reportCount} lab reports (${analyzedCount} with usable summary data).
 Inventory: ${JSON.stringify(inventory)}
 
 **OUTPUT SCHEMA (JSON):**
@@ -119,10 +185,13 @@ Inventory: ${JSON.stringify(inventory)}
      { "type": "test", "name": "Vitamin D", "reason": "Levels are low" } 
   ]
 }
-Note: For recommendations, try to pick exact names from Inventory. If not found, suggest a generic test name.
+Rules:
+- Never provide medication advice or diagnoses.
+- If data is limited, keep recommendations conservative and general.
+- For recommendations, try to pick exact names from Inventory. If not found, suggest a generic test name.
           `
         },
-        { role: "user", content: `Data Hash: ${currentDataHash}\nMedical Data:${combinedContext}` }
+        { role: "user", content: `Data Hash: ${currentDataHash}\nMedical Data:${combinedContext || 'No abnormal results noted.'}` }
       ]
     });
 
@@ -150,14 +219,27 @@ Note: For recommendations, try to pick exact names from Inventory. If not found,
     }).filter(Boolean);
 
     // 8. Define Final Data
-    const finalData = {
-      ...aiResult,
+    const normalized = parseHealthProfile(aiResult);
+    const warnings = [
+      ...(normalized.warnings || []),
+      ...(combinedContext ? [] : ['Limited lab signals; recommendations are general wellness only.'])
+    ];
+
+    const finalData = parseHealthProfile({
+      ...normalized,
       recommendations: enrichedRecs,
       reportCount,
       analyzedCount,
       dataHash: currentDataHash,
-      lastUpdated: new Date().toISOString()
-    };
+      lastUpdated: nowIso,
+      generatedAt: nowIso,
+      model: completion.model || 'gpt-4o-mini',
+      promptVersion: PROMPT_VERSION,
+      sourceOrderId: currentOrder.id,
+      sourceOrderIds,
+      timeWindowDays: TIME_WINDOW_DAYS,
+      warnings
+    });
 
     // 9. Save
     await prisma.orderReportSummary.upsert({
@@ -166,7 +248,7 @@ Note: For recommendations, try to pick exact names from Inventory. If not found,
       create: { orderId: currentOrder.id, content: JSON.stringify(finalData) }
     });
 
-    return NextResponse.json(finalData);
+    return NextResponse.json({ ...finalData, cached: false });
 
   } catch (error) {
     console.error("Aggregation Error:", error);
