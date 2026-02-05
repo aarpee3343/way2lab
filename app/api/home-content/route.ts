@@ -23,6 +23,11 @@ export async function GET() {
         showOnHomepage: true, 
         isActive: true 
       },
+      include: {
+        _count: {
+          select: { tests: true }
+        }
+      },
       take: 4,
       orderBy: { price: 'asc' } // Or order by priority if you add a priority field
     });

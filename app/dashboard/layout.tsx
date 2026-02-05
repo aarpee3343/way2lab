@@ -20,7 +20,6 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion'; 
-import { Toaster } from 'sonner';
 
 interface NavItem {
   name: string;
@@ -203,8 +202,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children} {/* This renders page.tsx */}
         </div>
       </main>
-      
-      <Toaster position="bottom-right" richColors />
     </div>
   );
 }

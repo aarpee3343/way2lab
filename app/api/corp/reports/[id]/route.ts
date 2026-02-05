@@ -68,17 +68,21 @@ export async function GET(
 
     const isPreEmployment = Boolean(report.order?.package?.isPreEmployment);
     if (!isPreEmployment) {
-      const service = await prisma.corporateService.findFirst({
-        where: {
-          corporateId,
-          isActive: true,
-          OR: [
-            report.order?.packageId ? { packageId: report.order.packageId } : undefined,
-            report.order?.couponId ? { couponId: report.order.couponId } : undefined
-          ].filter(Boolean) as any
-        },
-        select: { reportVisibilityOverride: true }
-      });
+      const serviceOr = [
+        report.order?.packageId ? { packageId: report.order.packageId } : null,
+        report.order?.couponId ? { couponId: report.order.couponId } : null
+      ].filter(Boolean) as any[];
+
+      const service = serviceOr.length
+        ? await prisma.corporateService.findFirst({
+            where: {
+              corporateId,
+              isActive: true,
+              OR: serviceOr
+            },
+            select: { reportVisibilityOverride: true }
+          })
+        : null;
 
       const policy =
         service?.reportVisibilityOverride ||

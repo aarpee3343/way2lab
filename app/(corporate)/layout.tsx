@@ -39,6 +39,8 @@ export default function CorporateLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
   const [corp, setCorp] = useState<Corporate>({
     companyName: 'Corporate',
     logoUrl: '/default-corp.png',
@@ -53,25 +55,54 @@ export default function CorporateLayout({
 
   /* These should later come from auth/session */
   useEffect(() => {
-    if (isLoginPage) return;
+    if (isLoginPage) {
+      setAuthChecked(true);
+      setIsAuthed(true);
+      return;
+    }
     const loadProfile = async () => {
-      const profile = await getCorporateProfile();
-      if (profile?.corp) {
+      try {
+        const profile = await getCorporateProfile();
+        if (!profile?.corp || !profile?.user || !profile.corp.isActive || !profile.user.isActive) {
+          setAuthChecked(true);
+          setIsAuthed(false);
+          router.replace('/corp-login');
+          return;
+        }
+
         setCorp({
           companyName: profile.corp.companyName,
           logoUrl: profile.corp.logoUrl || '/default-corp.png',
         });
-      }
-      if (profile?.user?.role) {
-        setUserLabel(profile.user.role.replace('_', ' '));
+        if (profile.user.role) {
+          setUserLabel(profile.user.role.replace('_', ' '));
+        }
+        setIsAuthed(true);
+        setAuthChecked(true);
+      } catch (e) {
+        setAuthChecked(true);
+        setIsAuthed(false);
+        router.replace('/corp-login');
       }
     };
     loadProfile();
-  }, [isLoginPage]);
+  }, [isLoginPage, router]);
 
   // Render auth pages without sidebar/header
   if (isLoginPage) {
     return <div className="min-h-screen bg-white">{children}</div>;
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-500 text-sm font-semibold">
+        Loading corporate portal...
+      </div>
+    );
+  }
+
+  if (!isAuthed) {
+    return <div className="min-h-screen bg-white" />;
   }
 
   const wayToLabLogo = '/logo.png';

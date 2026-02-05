@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Clock, ShieldCheck, FileText, Info, CheckCircle2, 
   ShoppingCart, Phone, Share2, Activity, Microscope, AlertCircle,
-  Heart, Stethoscope, Users, Calendar
+  Heart, Stethoscope, Users, Calendar, LayoutDashboard 
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -137,7 +137,7 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
               <motion.div 
                 initial={{ y: 20, opacity: 0 }} 
                 animate={{ y: 0, opacity: 1 }}
-                className="bg-white rounded-3xl p-8 shadow-lg border border-teal-100"
+                className="bg-white rounded-3xl p-8 shadow-lg border border-teal-100 relative overflow-hidden"
               >
                 <h3 className="font-bold text-xl mb-6 flex items-center gap-3 text-slate-900">
                   <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
@@ -187,9 +187,9 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
                 {[
                   'Sample Collection',
                   'Lab Processing',
-                  'Expert Analysis',
+                  'AI Analysis',
                   'Digital Report',
-                  'Doctor Consultation',
+                  'User Dashboard',
                   'Follow-up Guidance'
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl">
@@ -205,7 +205,7 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
               <h3 className="font-bold text-xl mb-6 text-slate-900">Why Choose WayToLab?</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {[
-                  { icon: <Stethoscope className="text-teal-600" />, title: 'Expert Consultation', desc: 'Free doctor consultation included' },
+                  { icon: <LayoutDashboard  className="text-teal-600" />, title: 'User Dashboard', desc: 'Free User Dashboard for onlinereporting' },
                   { icon: <Users className="text-blue-600" />, title: 'Trained Phlebotomists', desc: 'Skilled professionals for sample collection' },
                   { icon: <Activity className="text-emerald-600" />, title: 'Smart Health Reports', desc: 'AI-powered insights and trends' },
                   { icon: <Calendar className="text-purple-600" />, title: 'Flexible Scheduling', desc: 'Choose your preferred time slot' },
@@ -274,7 +274,7 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
                   className="w-full bg-white border-2 border-teal-100 text-teal-700 h-12 rounded-xl font-bold flex items-center justify-center gap-3 hover:border-teal-300 hover:bg-teal-50 transition-all"
                 >
                   <Phone size={18} />
-                  Call Medical Expert
+                  Call WayToLab Expert
                 </a>
 
                 {/* Healthcare guarantee */}
@@ -293,8 +293,8 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
                     <Users size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Need Medical Advice?</p>
-                    <p className="text-sm text-slate-600">Our healthcare experts can help</p>
+                    <p className="font-bold text-slate-900">Need Diagnostic Advice?</p>
+                    <p className="text-sm text-slate-600">Our Diagnostic experts can help</p>
                   </div>
                 </div>
                 <a 

@@ -21,7 +21,7 @@ import {
   Microscope,
   Package
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/safe-toast';
 
 /* ---------------- HELPERS ---------------- */
 // ... (Keep your existing formatDate, getAgeLabel, isRescheduleAllowed helpers here) ...

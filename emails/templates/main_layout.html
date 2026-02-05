@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f8fafc; 
+            font-family: -apple-system, sans-serif; 
+            line-height: 1.6;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .health-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #0d9488, #0ea5e9);
+        }
+        .header {
+            padding: 30px 20px;
+            text-align: center;
+            background: linear-gradient(135deg, #f0fdfa 0%, #f0f9ff 100%);
+        }
+        .content {
+            padding: 30px;
+            color: #64748b;
+        }
+        .highlight-box {
+            background: #f8fafc;
+            border-left: 4px solid #0d9488;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .order-id {
+            color: #0ea5e9;
+            font-weight: bold;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #0d9488;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .success-badge { background: #d1fae5; color: #065f46; }
+        .info-badge { background: #e0f2fe; color: #075985; }
+        .action-badge { background: #fef2f2; color: #991b1b; }
+        .footer {
+            padding: 20px;
+            text-align: center;
+            background: #f8fafc;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="health-bar"></div>
+        <div class="header" style="text-align: center;">
+    <div style="display: inline-flex; align-items: center; justify-content: center; gap: 12px;">
+        <img 
+            src="https://waytolab.com/logo.png" 
+            alt="WayToLab Logo" 
+            style="height: 36px; display: block;"
+        />
+        <span style="color: #0d9488; font-size: 22px; font-weight: 700;">
+            |
+        </span>
+        <span style="color: #0d9488; font-size: 22px; font-weight: 700; letter-spacing: 0.5px;">
+            WAYTOLAB
+        </span>
+    </div>
+
+    <p style="
+        color: #64748b;
+        margin: 10px 0 0;
+        font-size: 14px;
+        font-weight: 700;
+        text-align: center;
+    ">
+        Fast&nbsp;|&nbsp;Accurate&nbsp;|&nbsp;Trusted
+    </p>
+</div>
+
+
+        <div class="content">
+            <!-- EMAIL CONTENT GOES HERE -->
+        </div>
+        <div class="footer">
+            (c) 2020-2026 WayToLab Healthcare. All rights reserved.<br>
+            Need help? Contact us at care@waytolab.com
+        </div>
+    </div>
+</body>
+</html>

@@ -1,13 +1,13 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Clock, ShieldCheck, FileText, Info, CheckCircle2, 
+import {
+  ArrowLeft, Clock, ShieldCheck, FileText, Info, CheckCircle2,
   ShoppingCart, Phone, Share2, FlaskConical, LayoutList, HeartPulse,
-  Users, Award, Stethoscope, Calendar
+  Users, Award, Stethoscope, Calendar, LayoutDashboard 
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -45,14 +45,15 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
       </div>
     );
   }
-  
+
   if (!pkg) return <div className="text-center py-32 text-slate-500 font-bold">Health Package Not Found</div>;
 
   // Pricing
-  const mrp = Number(pkg.price);
-  const discount = Number(pkg.discount || 0);
-  const sellingPrice = discount > 0 ? Math.round(mrp - discount) : mrp;
-  const savingsPercent = mrp > 0 ? Math.round((discount / mrp) * 100) : 0;
+  const mrp = Number(pkg.price ?? 0);
+  const discountPercent = Number(pkg.discount || 0);
+  const sellingPrice = discountPercent > 0 ? Math.round(mrp - (mrp * discountPercent) / 100) : mrp;
+  const savingsPercent = discountPercent > 0 ? Math.round(discountPercent) : 0;
+  const savingsAmount = discountPercent > 0 ? Math.max(mrp - sellingPrice, 0) : 0;
 
   // Group tests by category
   const testsByCategory: Record<string, any[]> = {};
@@ -64,7 +65,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/20 via-white to-slate-50 pb-20">
-      
+
       {/* Healthcare Header */}
       <div className="bg-gradient-to-r from-teal-600 to-teal-700 pt-12 pb-20 px-4 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
@@ -78,14 +79,14 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
           <button onClick={() => router.back()} className="flex items-center gap-2 text-teal-100 hover:text-white mb-6 font-medium text-sm transition-colors">
             <ArrowLeft size={16} /> Back to Health Packages
           </button>
-          
+
           <div className="flex flex-col md:flex-row justify-between items-start gap-6">
             <div>
               <span className="inline-block bg-white/20 text-white text-sm font-bold px-4 py-2 rounded-full mb-4 uppercase tracking-wide">
                 Comprehensive Health Package
               </span>
               <h1 className="text-3xl md:text-4xl font-black mb-4 leading-tight">{pkg.packageName}</h1>
-              
+
               <div className="flex flex-wrap gap-6 text-sm font-medium text-teal-100">
                 <div className="flex items-center gap-2">
                   <FlaskConical size={18} className="text-teal-200" />
@@ -107,15 +108,15 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
 
       <div className="max-w-6xl mx-auto px-4 -mt-12">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
+
           {/* LEFT CONTENT */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Overview */}
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }} 
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              className="bg-white rounded-3xl p-8 shadow-lg border border-teal-100"
+              className="bg-white rounded-3xl p-8 shadow-lg border border-teal-100 relative overflow-hidden"
             >
               <h3 className="font-bold text-xl mb-6 flex items-center gap-3 text-slate-900">
                 <div className="w-10 h-10 bg-teal-100 rounded-xl flex items-center justify-center">
@@ -129,9 +130,9 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
             </motion.div>
 
             {/* Included Tests List */}
-            <motion.div 
-              initial={{ y: 20, opacity: 0 }} 
-              animate={{ y: 0, opacity: 1 }} 
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.1 }}
               className="bg-white rounded-3xl p-8 shadow-lg border border-teal-100"
             >
@@ -141,7 +142,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                 </div>
                 Included Diagnostic Tests ({pkg.tests?.length || 0})
               </h3>
-              
+
               <div className="space-y-8">
                 {Object.entries(testsByCategory).map(([category, tests]) => (
                   <div key={category}>
@@ -166,7 +167,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
               <h3 className="font-bold text-xl mb-6 text-slate-900">Why Choose This Package?</h3>
               <div className="grid md:grid-cols-2 gap-6">
                 {[
-                  { icon: <Stethoscope className="text-teal-600" />, title: 'Expert Consultation', desc: 'Free doctor consultation included' },
+                  { icon: <LayoutDashboard  className="text-teal-600" />, title: 'Dedicated Dashboard', desc: 'Dedicated user dashboard for online reporting' },
                   { icon: <Users className="text-blue-600" />, title: 'Trained Professionals', desc: 'Skilled phlebotomists for sample collection' },
                   { icon: <Calendar className="text-emerald-600" />, title: 'Flexible Scheduling', desc: 'Choose your preferred time slot' },
                   { icon: <Award className="text-purple-600" />, title: 'Quality Assured', desc: 'NABL certified labs with accurate results' },
@@ -189,13 +190,13 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
           {/* RIGHT SIDEBAR (Sticky Pricing) */}
           <div className="lg:col-span-1">
             <div className="sticky top-24 space-y-4">
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.95, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.3 }}
                 className="bg-white rounded-3xl p-6 shadow-xl shadow-teal-200/50 border border-teal-100 relative overflow-hidden"
               >
-                
+
                 {savingsPercent > 0 && (
                   <div className="absolute top-0 right-0 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-bold px-4 py-2 rounded-bl-2xl shadow-lg">
                     SAVE {savingsPercent}%
@@ -205,27 +206,27 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                 <div className="mb-8 mt-2">
                   <p className="text-slate-500 text-sm font-medium uppercase tracking-wider mb-2">Package Price</p>
                   <div className="flex items-baseline gap-3 mb-3">
-                    <span className="text-4xl font-black text-teal-700">₹{sellingPrice}</span>
-                    {discount > 0 && (
-                      <span className="text-slate-400 line-through text-lg font-medium">₹{mrp}</span>
+                    <span className="text-4xl font-black text-teal-700">INR {sellingPrice}</span>
+                    {discountPercent > 0 && (
+                      <span className="text-slate-400 line-through text-lg font-medium">INR {mrp}</span>
                     )}
                   </div>
-                  {discount > 0 && (
+                  {savingsAmount > 0 && (
                     <div className="flex items-center gap-2 text-emerald-600 font-bold">
                       <CheckCircle2 size={16} />
-                      <span>Total Savings: ₹{discount}</span>
+                      <span>Total Savings: INR {savingsAmount}</span>
                     </div>
                   )}
-                  
+
                   {/* Per test calculation */}
                   {pkg.tests?.length > 0 && (
                     <div className="mt-4 text-sm text-slate-500">
-                      <span className="font-medium">₹{Math.round(sellingPrice / pkg.tests.length)} per test</span>
+                      <span className="font-medium">INR {Math.round(sellingPrice / pkg.tests.length)} per test</span>
                     </div>
                   )}
                 </div>
 
-                <button 
+                <button
                   onClick={handleBook}
                   className="w-full bg-gradient-to-r from-teal-600 to-teal-700 text-white h-14 rounded-xl font-bold text-lg hover:shadow-xl hover:shadow-teal-200 transition-all flex items-center justify-center gap-3 mb-3 group/btn"
                 >
@@ -235,13 +236,13 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                     <ArrowLeft className="rotate-180" size={16} />
                   </div>
                 </button>
-                
-                <a 
+
+                <a
                   href="tel:+919311213388"
                   className="w-full bg-white border-2 border-teal-100 text-teal-700 h-12 rounded-xl font-bold flex items-center justify-center gap-3 hover:border-teal-300 hover:bg-teal-50 transition-all"
                 >
                   <Phone size={18} />
-                  Call Medical Expert
+                  Call WayToLab Helpline
                 </a>
 
                 {/* Healthcare guarantee */}
@@ -256,7 +257,7 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                   <div className="flex items-center gap-3 text-sm text-slate-600">
                     <CheckCircle2 size={16} className="text-teal-600" />
-                    <span>Home Collection Available</span>
+                    <span>Home Collection Available*</span>
                   </div>
                 </div>
               </motion.div>
@@ -268,12 +269,12 @@ export default function PackageDetailPage({ params }: { params: Promise<{ id: st
                     <Users size={20} className="text-blue-600" />
                   </div>
                   <div>
-                    <p className="font-bold text-slate-900">Need Medical Advice?</p>
-                    <p className="text-sm text-slate-600">Our healthcare experts can help</p>
+                    <p className="font-bold text-slate-900">Need Diagnostic Advice?</p>
+                    <p className="text-sm text-slate-600">Our Diagnostic experts can help</p>
                   </div>
                 </div>
-                <a 
-                  href="mailto:medical@waytolab.com" 
+                <a
+                  href="mailto:care@waytolab.com"
                   className="block text-center bg-white border border-blue-200 text-blue-700 px-4 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-50 transition-all"
                 >
                   Consult Healthcare Expert

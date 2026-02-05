@@ -170,6 +170,7 @@ export async function createOnsiteEmployee(data: {
   const passwordSeed = Math.random().toString(36).slice(-10) + Date.now();
   const hashedPassword = await bcrypt.hash(passwordSeed, 10);
 
+  const loginMethod = email ? 'email' : 'phone';
   const customer = await prisma.customer.create({
     data: {
       name,
@@ -182,7 +183,7 @@ export async function createOnsiteEmployee(data: {
       uhid,
       password: hashedPassword,
       isActive: true,
-      loginMethod: 'email'
+      loginMethod
     }
   });
 

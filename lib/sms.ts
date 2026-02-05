@@ -82,9 +82,16 @@ export const DEFAULT_SMS_TEMPLATES: Array<{ type: DefaultSMSType; id: string; me
 const DEFAULT_TEMPLATE_MAP = new Map(DEFAULT_SMS_TEMPLATES.map(t => [t.type, t]));
 
 function renderTemplate(message: string, vars: string[]) {
-  return message.replace(/\{\{(\d+)\}\}/g, (_, idx) => {
+  const withIndexes = message.replace(/\{\{(\d+)\}\}/g, (_, idx) => {
     const i = Number(idx) - 1;
     return typeof vars[i] !== 'undefined' ? String(vars[i]) : '';
+  });
+
+  let seq = 0;
+  return withIndexes.replace(/\{#var#\}/gi, () => {
+    const value = vars[seq];
+    seq += 1;
+    return typeof value !== 'undefined' ? String(value) : '';
   });
 }
 

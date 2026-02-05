@@ -22,3 +22,4 @@ export { getAuthUser } from './auth';
 
 // Utils
 export { generateOrderNumber, generateCustomerUHID } from './utils/generators';
+export { sendEmail } from './mailer';

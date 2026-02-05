@@ -14,7 +14,7 @@ const AVAILABLE_FIELDS = [
   { key: 'employeeId', label: 'Employee ID', required: true, sample: 'EMP-001' },
   { key: 'department', label: 'Department', required: false, sample: 'Engineering' },
   { key: 'location', label: 'Location', required: false, sample: 'Mumbai' },
-  { key: 'dob', label: 'Date of Birth (YYYY-MM-DD)', required: false, sample: '1990-12-31' },
+  { key: 'dob', label: 'Date of Birth (DD/MM/YYYY)', required: false, sample: '31/12/1990' },
   { key: 'gender', label: 'Gender', required: false, sample: 'Male' },
 ];
 
@@ -87,6 +87,7 @@ export default function BulkEmployeeUpload({
             else if(key.includes('email')) normalized.email = row[k];
             else if(key.includes('phone') || key.includes('contact')) normalized.phone = row[k];
             else if(key.includes('id') && key.includes('emp')) normalized.employeeId = row[k];
+            else if(key.includes('uhid')) normalized.uhid = row[k];
             else if(key.includes('dept')) normalized.department = row[k];
             else if(key.includes('loc')) normalized.location = row[k];
             else if(key.includes('dob') || key.includes('birth')) normalized.dob = row[k];

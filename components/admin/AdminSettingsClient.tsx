@@ -180,7 +180,7 @@ export default function AdminSettingsClient({ initialSettings }: { initialSettin
         <div>
           <h2 className="text-lg font-bold text-slate-800">SMS Templates</h2>
           <p className="text-sm text-slate-500">
-            Use placeholders like {'{{1}}'} or {'{{2}}'} for variables (order ID, date, etc.).
+            Use placeholders like {'{{1}}'} or {'{#var#}'} for variables (order ID, date, etc.).
           </p>
         </div>
 

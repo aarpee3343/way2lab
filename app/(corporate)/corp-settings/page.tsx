@@ -7,10 +7,6 @@ import { getCorporateProfile, updateCorporateProfile } from '@/app/actions/corpo
 export default function CorpSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [canEdit, setCanEdit] = useState(false);
-  const [logoUrl, setLogoUrl] = useState('');
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState('');
-  const [logoUploading, setLogoUploading] = useState(false);
   const [form, setForm] = useState({
     companyName: '',
     contactPerson: '',
@@ -18,7 +14,8 @@ export default function CorpSettingsPage() {
     address: '',
     city: '',
     state: '',
-    pincode: ''
+    pincode: '',
+    logoUrl: ''
   });
 
   useEffect(() => {
@@ -32,9 +29,9 @@ export default function CorpSettingsPage() {
           address: profile.corp.address || '',
           city: profile.corp.city || '',
           state: profile.corp.state || '',
-          pincode: profile.corp.pincode || ''
+          pincode: profile.corp.pincode || '',
+          logoUrl: profile.corp.logoUrl || ''
         });
-        setLogoUrl(profile.corp.logoUrl || '');
       }
       const isEditor = Boolean(profile?.user?.canEdit || profile?.user?.role === 'SUPER_ADMIN');
       setCanEdit(isEditor);
@@ -42,46 +39,6 @@ export default function CorpSettingsPage() {
     };
     load();
   }, []);
-
-  useEffect(() => {
-    if (!logoFile) {
-      setLogoPreview('');
-      return;
-    }
-    const nextPreview = URL.createObjectURL(logoFile);
-    setLogoPreview(nextPreview);
-    return () => URL.revokeObjectURL(nextPreview);
-  }, [logoFile]);
-
-  const handleLogoUpload = async () => {
-    if (!canEdit) {
-      toast.error('You do not have permission to edit settings');
-      return;
-    }
-    if (!logoFile) {
-      toast.error('Select a logo file first');
-      return;
-    }
-
-    setLogoUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append('file', logoFile);
-      const res = await fetch('/api/corp/logo', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (data?.success) {
-        setLogoUrl(data.logoUrl || '');
-        setLogoFile(null);
-        toast.success('Logo updated');
-      } else {
-        toast.error(data?.error || 'Logo upload failed');
-      }
-    } catch (error) {
-      toast.error('Logo upload failed');
-    } finally {
-      setLogoUploading(false);
-    }
-  };
 
   const handleSave = async () => {
     if (!canEdit) {
@@ -117,10 +74,10 @@ export default function CorpSettingsPage() {
           </div>
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="w-40 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
-              {logoPreview || logoUrl ? (
+              {form.logoUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={logoPreview || logoUrl}
+                  src={form.logoUrl}
                   alt="Corporate Logo"
                   className="max-h-full max-w-full object-contain"
                 />
@@ -130,18 +87,16 @@ export default function CorpSettingsPage() {
             </div>
             <div className="flex-1 space-y-3">
               <input
-                type="file"
-                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-                onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-                disabled={!canEdit || logoUploading}
+                type="url"
+                placeholder="https://example.com/logo.png"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 font-bold"
+                value={form.logoUrl}
+                onChange={(e) => setForm({ ...form, logoUrl: e.target.value })}
+                disabled={!canEdit}
               />
-              <button
-                onClick={handleLogoUpload}
-                disabled={!canEdit || logoUploading || !logoFile}
-                className="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold text-sm hover:bg-blue-700 disabled:opacity-60"
-              >
-                {logoUploading ? 'Uploading...' : 'Upload Logo'}
-              </button>
+              <p className="text-xs text-slate-500">
+                Paste a public image URL. This will be saved when you click Save Changes.
+              </p>
             </div>
           </div>
         </div>

@@ -57,9 +57,8 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     identifiers: ''
   });
   const [assigningEmployees, setAssigningEmployees] = useState(false);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
-  const [logoPreview, setLogoPreview] = useState('');
-  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUrlInput, setLogoUrlInput] = useState('');
+  const [logoSaving, setLogoSaving] = useState(false);
 
   const refresh = useCallback(() => {
     return getCorporateDetails(corpId).then(data => {
@@ -79,6 +78,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
           panNumber: data.panNumber || '',
           gstin: data.gstin || ''
         });
+        setLogoUrlInput(data.logoUrl || '');
       }
     });
   }, [corpId]);
@@ -87,16 +87,6 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     refresh();
     getAdminInventory().then(setInventory);
   }, [refresh]);
-
-  useEffect(() => {
-    if (!logoFile) {
-      setLogoPreview('');
-      return;
-    }
-    const nextPreview = URL.createObjectURL(logoFile);
-    setLogoPreview(nextPreview);
-    return () => URL.revokeObjectURL(nextPreview);
-  }, [logoFile]);
 
   // --- ACTIONS ---
 
@@ -234,32 +224,38 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
     }
   };
 
-  const handleLogoUpload = async () => {
-    if (!logoFile) {
-      toast.error('Select a logo file first');
+  const handleLogoSave = async () => {
+    if (isArchived) {
+      toast.error('Corporate is archived');
       return;
     }
-    setLogoUploading(true);
+    setLogoSaving(true);
     try {
-      const formData = new FormData();
-      formData.append('file', logoFile);
-      formData.append('corporateId', String(corpId));
-      const res = await fetch('/api/admin/corporates/logo', {
-        method: 'POST',
-        body: formData
-      });
-      const data = await res.json();
-      if (data?.success) {
+      const payload = {
+        companyName: corp.companyName,
+        contactPerson: corp.contactPerson,
+        phone: corp.phone,
+        email: corp.email,
+        address: corp.address || '',
+        city: corp.city || '',
+        state: corp.state || '',
+        pincode: corp.pincode || '',
+        employeeCount: corp.employeeCount,
+        panNumber: corp.panNumber || '',
+        gstin: corp.gstin || '',
+        logoUrl: logoUrlInput || ''
+      };
+      const res = await updateCorporateAction(corpId, payload);
+      if (res.success) {
         toast.success('Logo updated');
-        setLogoFile(null);
         refresh();
       } else {
-        toast.error(data?.error || 'Logo upload failed');
+        toast.error(res.error || 'Logo update failed');
       }
     } catch (error) {
-      toast.error('Logo upload failed');
+      toast.error('Logo update failed');
     } finally {
-      setLogoUploading(false);
+      setLogoSaving(false);
     }
   };
 
@@ -345,10 +341,10 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       {/* Branding */}
       <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row md:items-center gap-6">
         <div className="w-40 h-20 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center overflow-hidden">
-          {logoPreview || corp.logoUrl ? (
+          {logoUrlInput || corp.logoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={logoPreview || corp.logoUrl}
+              src={logoUrlInput || corp.logoUrl}
               alt={`${corp.companyName} Logo`}
               className="max-h-full max-w-full object-contain"
             />
@@ -361,19 +357,24 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
           <p className="text-xs text-slate-500 mb-3">Shown on the corporate portal header.</p>
           <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
             <input
-              type="file"
-              accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
-              onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
-              disabled={isArchived || logoUploading}
+              type="url"
+              placeholder="https://example.com/logo.png"
+              className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm"
+              value={logoUrlInput}
+              onChange={(e) => setLogoUrlInput(e.target.value)}
+              disabled={isArchived || logoSaving}
             />
             <button
-              onClick={handleLogoUpload}
-              disabled={isArchived || logoUploading || !logoFile}
+              onClick={handleLogoSave}
+              disabled={isArchived || logoSaving}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg font-bold text-xs hover:bg-blue-700 disabled:opacity-60"
             >
-              {logoUploading ? 'Uploading...' : 'Upload Logo'}
+              {logoSaving ? 'Saving...' : 'Save Logo'}
             </button>
           </div>
+          <p className="text-[11px] text-slate-400 mt-2">
+            Paste a public image URL. Uploads are disabled on Vercel.
+          </p>
         </div>
       </div>
 

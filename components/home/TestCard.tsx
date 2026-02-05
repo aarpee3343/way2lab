@@ -68,20 +68,35 @@ export default function TestCard({ test }: { test: any }) {
 
       <div className="relative z-10 flex flex-col h-full">
         {/* Header: Category & Wishlist */}
-        <div className="flex justify-between items-start mb-4">
-          <div className="flex items-center gap-2">
-            <Beaker size={16} className="text-teal-600" />
-            <span className="text-xs font-bold uppercase tracking-wider text-teal-700 bg-teal-50 px-3 py-1.5 rounded-full border border-teal-100 truncate max-w-[150px]">
-              {test.category || test.specialty || 'Diagnostic Test'}
-            </span>
-          </div>
-          <button 
-            onClick={handleWishlist}
-            className="p-2 rounded-full bg-white hover:bg-rose-50 text-slate-400 hover:text-rose-500 transition-all shadow-sm border border-slate-100"
-          >
-            <Heart size={18} strokeWidth={2} />
-          </button>
-        </div>
+  <div
+  className="flex items-center justify-between gap-2
+             mb-3
+             bg-white/90 backdrop-blur
+             border border-teal-100
+             rounded-full px-3 py-2
+             shadow-[0_6px_20px_-10px_rgba(13,116,144,0.35)]
+             hover:shadow-[0_10px_28px_-12px_rgba(13,116,144,0.45)]
+             transition-shadow">
+  
+              {/* Left: Category */}
+              <div className="flex items-center gap-2 min-w-0">
+                <Beaker size={14} className="text-teal-600 shrink-0" />
+                <span className="text-xs font-semibold text-teal-700 truncate">
+                  {test.category || test.specialty || 'Diagnostic Test'}
+                </span>
+              </div>
+
+              {/* Right: Discount */}
+              {maxDiscount > 0 && (
+                <span
+                  className="text-[11px] font-bold text-rose-600
+                            bg-rose-50 border border-rose-100
+                            px-2.5 py-1 rounded-full shrink-0"
+                >
+                  {Math.round(maxDiscount)}% OFF
+                </span>
+              )}
+            </div>
         
         {/* Main Content */}
         <div className="flex-1 mb-5">
@@ -113,20 +128,12 @@ export default function TestCard({ test }: { test: any }) {
                   </span>
                 )}
                 
-                {/* 3. Max Discount */}
-                {maxDiscount > 0 && (
-                  <span className="text-xs font-semibold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full">
-                    {Math.round(maxDiscount)}% OFF
+                {test.specialty && (
+                  <span className="text-[10px] px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100 font-medium">
+                      {test.specialty}
                   </span>
                 )}
               </div>
-
-              {/* Reporting Time from Test Table */}
-              {test.scheduleReporting && (
-                <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                  <Clock size={10} /> {test.scheduleReporting}
-                </p>
-              )}
             </div>
 
             {/* Action Button */}
@@ -142,14 +149,9 @@ export default function TestCard({ test }: { test: any }) {
         {/* Info Badges (From Test Table) */}
         <div className="flex flex-wrap gap-2 mt-4">
           {test.preparation && (
-            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium truncate max-w-[140px]">
+            <span className="text-[10px] px-2 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-100 font-medium truncate max-w-[1000px]">
               {test.preparation}
             </span>
-          )}
-          {test.specialty && (
-             <span className="text-[10px] px-2 py-1 rounded-full bg-purple-50 text-purple-700 border border-purple-100 font-medium">
-                {test.specialty}
-             </span>
           )}
         </div>
       </div>

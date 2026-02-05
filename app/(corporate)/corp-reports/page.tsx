@@ -5,7 +5,7 @@ import { getCorporateReports } from '@/app/actions/corporatePortalActions';
 import { toast } from '@/lib/safe-toast';
 
 export default function CorporateReportsPage() {
-  const [reportType, setReportType] = useState<'PRE_EMPLOYMENT' | 'ANNUAL_CHECKUP' | 'SHARED_BY_EMPLOYEE'>('PRE_EMPLOYMENT');
+  const [reportType, setReportType] = useState<'ALL' | 'PRE_EMPLOYMENT' | 'ANNUAL_CHECKUP' | 'SHARED_BY_EMPLOYEE'>('ALL');
   const [search, setSearch] = useState('');
   const [reports, setReports] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,13 +64,13 @@ export default function CorporateReportsPage() {
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-center">
         <div className="flex gap-4 p-1 bg-slate-200/50 w-fit rounded-2xl">
-          {['PRE_EMPLOYMENT', 'ANNUAL_CHECKUP', 'SHARED_BY_EMPLOYEE'].map(t => (
+          {(['ALL', 'PRE_EMPLOYMENT', 'ANNUAL_CHECKUP', 'SHARED_BY_EMPLOYEE'] as const).map(t => (
             <button 
               key={t}
-              onClick={() => setReportType(t as any)}
+              onClick={() => setReportType(t)}
               className={`px-6 py-2.5 rounded-xl text-xs font-black transition-all ${reportType === t ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
             >
-              {t.replace(/_/g, ' ')}
+              {t === 'ALL' ? 'ALL' : t.replace(/_/g, ' ')}
             </button>
           ))}
         </div>

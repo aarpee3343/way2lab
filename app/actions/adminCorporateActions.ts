@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
+import { sendSMS } from '@/lib/sms';
 
 // --- 1. GET DASHBOARD STATS ---
 export async function getCorporateDashboardStats() {
@@ -375,6 +376,56 @@ export async function uploadCorporateEmployees(
 ) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const normalizeText = (value: any) => {
+      if (value === null || value === undefined) return undefined;
+      const trimmed = String(value).trim();
+      return trimmed ? trimmed : undefined;
+    };
+
+    const parseDateOfBirth = (value: any) => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+      const raw = String(value).trim();
+      if (!raw) return null;
+
+      const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (isoMatch) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]);
+        const day = Number(isoMatch[3]);
+        const candidate = new Date(year, month - 1, day);
+        if (
+          candidate.getFullYear() === year &&
+          candidate.getMonth() === month - 1 &&
+          candidate.getDate() === day
+        ) {
+          return candidate;
+        }
+        return null;
+      }
+
+      const dmyMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (dmyMatch) {
+        const day = Number(dmyMatch[1]);
+        const month = Number(dmyMatch[2]);
+        const year = Number(dmyMatch[3]);
+        const candidate = new Date(year, month - 1, day);
+        if (
+          candidate.getFullYear() === year &&
+          candidate.getMonth() === month - 1 &&
+          candidate.getDate() === day
+        ) {
+          return candidate;
+        }
+        return null;
+      }
+
+      const fallback = new Date(raw);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    };
+
     const corp = await prisma.corporate.findUnique({
       where: { id: corporateId },
       select: { isActive: true }
@@ -383,27 +434,84 @@ export async function uploadCorporateEmployees(
       return { success: false, error: 'Corporate is archived' };
     }
 
+    const cleanedEmployees = (employees || [])
+      .map((emp: any) => ({
+        name: normalizeText(emp.name),
+        email: normalizeText(emp.email),
+        phone: normalizeText(emp.phone),
+        employeeId: normalizeText(emp.employeeId),
+        department: normalizeText(emp.department),
+        location: normalizeText(emp.location),
+        dob: normalizeText(emp.dob),
+        gender: normalizeText(emp.gender),
+        uhid: normalizeText(emp.uhid)
+      }))
+      .filter((emp: any) => emp.email || emp.phone);
+
+    const uniqueEmployees: any[] = [];
+    const seenKeys = new Set<string>();
+    for (const emp of cleanedEmployees) {
+      const keys: string[] = [];
+      if (emp.email) keys.push(`email:${emp.email}`);
+      if (emp.phone) keys.push(`phone:${emp.phone}`);
+      if (keys.some((k) => seenKeys.has(k))) continue;
+      keys.forEach((k) => seenKeys.add(k));
+      uniqueEmployees.push(emp);
+    }
+
+    const emails = uniqueEmployees.map(e => e.email).filter(Boolean) as string[];
+    const phones = uniqueEmployees.map(e => e.phone).filter(Boolean) as string[];
+    const orConditions: any[] = [];
+    if (emails.length) orConditions.push({ email: { in: emails } });
+    if (phones.length) orConditions.push({ phone: { in: phones } });
+
+    const existingCustomers = orConditions.length
+      ? await prisma.customer.findMany({
+          where: { OR: orConditions },
+          select: { id: true, email: true, phone: true, department: true, location: true }
+        })
+      : [];
+
+    const existingByEmail = new Map<string, any>();
+    const existingByPhone = new Map<string, any>();
+    existingCustomers.forEach((c) => {
+      if (c.email) existingByEmail.set(c.email, c);
+      if (c.phone) existingByPhone.set(c.phone, c);
+    });
+
+    let nextUhidNumber = 100001;
+    const needsGeneratedUhid = uniqueEmployees.some((e) => !e.uhid);
+    if (needsGeneratedUhid) {
+      const lastCustomer = await prisma.customer.findFirst({
+        where: { uhid: { not: null } },
+        orderBy: { id: 'desc' },
+        select: { uhid: true }
+      });
+      if (lastCustomer?.uhid) {
+        const match = lastCustomer.uhid.match(/\d+/);
+        if (match) nextUhidNumber = parseInt(match[0], 10) + 1;
+      }
+    }
+
+    const buildUhid = () => `WTL-${nextUhidNumber++}`;
+
     let mapped = 0;
     let created = 0;
-    
+
     // OPTIMIZATION: Hash once, use for all new users
     const defaultPasswordHash = await bcrypt.hash('Welcome123', 10);
 
-    for (const emp of employees) {
-      if (!emp.phone && !emp.email) continue; 
+    const updates: Array<{ id: number; data: any }> = [];
+    const creates: any[] = [];
 
-      const existing = await prisma.customer.findFirst({
-        where: {
-          OR: [
-            { phone: emp.phone }, 
-            { email: emp.email }
-          ]
-        }
-      });
+    for (const emp of uniqueEmployees) {
+      const existing =
+        (emp.email && existingByEmail.get(emp.email)) ||
+        (emp.phone && existingByPhone.get(emp.phone));
 
       if (existing) {
-        await prisma.customer.update({
-          where: { id: existing.id },
+        updates.push({
+          id: existing.id,
           data: {
             corporateId,
             employeeId: emp.employeeId,
@@ -411,26 +519,39 @@ export async function uploadCorporateEmployees(
             location: emp.location || existing.location
           }
         });
-        mapped++;
       } else {
-        await prisma.customer.create({
-          data: {
-            name: emp.name,
-            email: emp.email,
-            phone: emp.phone,
-            password: defaultPasswordHash, // Used pre-hashed password
-            dateOfBirth: emp.dob ? new Date(emp.dob) : null,
-            gender: emp.gender,
-            employeeId: emp.employeeId,
-            department: emp.department,
-            location: emp.location,
-            corporateId,
-            isActive: true,
-            loginMethod: 'email'
-          }
+        const loginMethod = emp.email ? 'email' : 'phone';
+        creates.push({
+          name: emp.name || null,
+          email: emp.email || null,
+          phone: emp.phone || null,
+          password: defaultPasswordHash,
+          dateOfBirth: parseDateOfBirth(emp.dob),
+          gender: emp.gender,
+          employeeId: emp.employeeId,
+          department: emp.department,
+          location: emp.location,
+          corporateId,
+          isActive: true,
+          loginMethod,
+          uhid: emp.uhid || buildUhid()
         });
-        created++;
       }
+    }
+
+    for (const update of updates) {
+      await prisma.customer.update({ where: { id: update.id }, data: update.data });
+      mapped++;
+    }
+
+    const batchSize = 500;
+    for (let i = 0; i < creates.length; i += batchSize) {
+      const batch = creates.slice(i, i + batchSize);
+      const res = await prisma.customer.createMany({
+        data: batch,
+        skipDuplicates: true
+      });
+      created += res.count;
     }
 
     revalidatePath(`/admin/corporates/${corporateId}`);
@@ -504,7 +625,7 @@ export async function assignCorporateService(data: {
     }
     const corp = await prisma.corporate.findUnique({
       where: { id: data.corporateId },
-      select: { isActive: true }
+      select: { isActive: true, companyName: true }
     });
     if (!corp || !corp.isActive) {
       return { success: false, error: 'Corporate is archived' };
@@ -538,6 +659,34 @@ export async function assignCorporateService(data: {
           showOnHomepage: false // Hidden from public
         }
       });
+
+      // Notify corporate employees about assignment
+      try {
+        const employees = await prisma.customer.findMany({
+          where: {
+            corporateId: data.corporateId,
+            isActive: true,
+            phone: { not: null }
+          },
+          select: { name: true, phone: true }
+        });
+
+        const corporateName = corp.companyName || 'your organization';
+        const batchSize = 25;
+        for (let i = 0; i < employees.length; i += batchSize) {
+          const batch = employees.slice(i, i + batchSize);
+          await Promise.allSettled(
+            batch.map((emp) => {
+              const mobile = String(emp.phone || '').trim();
+              if (!mobile) return Promise.resolve();
+              const customerName = emp.name || 'Employee';
+              return sendSMS(mobile, 'corp_assigned', [customerName, corporateName]);
+            })
+          );
+        }
+      } catch (smsError) {
+        console.warn('Failed to send corporate assignment SMS', smsError);
+      }
     }
 
     revalidatePath(`/admin/corporates/${data.corporateId}`);
@@ -613,6 +762,9 @@ export async function updateCorporateAction(id: number, data: any) {
 
     if (data.password && data.password.trim() !== "") {
       updateData.password = await bcrypt.hash(data.password, 10);
+    }
+    if ('logoUrl' in data) {
+      updateData.logoUrl = data.logoUrl || null;
     }
 
     await prisma.corporate.update({

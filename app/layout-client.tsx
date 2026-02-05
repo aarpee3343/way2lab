@@ -17,8 +17,10 @@ export default function LayoutClient({
   const isCorpRoute =
     pathname.startsWith("/corp") || pathname.startsWith("/employees");
   const isAdminRoute = pathname.startsWith("/admin");
+  const isDashboardRoute = pathname.startsWith("/dashboard");
 
   const hidePublicLayout = isCorpRoute || isAdminRoute;
+  const toasterPosition = isDashboardRoute ? "bottom-right" : "top-center";
 
   return (
     <>
@@ -34,7 +36,7 @@ export default function LayoutClient({
         shadow="0 0 10px rgba(13, 148, 136, 0.5)"
       />
 
-      <UiProvider>
+      <UiProvider toasterPosition={toasterPosition}>
         {!hidePublicLayout && <Header />}
 
         <main

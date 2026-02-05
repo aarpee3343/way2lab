@@ -244,10 +244,10 @@ model Package {
   corporateId         Int?                @map("corporate_id")
   isCorporate         Boolean             @default(false) @map("is_corporate")
   isPreEmployment     Boolean             @default(false) @map("is_pre_employment")
-  reportVisibility    ReportVisibility    @default(USER_ONLY) @map("report_visibility")
   paymentType         PaymentType?        @default(USER_PAYS) @map("payment_type")
   showOnHomepage      Boolean             @default(false) @map("show_on_homepage")
   tag                 String?
+  reportVisibility    ReportVisibility    @default(USER_ONLY) @map("report_visibility")
   corporateServices   CorporateService[]
   employeeAssignments EmployeePackage[]
   labs                LabPackage[]
@@ -512,9 +512,9 @@ model OnsiteCamp {
   expectedHeadcount Int?                @map("expected_headcount")
   startedAt         DateTime?           @map("started_at")
   endedAt           DateTime?           @map("ended_at")
-  labName           String?             @map("lab_name")
   createdAt         DateTime            @default(now()) @map("created_at")
   createdByAdminId  Int?                @map("created_by_admin_id")
+  labName           String?             @map("lab_name")
   packages          OnsiteCampPackage[]
   corporate         Corporate           @relation(fields: [corporateId], references: [id], onDelete: Cascade)
   createdBy         Admin?              @relation(fields: [createdByAdminId], references: [id])
@@ -568,22 +568,22 @@ model OnsiteEntry {
 }
 
 model CorporateService {
-  id                Int         @id @default(autoincrement())
-  corporateId       Int         @map("corporate_id")
-  packageId         Int?        @map("package_id")
-  couponId          Int?        @map("coupon_id")
-  validFrom         DateTime    @map("valid_from")
-  validTill         DateTime    @map("valid_till")
-  selfPaymentType   PaymentType @default(CORPORATE_PAYS) @map("self_payment_type")
-  familyPaymentType PaymentType @default(USER_PAYS) @map("family_payment_type")
-  selfUsageLimit    Int         @default(1) @map("self_usage_limit")
-  familyUsageLimit  Int         @default(0) @map("family_usage_limit")
+  id                       Int               @id @default(autoincrement())
+  corporateId              Int               @map("corporate_id")
+  packageId                Int?              @map("package_id")
+  couponId                 Int?              @map("coupon_id")
+  validFrom                DateTime          @map("valid_from")
+  validTill                DateTime          @map("valid_till")
+  selfPaymentType          PaymentType       @default(CORPORATE_PAYS) @map("self_payment_type")
+  familyPaymentType        PaymentType       @default(USER_PAYS) @map("family_payment_type")
+  selfUsageLimit           Int               @default(1) @map("self_usage_limit")
+  familyUsageLimit         Int               @default(0) @map("family_usage_limit")
+  isActive                 Boolean           @default(true) @map("is_active")
+  createdAt                DateTime          @default(now()) @map("created_at")
   reportVisibilityOverride ReportVisibility? @map("report_visibility_override")
-  isActive          Boolean     @default(true) @map("is_active")
-  createdAt         DateTime    @default(now()) @map("created_at")
-  corporate         Corporate   @relation(fields: [corporateId], references: [id], onDelete: Cascade)
-  coupon            Coupon?     @relation(fields: [couponId], references: [id])
-  package           Package?    @relation(fields: [packageId], references: [id])
+  corporate                Corporate         @relation(fields: [corporateId], references: [id], onDelete: Cascade)
+  coupon                   Coupon?           @relation(fields: [couponId], references: [id])
+  package                  Package?          @relation(fields: [packageId], references: [id])
 
   @@map("corporate_services")
 }
@@ -713,15 +713,15 @@ enum DiscountType {
   FIXED
 }
 
+enum PaymentType {
+  USER_PAYS
+  CORPORATE_PAYS
+}
+
 enum ReportVisibility {
   USER_ONLY
   CORPORATE_ONLY
   BOTH
-}
-
-enum PaymentType {
-  USER_PAYS
-  CORPORATE_PAYS
 }
 
 enum AdminRole {

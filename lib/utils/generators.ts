@@ -47,6 +47,7 @@ export async function generateOrderNumber(): Promise<string> {
 export async function generateCustomerUHID(): Promise<string> {
   return await prisma.$transaction(async (tx) => {
     const lastCustomer = await tx.customer.findFirst({
+      where: { uhid: { not: null } },
       orderBy: { id: 'desc' },
       select: { uhid: true }
     });
@@ -67,6 +68,7 @@ export async function generateCustomerUHID(): Promise<string> {
 export async function generateFamilyUHID(): Promise<string> {
   return await prisma.$transaction(async (tx) => {
     const lastFamily = await tx.familyMember.findFirst({
+      where: { uhid: { not: null } },
       orderBy: { id: 'desc' },
       select: { uhid: true }
     });

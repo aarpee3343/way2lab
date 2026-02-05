@@ -52,7 +52,7 @@ export default function Home() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">Trusted by 10,000+ Patients</span>
+            <span className="text-xs font-bold text-teal-700 uppercase tracking-wider">Trusted by 1M+ Patients</span>
             <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
           </div>
           
@@ -142,7 +142,7 @@ export default function Home() {
                   <h3 className="text-2xl font-bold mb-2">Comprehensive Health Checkups</h3>
                   <p className="text-slate-400">Starting at ₹499. Includes 60+ parameters with doctor consultation.</p>
                 </div>
-                <Link href="/search?q=Full Body" className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-teal-200 transition-all duration-300 flex items-center gap-2 group/btn">
+                <Link href="/packages" className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-teal-200 transition-all duration-300 flex items-center gap-2 group/btn">
                   Explore Packages 
                   <ArrowRight size={18} className="group-hover/btn:translate-x-1 transition-transform duration-300" />
                 </Link>

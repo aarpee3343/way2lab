@@ -4,7 +4,6 @@ import { prisma } from '@/lib/db';
 import { getCorpUser } from '@/lib/auth-corp';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
-import { uploadCorporateEmployees } from './adminCorporateActions';
 import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
 
@@ -89,6 +88,11 @@ const buildCorporateReportVisibilityFilter = (
     orConditions.push({ isReportSharedWithCorp: true, OR: sharedOr });
   }
 
+  if (orConditions.length === 0) {
+    // Avoid invalid OR: [] filters
+    return { id: -1 };
+  }
+
   return { OR: orConditions };
 };
 
@@ -166,6 +170,7 @@ export async function updateCorporateProfile(data: {
   city?: string;
   state?: string;
   pincode?: string;
+  logoUrl?: string;
 }) {
   const session = await getSession();
   if (!session) return { success: false, error: 'Unauthorized' };
@@ -181,7 +186,8 @@ export async function updateCorporateProfile(data: {
         address: data.address || null,
         city: data.city || null,
         state: data.state || null,
-        pincode: data.pincode || null
+        pincode: data.pincode || null,
+        logoUrl: data.logoUrl || null
       }
     });
 
@@ -226,7 +232,8 @@ export async function getCorporateOverview(filter?: {
     totalOrders,
     completedOrders,
     pendingOrders,
-    services,
+    servicesForDisplay,
+    servicesForVisibility,
     departmentRows,
     locationRows,
     activeCamp
@@ -244,11 +251,28 @@ export async function getCorporateOverview(filter?: {
     prisma.corporateService.findMany({
       where: { corporateId: session.corporateId, isActive: true },
       include: {
-        package: { select: { id: true, packageName: true, price: true, isPreEmployment: true, reportVisibility: true } },
-        coupon: { select: { id: true, code: true } }
+        package: {
+          select: {
+            id: true,
+            packageName: true,
+            price: true,
+            isPreEmployment: true,
+            reportVisibility: true
+          }
         },
-        orderBy: { createdAt: 'desc' },
-        take: 5
+        coupon: { select: { id: true, code: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    }),
+    prisma.corporateService.findMany({
+      where: { corporateId: session.corporateId, isActive: true },
+      select: {
+        packageId: true,
+        couponId: true,
+        reportVisibilityOverride: true,
+        package: { select: { isPreEmployment: true, reportVisibility: true } }
+      }
     }),
     prisma.customer.findMany({
       where: baseEmployeeWhere,
@@ -284,7 +308,7 @@ export async function getCorporateOverview(filter?: {
     .sort();
 
   const serviceStats = await Promise.all(
-    services.map(async (s) => {
+    servicesForDisplay.map(async (s) => {
       const usageWhere: any = {
         ...orderBaseWhere,
         status: { notIn: ['CANCELLED', 'REJECTED'] },
@@ -292,9 +316,13 @@ export async function getCorporateOverview(filter?: {
         ...(s.couponId ? { couponId: s.couponId } : {})
       };
 
-      const [usedCount, availedEmployees, recentOrders] = await Promise.all([
+      const [usedCount, availedEmployeeRows, recentOrders] = await Promise.all([
         prisma.order.count({ where: usageWhere }),
-        prisma.order.count({ where: usageWhere, distinct: ['userId'] }),
+        prisma.order.findMany({
+          where: usageWhere,
+          distinct: ['userId'],
+          select: { userId: true }
+        }),
         prisma.order.findMany({
           where: usageWhere,
           orderBy: { createdAt: 'desc' },
@@ -308,6 +336,7 @@ export async function getCorporateOverview(filter?: {
         })
       ]);
 
+      const availedEmployees = availedEmployeeRows.length;
       const seen = new Set<number>();
       const availedBy = recentOrders
         .map((o) => o.customer)
@@ -342,7 +371,7 @@ export async function getCorporateOverview(filter?: {
     })
   );
 
-  const visibilityFilter = buildCorporateReportVisibilityFilter(services);
+  const visibilityFilter = buildCorporateReportVisibilityFilter(servicesForVisibility);
   const visibleOrderWhere: any = {
     ...orderBaseWhere,
     ...visibilityFilter
@@ -553,23 +582,201 @@ export async function uploadEmployeesForCorp(corporateId: number, employees: any
   if (!canEdit(session)) return { success: false, error: 'Insufficient permissions' };
   if (session.corporateId !== corporateId) return { success: false, error: 'Forbidden' };
 
-  const res = await uploadCorporateEmployees(corporateId, employees);
-  if (res.success) {
+  try {
+    const normalizeText = (value: any) => {
+      if (value === null || value === undefined) return undefined;
+      const trimmed = String(value).trim();
+      return trimmed ? trimmed : undefined;
+    };
+
+    const parseDateOfBirth = (value: any) => {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+      const raw = String(value).trim();
+      if (!raw) return null;
+
+      const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (isoMatch) {
+        const year = Number(isoMatch[1]);
+        const month = Number(isoMatch[2]);
+        const day = Number(isoMatch[3]);
+        const candidate = new Date(year, month - 1, day);
+        if (
+          candidate.getFullYear() === year &&
+          candidate.getMonth() === month - 1 &&
+          candidate.getDate() === day
+        ) {
+          return candidate;
+        }
+        return null;
+      }
+
+      const dmyMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+      if (dmyMatch) {
+        const day = Number(dmyMatch[1]);
+        const month = Number(dmyMatch[2]);
+        const year = Number(dmyMatch[3]);
+        const candidate = new Date(year, month - 1, day);
+        if (
+          candidate.getFullYear() === year &&
+          candidate.getMonth() === month - 1 &&
+          candidate.getDate() === day
+        ) {
+          return candidate;
+        }
+        return null;
+      }
+
+      const fallback = new Date(raw);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    };
+
+    const corp = await prisma.corporate.findUnique({
+      where: { id: corporateId },
+      select: { isActive: true }
+    });
+    if (!corp || !corp.isActive) {
+      return { success: false, error: 'Corporate is archived' };
+    }
+
+    const cleanedEmployees = (employees || [])
+      .map((emp: any) => ({
+        name: normalizeText(emp.name),
+        email: normalizeText(emp.email),
+        phone: normalizeText(emp.phone),
+        employeeId: normalizeText(emp.employeeId),
+        department: normalizeText(emp.department),
+        location: normalizeText(emp.location),
+        dob: normalizeText(emp.dob),
+        gender: normalizeText(emp.gender),
+        uhid: normalizeText(emp.uhid)
+      }))
+      .filter((emp: any) => emp.email || emp.phone);
+
+    const uniqueEmployees: any[] = [];
+    const seenKeys = new Set<string>();
+    for (const emp of cleanedEmployees) {
+      const keys: string[] = [];
+      if (emp.email) keys.push(`email:${emp.email}`);
+      if (emp.phone) keys.push(`phone:${emp.phone}`);
+      if (keys.some((k) => seenKeys.has(k))) continue;
+      keys.forEach((k) => seenKeys.add(k));
+      uniqueEmployees.push(emp);
+    }
+
+    const emails = uniqueEmployees.map(e => e.email).filter(Boolean) as string[];
+    const phones = uniqueEmployees.map(e => e.phone).filter(Boolean) as string[];
+    const orConditions: any[] = [];
+    if (emails.length) orConditions.push({ email: { in: emails } });
+    if (phones.length) orConditions.push({ phone: { in: phones } });
+
+    const existingCustomers = orConditions.length
+      ? await prisma.customer.findMany({
+          where: { OR: orConditions },
+          select: { id: true, email: true, phone: true, department: true, location: true }
+        })
+      : [];
+
+    const existingByEmail = new Map<string, any>();
+    const existingByPhone = new Map<string, any>();
+    existingCustomers.forEach((c) => {
+      if (c.email) existingByEmail.set(c.email, c);
+      if (c.phone) existingByPhone.set(c.phone, c);
+    });
+
+    let nextUhidNumber = 100001;
+    const needsGeneratedUhid = uniqueEmployees.some((e) => !e.uhid);
+    if (needsGeneratedUhid) {
+      const lastCustomer = await prisma.customer.findFirst({
+        where: { uhid: { not: null } },
+        orderBy: { id: 'desc' },
+        select: { uhid: true }
+      });
+      if (lastCustomer?.uhid) {
+        const match = lastCustomer.uhid.match(/\d+/);
+        if (match) nextUhidNumber = parseInt(match[0], 10) + 1;
+      }
+    }
+
+    const buildUhid = () => `WTL-${nextUhidNumber++}`;
+
+    let mapped = 0;
+    let created = 0;
+    const defaultPasswordHash = await bcrypt.hash('Welcome123', 10);
+
+    const updates: Array<{ id: number; data: any }> = [];
+    const creates: any[] = [];
+
+    for (const emp of uniqueEmployees) {
+      const existing =
+        (emp.email && existingByEmail.get(emp.email)) ||
+        (emp.phone && existingByPhone.get(emp.phone));
+
+      if (existing) {
+        updates.push({
+          id: existing.id,
+          data: {
+            corporateId,
+            employeeId: emp.employeeId,
+            department: emp.department || existing.department,
+            location: emp.location || existing.location
+          }
+        });
+      } else {
+        const loginMethod = emp.email ? 'email' : 'phone';
+        creates.push({
+          name: emp.name || null,
+          email: emp.email || null,
+          phone: emp.phone || null,
+          password: defaultPasswordHash,
+          dateOfBirth: parseDateOfBirth(emp.dob),
+          gender: emp.gender,
+          employeeId: emp.employeeId,
+          department: emp.department,
+          location: emp.location,
+          corporateId,
+          isActive: true,
+          loginMethod,
+          uhid: emp.uhid || buildUhid()
+        });
+      }
+    }
+
+    for (const update of updates) {
+      await prisma.customer.update({ where: { id: update.id }, data: update.data });
+      mapped++;
+    }
+
+    const batchSize = 500;
+    for (let i = 0; i < creates.length; i += batchSize) {
+      const batch = creates.slice(i, i + batchSize);
+      const res = await prisma.customer.createMany({
+        data: batch,
+        skipDuplicates: true
+      });
+      created += res.count;
+    }
+
     const actor = await getActorName(session);
     await logActivity(
       session.corporateId,
       actor,
       'BULK_UPLOAD',
-      `Uploaded employee list (${res.stats?.created || 0} created, ${res.stats?.mapped || 0} mapped)`
+      `Uploaded employee list (${created} created, ${mapped} mapped)`
     );
     revalidatePath('/employees');
     revalidatePath('/corp-settings/logs');
+    return { success: true, stats: { mapped, created } };
+  } catch (e: any) {
+    console.error('Upload Error:', e);
+    return { success: false, error: 'Processing failed: ' + (e.message || 'Unknown error') };
   }
-  return res;
 }
 
 export async function getCorporateReports(filter?: {
-  type?: 'PRE_EMPLOYMENT' | 'ANNUAL_CHECKUP' | 'SHARED_BY_EMPLOYEE';
+  type?: 'PRE_EMPLOYMENT' | 'ANNUAL_CHECKUP' | 'SHARED_BY_EMPLOYEE' | 'ALL';
   search?: string;
 }) {
   const session = await getSession();
@@ -586,13 +793,14 @@ export async function getCorporateReports(filter?: {
     include: { package: { select: { isPreEmployment: true, reportVisibility: true } } }
   });
 
+  const normalizedType = filter?.type === 'ALL' ? undefined : filter?.type;
   let visibilityFilter: any = buildCorporateReportVisibilityFilter(services);
 
-  if (filter?.type === 'PRE_EMPLOYMENT') {
+  if (normalizedType === 'PRE_EMPLOYMENT') {
     visibilityFilter = { package: { isPreEmployment: true } };
-  } else if (filter?.type === 'SHARED_BY_EMPLOYEE') {
+  } else if (normalizedType === 'SHARED_BY_EMPLOYEE') {
     visibilityFilter = { isReportSharedWithCorp: true, package: { isPreEmployment: false } };
-  } else if (filter?.type === 'ANNUAL_CHECKUP') {
+  } else if (normalizedType === 'ANNUAL_CHECKUP') {
     visibilityFilter = buildCorporateReportVisibilityFilter(services, {
       includePreEmployment: false,
       excludePreEmploymentPackages: true

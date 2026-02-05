@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 import LayoutClient from "./layout-client";
+
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -59,6 +61,7 @@ export default function RootLayout({
         className={`${inter.className} antialiased bg-gradient-to-b from-teal-50/20 via-white to-slate-50`}
       >
         <LayoutClient>{children}</LayoutClient>
+        <SpeedInsights />
       </body>
     </html>
   );

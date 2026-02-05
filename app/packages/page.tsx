@@ -78,10 +78,13 @@ export default function PackagesPage() {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {packages.map((pkg) => {
-              const mrp = Number(pkg.price);
-              const discount = Number(pkg.discount || 0);
-              const sellingPrice = discount > 0 ? Math.round(mrp - discount) : mrp;
-              const savingsPercent = mrp > 0 ? Math.round((discount / mrp) * 100) : 0;
+              const mrp = Number(pkg?.price ?? 0);
+              const discountPercent = Number(pkg?.discount ?? 0);
+              const sellingPrice = discountPercent > 0
+                ? Math.round(mrp - (mrp * discountPercent) / 100)
+                : mrp;
+              const savingsPercent = discountPercent > 0 ? Math.round(discountPercent) : 0;
+              const discount = discountPercent > 0 ? Math.max(mrp - sellingPrice, 0) : 0;
 
               return (
                 <motion.div 

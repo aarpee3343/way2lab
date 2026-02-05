@@ -89,10 +89,10 @@ export default function Header() {
     { name: 'Home', href: '/', icon: Home },
     { name: 'Tests', href: '/search', icon: Search },
     { name: 'Packages', href: '/packages', icon: Package },
-    { name: 'Labs', href: '/labs', icon: Stethoscope },
+    { name: 'Labs Network', href: '/labs', icon: Stethoscope },
     { name: 'Health Blog', href: '/blogs', icon: Heart },
-    { name: 'About Us', href: '/about', icon: Info },
-    { name: 'Contact', href: '/contact', icon: Phone },
+    // { name: 'About Us', href: '/about', icon: Info },
+    // { name: 'Contact', href: '/contact', icon: Phone },
   ];
 
   const dashboardLinks = [

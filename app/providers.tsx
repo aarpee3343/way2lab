@@ -2,12 +2,26 @@
 
 import { Toaster } from 'sonner';
 
-export function UiProvider({ children }: { children: React.ReactNode }) {
+type ToasterPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right';
+
+export function UiProvider({
+  children,
+  toasterPosition = 'top-center',
+}: {
+  children: React.ReactNode;
+  toasterPosition?: ToasterPosition;
+}) {
   return (
     <>
       {children}
       <Toaster 
-        position="top-center" 
+        position={toasterPosition} 
         richColors 
         closeButton
         toastOptions={{

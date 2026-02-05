@@ -11,7 +11,7 @@ export async function generateSampleCSV(selectedFields: string[], corporateId: n
   const sampleData = finalHeaders.map(h => {
     if (h === 'corporateId') return corporateId;
     if (h === 'gender') return 'Male/Female';
-    if (h === 'dateOfBirth') return 'YYYY-MM-DD';
+    if (h === 'dateOfBirth') return 'DD/MM/YYYY';
     return `Sample_${h}`;
   });
 

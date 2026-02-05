@@ -117,7 +117,8 @@ function LoginContent() {
         ...regData,
         phone: identifier, // The verified phone
         password: 'otp-login-account',
-        loginMethod: 'phone'
+        loginMethod: 'phone',
+        phoneOtp: otp
       });
 
       if (res.data.success) {
