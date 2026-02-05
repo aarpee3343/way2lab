@@ -370,15 +370,19 @@ export async function placeAdminOrderAction(data: any) {
       const finalAmount = subtotal + homeCharges - discountAmount;
       const associateId = data.associateId ? Number(data.associateId) : null;
 
+      const parsedPackageId = Number(data.packageId);
+      const safePackageId =
+        Number.isInteger(parsedPackageId) && parsedPackageId > 0
+          ? parsedPackageId
+          : null;
+
       const order = await tx.order.create({
         data: {
           orderNumber,
           userId: customerId,
           labId: data.labId,
           addressId,
-          packageId: Number.isFinite(Number(data.packageId))
-            ? Number(data.packageId)
-            : null,
+          packageId: safePackageId,
 
           // Financials
           totalAmount: subtotal,
