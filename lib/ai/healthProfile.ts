@@ -13,6 +13,13 @@ const toNumber = z.preprocess((value) => {
   return Number.isFinite(parsed) ? parsed : undefined;
 }, z.number());
 
+const toScoreNumber = z.preprocess((value) => {
+  if (value === null || value === undefined || value === '') return undefined;
+  if (typeof value === 'number') return value;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}, z.number().min(0).max(100));
+
 const DietPlanDaySchema = z.object({
   day: toTrimmedString.optional().default(''),
   breakfast: toTrimmedString.optional().default(''),
@@ -49,7 +56,7 @@ const RecommendationSchema = z.object({
 }).passthrough();
 
 export const HealthProfileSchema = z.object({
-  healthScore: toNumber.min(0).max(100).optional().default(0),
+  healthScore: toScoreNumber.optional().default(0),
   summaryHeadline: toTrimmedString.optional().default(''),
   lifestyle: z.array(LifestyleSchema).optional().default([]),
   dietPlan: DietPlanSchema.optional().default({ include: [], avoid: [], plan: [] }),

@@ -46,7 +46,7 @@ const registerSteps = [
   {
     step: '01',
     title: 'Start Registration',
-    desc: 'Click Register and enter your corporate email or employee ID as provided by your HR.'
+    desc: 'Click Register and enter your corporate email or Mobile No as provided by your HR.'
   },
   {
     step: '02',
@@ -206,10 +206,10 @@ export default function CorporateBenefitsGuidePage() {
             className="mt-10 flex flex-col sm:flex-row justify-center gap-4"
           >
             <Link
-              href="/corp-login"
+              href="/login"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-8 py-3.5 text-sm font-bold text-teal-700 shadow-lg shadow-teal-900/20 hover:shadow-xl hover:shadow-teal-900/30 transition-all"
             >
-              Corporate Login
+              Employee Login
             </Link>
             <Link
               href="/register"
