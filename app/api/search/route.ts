@@ -3,7 +3,6 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { safeData } from '@/lib/utils';
-import { getAuthUser } from '@/lib/auth'; // adjust import if needed
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -14,18 +13,6 @@ export async function GET(req: Request) {
   }
 
   try {
-    // 🔐 Get logged-in user (may be null)
-    const user = await getAuthUser(req);
-    let corporateId = user?.corporateId ?? null;
-
-    if (user?.id && corporateId == null) {
-      const dbUser = await prisma.customer.findUnique({
-        where: { id: user.id },
-        select: { corporateId: true }
-      });
-      corporateId = dbUser?.corporateId ?? null;
-    }
-
     /* -------------------- TEST SEARCH -------------------- */
     const tests = await prisma.test.findMany({
       where: {
@@ -38,18 +25,8 @@ export async function GET(req: Request) {
     /* ------------------ PACKAGE SEARCH ------------------- */
     const packageWhere: any = {
       isActive: true,
+      isCorporate: false,
       packageName: { contains: query, mode: 'insensitive' },
-      OR: [
-        { isCorporate: false }, // Public packages
-        ...(corporateId
-          ? [
-              {
-                isCorporate: true,
-                corporateId,
-              },
-            ]
-          : []),
-      ],
     };
 
     const packages = await prisma.package.findMany({
@@ -92,3 +69,4 @@ export async function GET(req: Request) {
     );
   }
 }
+

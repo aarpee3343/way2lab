@@ -66,10 +66,8 @@ export default function EditPackagePage({ params }: { params: Promise<{ id: stri
         setIsPreEmployment(Boolean(pkg.isPreEmployment));
         setReportVisibility((pkg.reportVisibility as any) || 'USER_ONLY');
         
-        // Logic to determine if "Corporate Toggle" should be on
-        if (pkg.category && pkg.category !== 'ANNUAL') {
-          setIsCorporate(true);
-        }
+        // Corporate toggle should reflect actual package flag
+        setIsCorporate(Boolean(pkg.isCorporate));
 
       } catch (e) {
         toast.error("Failed to load data");

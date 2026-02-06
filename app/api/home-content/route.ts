@@ -21,7 +21,8 @@ export async function GET() {
     const packages = await prisma.package.findMany({
       where: { 
         showOnHomepage: true, 
-        isActive: true 
+        isActive: true,
+        isCorporate: false
       },
       include: {
         _count: {

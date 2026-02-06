@@ -54,6 +54,13 @@ function SearchContent() {
     minRating: 0
   });
 
+  const isPublicPackageItem = (item: any) => {
+    if (item?.type !== 'package') return true;
+    const isActive = item?.isActive ?? item?.isactive;
+    const isCorporate = item?.isCorporate ?? item?.iscorporate;
+    return isActive !== false && isCorporate !== true;
+  };
+
   // --- 2. LOCATION LOGIC (Restored) ---
 
   useEffect(() => {
@@ -157,7 +164,7 @@ function SearchContent() {
         setLoading(true);
         try {
           const res = await axios.get(`${API_BASE}/search`, { params: { query: urlQuery } });
-          const data = res.data.results || [];
+          const data = (res.data.results || []).filter(isPublicPackageItem);
           if (data.length > 0) {
             const match = urlId ? data.find((i:any) => i.id == urlId) : data[0];
             if (match) setSelectedItems([match]);
@@ -182,7 +189,8 @@ function SearchContent() {
 
       try {
         const res = await axios.get(`${API_BASE}/search`, { params: { query } });
-        setResults(res.data.results || []);
+        const filtered = (res.data.results || []).filter(isPublicPackageItem);
+        setResults(filtered);
       } catch (err) { console.error(err); }
     }, 300);
     return () => clearTimeout(timer);
@@ -241,6 +249,7 @@ function SearchContent() {
   // --- 4. UI HELPERS ---
 
   const addItem = (item: any) => {
+    if (!isPublicPackageItem(item)) return;
     setSelectedItems(prev => {
       if (prev.some(i => i.id === item.id && i.type === item.type)) return prev;
       return [...prev, item];

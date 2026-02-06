@@ -7,7 +7,7 @@ import { safeData } from '@/lib/utils';
 export async function GET(req: Request) {
   try {
     const packages = await prisma.package.findMany({
-      where: { isActive: true },
+      where: { isActive: true, isCorporate: false },
       include: {
         tests: true // We need to count tests
       },

@@ -7,6 +7,10 @@ import { Package, Plus } from 'lucide-react';
 export default function PackageCard({ pkg }: { pkg: any }) {
   const router = useRouter();
 
+  const isActive = pkg?.isActive ?? pkg?.isactive;
+  const isCorporate = pkg?.isCorporate ?? pkg?.iscorporate;
+  if (!pkg || isActive === false || isCorporate === true) return null;
+
   // --- PRICING LOGIC ---
   const mrp = Number(pkg?.price ?? 0);
   const discount = Number(pkg?.discount ?? 0);

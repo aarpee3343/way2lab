@@ -20,6 +20,14 @@ export default function PackagesPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const isPublicPackage = (pkg: any) => {
+    const isActive = pkg?.isActive ?? pkg?.isactive;
+    const isCorporate = pkg?.isCorporate ?? pkg?.iscorporate;
+    return isActive !== false && isCorporate !== true;
+  };
+
+  const visiblePackages = packages.filter(isPublicPackage);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/10 via-white to-slate-50 pb-20">
       
@@ -61,7 +69,7 @@ export default function PackagesPage() {
               </div>
             ))}
           </div>
-        ) : packages.length === 0 ? (
+        ) : visiblePackages.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border border-teal-100 shadow-sm">
             <div className="w-20 h-20 bg-gradient-to-br from-teal-50 to-blue-50 rounded-full flex items-center justify-center mx-auto mb-4 text-teal-600">
               <HeartPulse size={32} />
@@ -77,7 +85,7 @@ export default function PackagesPage() {
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {packages.map((pkg) => {
+            {visiblePackages.map((pkg) => {
               const mrp = Number(pkg?.price ?? 0);
               const discountPercent = Number(pkg?.discount ?? 0);
               const sellingPrice = discountPercent > 0
