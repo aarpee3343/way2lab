@@ -124,7 +124,7 @@ export default function EmployeeBenefits() {
         labId: labData.lab.id,
         labName: labData.lab.labName,
         servicePincode: pincode,
-        homeCollectionCharges: Number(labData.lab.homeCollectionCharges || 0)
+        homeCollectionCharges: 0
       },
       [
         {
@@ -285,6 +285,7 @@ export default function EmployeeBenefits() {
                         const item = labData.foundItems?.[0];
                         const basePrice = Number(item?.labItemMRP || 0);
                         const sellingPrice = Number(item?.labItemPrice || 0);
+                        const homeCharge = Number(labData.lab.homeCollectionCharges || 0);
                         const payableSelf =
                           b.selfPaymentType === 'CORPORATE_PAYS' ? 0 : sellingPrice;
                         const payableFamily =
@@ -298,7 +299,7 @@ export default function EmployeeBenefits() {
                             <div>
                               <h4 className="font-bold text-slate-800">{labData.lab.labName}</h4>
                               <p className="text-xs text-slate-500">
-                                Home collection: INR {Number(labData.lab.homeCollectionCharges || 0).toLocaleString()}
+                                Home collection: {homeCharge > 0 ? `INR ${homeCharge.toLocaleString()} (waived for corporate benefits)` : 'Included'}
                               </p>
                               <p className="text-xs text-slate-500">
                                 MRP: INR {basePrice.toLocaleString()} - Discount {Number(item?.labItemDiscount || 0)}%

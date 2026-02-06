@@ -140,6 +140,7 @@ export default function Footer() {
                 { name: 'Health Packages', href: '/packages' },
                 { name: 'Our Labs', href: '/labs' },
                 { name: 'Corporate Login', href: '/corp-login' },
+                { name: 'Corporate Benefits Guide', href: '/corporate-benefits' },
                 { name: 'Home Collection', href: '/search' }
               ].map((item) => (
                 <li key={item.name}>

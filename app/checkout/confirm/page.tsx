@@ -73,6 +73,8 @@ export default function ConfirmOrderPage() {
     scheduleTime
   } = useBookingStore();
 
+  const isCorporatePackageOrder = items.some((i) => i.isCorporate === true);
+
   /* ---------- STATE ---------- */
   const [loading, setLoading] = useState(true); // Start loading true
   const [address, setAddress] = useState<any>(null);
@@ -134,7 +136,7 @@ export default function ConfirmOrderPage() {
           }
         }
 
-        if (collectionType === 'home_collection') {
+        if (collectionType === 'home_collection' && !isCorporatePackageOrder) {
           setHomeCharge(Number(lab?.homeCollectionCharges || 0));
         } else {
           setHomeCharge(0);
@@ -154,7 +156,7 @@ export default function ConfirmOrderPage() {
     };
 
     if (items.length > 0) load();
-  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType, items.length, lab?.homeCollectionCharges, router]);
+  }, [patientType, selectedFamilyMemberId, selectedAddressId, collectionType, items.length, lab?.homeCollectionCharges, isCorporatePackageOrder, router]);
 
   if (loading) {
     return (
@@ -345,8 +347,13 @@ export default function ConfirmOrderPage() {
           <Row label="Amount Payable" value={finalTotal} bold />
 
           {isCorporateCovered && finalTotal === 0 && (
-            <p className="text-xs text-green-600 font-bold mt-2 bg-green-50 p-2 rounded border border-green-200 text-center">
-              Covered by Corporate Account
+            <p className="text-xs text-green-700 font-bold mt-2 bg-green-50 p-2 rounded border border-green-200 text-center">
+              Corporate sponsored package â€¢ Payable â‚¹0
+            </p>
+          )}
+          {isCorporatePackageOrder && !isCorporateCovered && (
+            <p className="text-xs text-slate-600 font-bold mt-2 bg-slate-50 p-2 rounded border border-slate-200 text-center">
+              Corporate benefit (Self Pay) â€¢ Home collection charges are waived
             </p>
           )}
 

@@ -86,12 +86,21 @@ export default function ReviewOrderPage() {
       </div>
   );
 
-  const homeCharge = collectionType === 'home_collection'
-    ? Number(lab?.homeCollectionCharges || 0)
-    : 0;
+  const isCorporatePackageOrder = items.some((i) => i.isCorporate === true);
+  const patientTypeKey: 'self' | 'family' =
+    patientType === 'family_member' ? 'family' : 'self';
+  const isCorporateCovered = items.some((i) =>
+    i.isCorporate === true &&
+    (patientTypeKey === 'self' ? i.corporatePaymentSelf : i.corporatePaymentFamily) === 'CORPORATE_PAYS'
+  );
+
+  const homeCharge =
+    collectionType === 'home_collection' && !isCorporatePackageOrder
+      ? Number(lab?.homeCollectionCharges || 0)
+      : 0;
   // Use safe totals (fallback to 0)
   const finalAmt = totals?.finalAmount || 0;
-  const grandTotal = finalAmt + homeCharge;
+  const grandTotal = (isCorporateCovered ? 0 : finalAmt) + homeCharge;
 
   return (
     <div className="min-h-screen bg-slate-50 pb-36">
@@ -193,6 +202,16 @@ export default function ReviewOrderPage() {
               ₹{grandTotal} 
               {homeCharge > 0 && <span className="text-xs font-semibold text-slate-400">(Includes +₹{homeCharge} home fee)</span>}
             </div>
+            {isCorporateCovered && (
+              <p className="text-[10px] font-bold text-emerald-700 mt-1">
+                Corporate sponsored package • Payable ₹0
+              </p>
+            )}
+            {isCorporatePackageOrder && !isCorporateCovered && (
+              <p className="text-[10px] font-bold text-slate-500 mt-1">
+                Corporate benefit (Self Pay) • Home collection charges are waived
+              </p>
+            )}
           </div>
 
           <button 

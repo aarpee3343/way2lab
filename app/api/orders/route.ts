@@ -68,7 +68,9 @@ export async function POST(req: Request) {
     const { labId, items, patientDetails, addressId, schedule, paymentMode, paymentStatus, totals, couponCode } = body;
 
     // Basic Validation
-    if (!items?.length) return NextResponse.json({ success: false, message: 'No items' }, { status: 400 });
+    if (!Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ success: false, message: 'No items' }, { status: 400 });
+    }
     if (!patientDetails?.name) return NextResponse.json({ success: false, message: 'Invalid patient' }, { status: 400 });
 
     // Fetch corporate context (if any)
@@ -79,6 +81,10 @@ export async function POST(req: Request) {
     const corporateId = dbUser?.corporateId ?? null;
 
     const patientTypeKey = patientDetails?.type === 'family' ? 'family' : 'self';
+    let hasCorporatePackageBenefit = false;
+    let hasNonCorporatePackageItem = false;
+    let hasCorporatePaymentDecision = false;
+    let corporatePaysForAll = true;
 
     // Corporate usage/eligibility checks for package benefits
     const packageItems = (items || []).filter((i: any) => i.type === 'package');
@@ -94,7 +100,11 @@ export async function POST(req: Request) {
       for (const item of packageItems) {
         const packageId = Number(item.id);
         const pkg = packageMap.get(packageId);
-        if (!pkg || !pkg.isCorporate || pkg.corporateId !== corporateId) continue;
+        if (!pkg || !pkg.isCorporate || pkg.corporateId !== corporateId) {
+          hasNonCorporatePackageItem = true;
+          continue;
+        }
+        hasCorporatePackageBenefit = true;
 
         const service = await prisma.corporateService.findFirst({
           where: {
@@ -106,7 +116,9 @@ export async function POST(req: Request) {
           },
           select: {
             selfUsageLimit: true,
-            familyUsageLimit: true
+            familyUsageLimit: true,
+            selfPaymentType: true,
+            familyPaymentType: true
           }
         });
 
@@ -138,6 +150,15 @@ export async function POST(req: Request) {
             ? Number(service.selfUsageLimit || 0)
             : Number(service.familyUsageLimit || 0);
 
+        const paymentTypeForItem =
+          patientTypeKey === 'self'
+            ? service.selfPaymentType
+            : service.familyPaymentType;
+        hasCorporatePaymentDecision = true;
+        if (paymentTypeForItem !== 'CORPORATE_PAYS') {
+          corporatePaysForAll = false;
+        }
+
         if (limit <= 0) {
           return NextResponse.json(
             { success: false, message: 'This benefit is not available for the selected patient type.' },
@@ -163,6 +184,15 @@ export async function POST(req: Request) {
       }
     }
 
+    const isCorporateBenefitOnlyOrder =
+      items.every((i: any) => i.type === 'package') &&
+      packageItems.length === items.length &&
+      hasCorporatePackageBenefit &&
+      !hasNonCorporatePackageItem;
+
+    const corporatePaysForBenefit =
+      isCorporateBenefitOnlyOrder && hasCorporatePaymentDecision && corporatePaysForAll;
+
     // Coupon Lookup
     let couponId: number | null = null;
     if (couponCode) {
@@ -178,6 +208,23 @@ export async function POST(req: Request) {
     // Transaction
     const primaryPackageId =
       packageItems.length === 1 ? Number(packageItems[0].id) : null;
+
+    let resolvedHomeCollection = Number(totals.homeCollection || 0);
+    let resolvedFinalAmount = Number(totals.final || 0);
+    let resolvedPaymentMode = paymentMode;
+    let resolvedPaymentStatus = paymentStatus || null;
+
+    if (isCorporateBenefitOnlyOrder) {
+      resolvedFinalAmount = Math.max(0, resolvedFinalAmount - resolvedHomeCollection);
+      resolvedHomeCollection = 0;
+    }
+
+    if (corporatePaysForBenefit) {
+      resolvedFinalAmount = 0;
+      resolvedHomeCollection = 0;
+      resolvedPaymentMode = 'Corporate Credit';
+      resolvedPaymentStatus = 'CORPORATE_BILLING';
+    }
 
     const order = await prisma.$transaction(async (tx) => {
       // Backfill Self Data
@@ -212,12 +259,12 @@ export async function POST(req: Request) {
 
           totalAmount: Number(totals.subtotal),
           discountAmount: Number(totals.discount),
-          homeCollectionCharges: Number(totals.homeCollection),
-          finalAmount: Number(totals.final),
+          homeCollectionCharges: resolvedHomeCollection,
+          finalAmount: resolvedFinalAmount,
           
           couponId,
-          paymentMode,
-          paymentStatus: paymentStatus || null,
+          paymentMode: resolvedPaymentMode,
+          paymentStatus: resolvedPaymentStatus,
           status: 'PENDING',
 
           items: {

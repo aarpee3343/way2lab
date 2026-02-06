@@ -159,8 +159,18 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
 
   const mrp = Number(order.totalAmount || 0);
   const discount = Number(order.discountAmount || 0);
-  const home = Number(order.homeCollectionCharges || 0);
-  const final = Number(order.finalAmount || 0);
+  const rawHome = Number(order.homeCollectionCharges || 0);
+  const rawFinal = Number(order.finalAmount || 0);
+
+  const isCorporatePackageOrder = Boolean(order.package?.isCorporate);
+  const isCorporateSponsored =
+    isCorporatePackageOrder &&
+    (order.paymentStatus === 'CORPORATE_BILLING' || order.paymentMode === 'Corporate Credit');
+
+  const home = isCorporatePackageOrder ? 0 : rawHome;
+  const final = isCorporateSponsored
+    ? 0
+    : (isCorporatePackageOrder ? Math.max(0, rawFinal - rawHome) : rawFinal);
 
   return (
     <div className="min-h-screen bg-slate-100 relative">
@@ -316,6 +326,16 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
             <Row label="Discount" value={-discount} />
             <Row label="Collection" value={home} />
             <div className="border-t my-1 pt-1"><Row label="Paid" value={final} bold /></div>
+            {isCorporateSponsored && (
+              <p className="text-xs font-bold text-emerald-700 mt-2 bg-emerald-50 p-2 rounded border border-emerald-200">
+                Corporate sponsored package - Payable INR 0
+              </p>
+            )}
+            {isCorporatePackageOrder && !isCorporateSponsored && (
+              <p className="text-xs font-bold text-slate-600 mt-2 bg-slate-50 p-2 rounded border border-slate-200">
+                Corporate benefit (Self Pay) - Home collection charges are waived
+              </p>
+            )}
           </Card>
         </div>
 

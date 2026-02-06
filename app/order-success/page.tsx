@@ -143,11 +143,19 @@ function SuccessContent() {
   const totalMRP = order.items.reduce((s: number, i: any) => s + Number(i.basePrice || 0), 0);
   const sellingTotal = order.items.reduce((s: number, i: any) => s + Number(i.price || 0), 0);
 
+  const isCorporatePackageOrder = Boolean(order.package?.isCorporate);
+  const isCorporateSponsored =
+    isCorporatePackageOrder &&
+    (order.paymentStatus === 'CORPORATE_BILLING' || order.paymentMode === 'Corporate Credit');
+
   const labDiscount = totalMRP - sellingTotal;
   const totalDiscount = Number(order.discountAmount || 0);
   const couponDiscount = Math.max(0, totalDiscount - labDiscount);
-  const homeCollection = Number(order.homeCollectionCharges || 0);
-  const payable = Number(order.finalAmount || 0);
+  const rawHomeCollection = Number(order.homeCollectionCharges || 0);
+  const homeCollection = isCorporatePackageOrder ? 0 : rawHomeCollection;
+  const payable = isCorporatePackageOrder
+    ? Math.max(0, Number(order.finalAmount || 0) - rawHomeCollection)
+    : Number(order.finalAmount || 0);
   const totalSavings = labDiscount + couponDiscount;
 
   const reportHours = getReportETA(order.items);
@@ -237,7 +245,17 @@ function SuccessContent() {
           {couponDiscount > 0 && <SummaryRow label="Coupon Discount" value={-couponDiscount} />}
           {homeCollection > 0 && <SummaryRow label="Home Collection Charges" value={homeCollection} />}
           <hr className="my-2" />
-          <SummaryRow label="Total Payable" value={payable} bold />
+          <SummaryRow label="Total Payable" value={isCorporateSponsored ? 0 : payable} bold />
+          {isCorporateSponsored && (
+            <p className="text-xs font-bold text-emerald-700 mt-1 bg-emerald-50 p-2 rounded border border-emerald-200">
+              Corporate sponsored package â€¢ Payable â‚¹0
+            </p>
+          )}
+          {isCorporatePackageOrder && !isCorporateSponsored && (
+            <p className="text-xs font-bold text-slate-600 mt-1 bg-slate-50 p-2 rounded border border-slate-200">
+              Corporate benefit (Self Pay) â€¢ Home collection charges are waived
+            </p>
+          )}
           {totalSavings > 0 && (
             <p className="text-xs font-bold text-emerald-600 mt-1">You saved ₹{totalSavings}</p>
           )}

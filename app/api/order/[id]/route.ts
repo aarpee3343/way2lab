@@ -46,7 +46,7 @@ export async function GET(
 
       // 4.5 Package (for report sharing rules)
       package: {
-        select: { isPreEmployment: true, reportVisibility: true }
+        select: { isPreEmployment: true, reportVisibility: true, isCorporate: true }
       },
 
       // 5. Others
