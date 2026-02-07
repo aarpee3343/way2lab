@@ -9,38 +9,127 @@ import { getCorpUser } from '@/lib/auth-corp';
 
 const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET);
 
+function normalizeIdentifier(value: FormDataEntryValue | null) {
+  return String(value || '').trim().toLowerCase();
+}
+
+async function resolveCorporateLoginUser(identifier: string) {
+  const include = {
+    corporate: {
+      select: {
+        id: true,
+        companyName: true,
+        isActive: true
+      }
+    }
+  } as const;
+
+  const directUser = await prisma.corporateUser.findFirst({
+    where: { email: { equals: identifier, mode: 'insensitive' } },
+    include
+  });
+  if (directUser) return { user: directUser, viaCorporateEmail: false };
+
+  // Fallback: allow login with corporate master email by mapping to a valid corp user.
+  const corp = await prisma.corporate.findFirst({
+    where: { email: { equals: identifier, mode: 'insensitive' } },
+    select: { id: true }
+  });
+  if (!corp) return null;
+
+  const fallbackUser =
+    (await prisma.corporateUser.findFirst({
+      where: { corporateId: corp.id, role: 'SUPER_ADMIN', isActive: true },
+      include
+    })) ||
+    (await prisma.corporateUser.findFirst({
+      where: { corporateId: corp.id, isActive: true },
+      include
+    }));
+
+  return fallbackUser ? { user: fallbackUser, viaCorporateEmail: true } : null;
+}
+
 export async function corporateLoginAction(formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const identifier = normalizeIdentifier(formData.get('email'));
+  const password = String(formData.get('password') || '');
 
   try {
+    if (!identifier || !password) {
+      return { success: false, error: 'Invalid credentials' };
+    }
+
     // 1. Find the Corporate User
-    const user = await prisma.corporateUser.findUnique({
-      where: { email },
-      include: {
-        corporate: {
-          select: {
-            id: true,
-            companyName: true,
-            isActive: true
-          }
-        }
-      }
-    });
+    const resolved = await resolveCorporateLoginUser(identifier);
 
     // 2. Validate User & Corporate Status
-    if (!user) {
+    if (!resolved) {
       return { success: false, error: "Invalid credentials" };
     }
+    const { user, viaCorporateEmail } = resolved;
 
     if (!user.isActive || !user.corporate.isActive) {
       return { success: false, error: "Account or Corporate is deactivated. Contact Support." };
     }
 
     // 3. Verify Password
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
+    const passwordCandidates = Array.from(new Set([password, password.trim()])).filter(Boolean);
+    let matchedPassword: string | null = null;
+    let matchedByLegacyPlaintext = false;
+    let matchedByCorporateMasterPassword = false;
+
+    for (const candidate of passwordCandidates) {
+      const ok = await bcrypt.compare(candidate, user.password).catch(() => false);
+      if (ok) {
+        matchedPassword = candidate;
+        break;
+      }
+    }
+
+    if (!matchedPassword) {
+      const plainMatch = passwordCandidates.find((candidate) => candidate === user.password);
+      if (plainMatch) {
+        matchedPassword = plainMatch;
+        matchedByLegacyPlaintext = true;
+      }
+    }
+
+    // If login used the corporate master email, allow corporate master password too.
+    // This also heals old records where corporate password changed but corporateUser did not.
+    if (!matchedPassword && viaCorporateEmail) {
+      const corpCredential = await prisma.corporate.findUnique({
+        where: { id: user.corporateId },
+        select: { password: true, isActive: true }
+      });
+      if (corpCredential?.isActive) {
+        for (const candidate of passwordCandidates) {
+          const ok = await bcrypt.compare(candidate, corpCredential.password).catch(() => false);
+          if (ok) {
+            matchedPassword = candidate;
+            matchedByCorporateMasterPassword = true;
+            break;
+          }
+        }
+        if (!matchedPassword) {
+          const plainMatch = passwordCandidates.find((candidate) => candidate === corpCredential.password);
+          if (plainMatch) {
+            matchedPassword = plainMatch;
+            matchedByCorporateMasterPassword = true;
+          }
+        }
+      }
+    }
+
+    if (!matchedPassword) {
       return { success: false, error: "Invalid credentials" };
+    }
+
+    // Backward compatibility: migrate any legacy plain-text password to bcrypt.
+    if (matchedByLegacyPlaintext || matchedByCorporateMasterPassword) {
+      await prisma.corporateUser.update({
+        where: { id: user.id },
+        data: { password: await bcrypt.hash(matchedPassword, 10) }
+      });
     }
 
     // 4. Generate JWT Payload

@@ -356,6 +356,17 @@ function LoginContent() {
 
           </form>
 
+          {(step === 'INPUT' || step === 'PASSWORD') && (
+            <div className="mt-4">
+              <Link
+                href="/forgot-password"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-teal-200 px-4 py-3 text-sm font-bold text-teal-700 transition-colors hover:bg-teal-50 hover:text-teal-800"
+              >
+                Forgot Password
+              </Link>
+            </div>
+          )}
+
           {step === 'INPUT' && (
             <div className="mt-8 pt-6 border-t border-teal-100 text-center">
               <p className="text-sm text-slate-500">New to WayToLab?</p>

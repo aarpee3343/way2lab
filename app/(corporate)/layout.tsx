@@ -51,7 +51,7 @@ export default function CorporateLayout({
    * Routes that should NOT show dashboard shell
    * (login / auth pages)
    */
-  const isLoginPage = pathname === '/corp-login';
+  const isLoginPage = pathname === '/corp-login' || pathname === '/corp-forgot-password';
 
   /* These should later come from auth/session */
   useEffect(() => {

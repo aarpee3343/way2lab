@@ -5,10 +5,11 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { prisma } from '@/lib/db';
 import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
-import { OrderStatus } from '@prisma/client';
+import { AdminRole, OrderStatus } from '@prisma/client';
 import { processAndSaveSummary } from '@/lib/aiService';
 import { sendSMS } from '@/lib/sms';
 
+const ORDER_ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN'];
 
 
 
@@ -24,7 +25,7 @@ export async function getAdminOrders(params: {
   source?: string;
   corporate?: string;
 }) {
-  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  await requireAdmin({ roles: ORDER_ADMIN_ROLES });
   const page = Number(params.page) || 1;
   const limit = 20;
   const skip = (page - 1) * limit;
@@ -170,65 +171,70 @@ export async function getAdminOrders(params: {
 ============================================================================= */
 
 export async function updateOrderStatusAction(formData: FormData) {
-  await requireAdmin({ roles: ['SUPER_ADMIN'] });
-  const orderId = Number(formData.get('orderId'));
-  const newStatus = formData.get('status') as OrderStatus;
+  try {
+    await requireAdmin({ roles: ORDER_ADMIN_ROLES });
+    const orderId = Number(formData.get('orderId'));
+    const newStatusRaw = String(formData.get('status') || '');
 
-  if (!orderId || !newStatus) {
-    return { success: false };
-  }
+    const validStatuses = new Set(Object.values(OrderStatus));
+    if (!orderId || !newStatusRaw || !validStatuses.has(newStatusRaw as OrderStatus)) {
+      return { success: false, error: 'Invalid payload' };
+    }
+    const newStatus = newStatusRaw as OrderStatus;
 
-  /* ---------- 1. Fetch existing order + phone ---------- */
-  const orderData = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: {
-      status: true,
-      orderNumber: true,
-      customer: { select: { phone: true } },
-      patientPhone: true,
-    },
-  });
-
-  if (!orderData) {
-    return { success: false };
-  }
-
-  /* ---------- 2. Update status + activity (transaction) ---------- */
-  await prisma.$transaction(async (tx) => {
-    await tx.order.update({
+    /* ---------- 1. Fetch existing order + phone ---------- */
+    const orderData = await prisma.order.findUnique({
       where: { id: orderId },
-      data: { status: newStatus },
-    });
-
-    await tx.orderActivity.create({
-      data: {
-        orderId,
-        action: 'STATUS_UPDATED',
-        oldValue: orderData.status,
-        newValue: newStatus,
-        performedBy: 'ADMIN',
+      select: {
+        status: true,
+        orderNumber: true,
+        customer: { select: { phone: true } },
+        patientPhone: true,
       },
     });
-  });
 
-  /* ---------- 3. Send SMS (non-blocking) ---------- */
-  const mobile =
-    orderData.customer?.phone || orderData.patientPhone;
-
-  if (mobile && newStatus === 'PROCESSING') {
-    try {
-      await sendSMS(
-        mobile,
-        'SAMPLE_COLLECTED',
-        [orderData.orderNumber || String(orderId)]
-      );
-    } catch (smsError) {
-      console.error('SMS sending failed:', smsError);
-      // Do NOT affect success response
+    if (!orderData) {
+      return { success: false, error: 'Order not found' };
     }
-  }
 
-  return { success: true };
+    /* ---------- 2. Update status + activity (transaction) ---------- */
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: newStatus },
+      });
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'STATUS_UPDATED',
+          oldValue: orderData.status,
+          newValue: newStatus,
+          performedBy: 'ADMIN',
+        },
+      });
+    });
+
+    /* ---------- 3. Send SMS (non-blocking) ---------- */
+    const mobile = orderData.customer?.phone || orderData.patientPhone;
+
+    if (mobile && newStatus === 'PROCESSING') {
+      try {
+        await sendSMS(
+          mobile,
+          'SAMPLE_COLLECTED',
+          [orderData.orderNumber || String(orderId)]
+        );
+      } catch (smsError) {
+        console.error('SMS sending failed:', smsError);
+      }
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('updateOrderStatusAction failed:', err);
+    return { success: false, error: 'Status update failed' };
+  }
 }
 
 /* =============================================================================
@@ -236,38 +242,51 @@ export async function updateOrderStatusAction(formData: FormData) {
 ============================================================================= */
 
 export async function assignTechnicianAction(formData: FormData) {
-  await requireAdmin({ roles: ['SUPER_ADMIN'] });
-  const orderId = Number(formData.get('orderId'));
-  const technicianId = Number(formData.get('technicianId'));
+  try {
+    await requireAdmin({ roles: ORDER_ADMIN_ROLES });
+    const orderId = Number(formData.get('orderId'));
+    const technicianId = Number(formData.get('technicianId'));
 
-  const old = await prisma.order.findUnique({
-    where: { id: orderId },
-    select: { technicianId: true }
-  });
+    if (!orderId || !technicianId) {
+      return { success: false, error: 'Order and technician are required' };
+    }
 
-  await prisma.$transaction(async tx => {
-    await tx.order.update({
+    const old = await prisma.order.findUnique({
       where: { id: orderId },
-      data: {
-        technicianId,
-        status: OrderStatus.PROCESSING
-      }
+      select: { technicianId: true }
     });
 
-    await tx.orderActivity.create({
-      data: {
-        orderId,
-        action: 'TECHNICIAN_ASSIGNED',
-        oldValue: old?.technicianId
-          ? `Technician:${old.technicianId}`
-          : null,
-        newValue: `Technician:${technicianId}`,
-        performedBy: 'ADMIN'
-      }
-    });
-  });
+    if (!old) {
+      return { success: false, error: 'Order not found' };
+    }
 
-  return { success: true };
+    await prisma.$transaction(async tx => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          technicianId,
+          status: OrderStatus.PROCESSING
+        }
+      });
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'TECHNICIAN_ASSIGNED',
+          oldValue: old.technicianId
+            ? `Technician:${old.technicianId}`
+            : null,
+          newValue: `Technician:${technicianId}`,
+          performedBy: 'ADMIN'
+        }
+      });
+    });
+
+    return { success: true };
+  } catch (err) {
+    console.error('assignTechnicianAction failed:', err);
+    return { success: false, error: 'Technician assignment failed' };
+  }
 }
 
 /* =============================================================================
@@ -278,8 +297,8 @@ export async function uploadReportAction(
   _prevState: any,
   formData: FormData
 ) {
-  await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    await requireAdmin({ roles: ORDER_ADMIN_ROLES });
     const file = formData.get('file');
     const orderId = Number(formData.get('orderId'));
     const typeRaw = formData.get('type');

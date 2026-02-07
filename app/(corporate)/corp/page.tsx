@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import CorpStatsGrid from '@/components/corporate/CorpStatsGrid';
 import OnsiteActivityCard from '@/components/corporate/OnsiteActivityCard';
 import { 
@@ -14,6 +15,7 @@ import { getCorporateEmployees, getCorporateOverview } from '@/app/actions/corpo
 // If you plan to add a "Quick Create User" button here later, add them back.
 
 export default function CorporateDashboardPage() {
+  const router = useRouter();
   const [filters, setFilters] = useState({
     location: 'All Locations',
     department: 'All Departments',
@@ -169,7 +171,7 @@ export default function CorporateDashboardPage() {
                       </td>
                       <td className="px-8 py-5 text-right">
                         <button
-                          onClick={() => window.location.href = '/corp-reports'}
+                          onClick={() => router.push(`/corp-services/${service.id}`)}
                           className="p-2 hover:bg-white rounded-xl border border-transparent hover:border-slate-200 transition-all"
                         >
                           <ChevronRight size={18} className="text-slate-400" />

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from '@/lib/safe-toast';
 import Image from "next/image";
 import {
@@ -143,6 +144,13 @@ export default function CorporateLoginPage() {
                 </>
               )}
             </button>
+
+            <Link
+              href="/corp-forgot-password"
+              className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white py-3 text-sm font-bold text-slate-600 transition-all hover:border-blue-200 hover:text-blue-600"
+            >
+              Forgot Password
+            </Link>
           </form>
 
           <div className="pt-8 flex items-center gap-3">

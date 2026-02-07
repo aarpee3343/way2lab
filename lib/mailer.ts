@@ -2,8 +2,10 @@ import axios from 'axios';
 import path from 'path';
 import { readFile } from 'fs/promises';
 
-const EMAIL_API = process.env.EMAIL_API;
+const EMAIL_API = process.env.EMAIL_API?.trim();
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY?.trim();
 const DEFAULT_FROM = process.env.EMAIL_FROM || 'WayToLab <no-reply@waytolab.com>';
+const SENDGRID_API_URL = 'https://api.sendgrid.com/v3/mail/send';
 
 const TEMPLATE_DIR = path.join(process.cwd(), 'emails', 'templates');
 
@@ -22,6 +24,30 @@ export type SendEmailOptions = {
   cc?: EmailAddress[];
   bcc?: EmailAddress[];
 };
+
+function isHttpUrl(value: string) {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isLikelySendGridApiKey(value: string) {
+  return /^SG\.[A-Za-z0-9._-]+$/.test(value);
+}
+
+function parseFromAddress(from: string) {
+  const trimmed = from.trim();
+  const match = trimmed.match(/^(.*)<([^>]+)>$/);
+  if (match) {
+    const name = match[1].trim().replace(/^"|"$/g, '');
+    const email = match[2].trim();
+    return name ? { email, name } : { email };
+  }
+  return { email: trimmed };
+}
 
 function renderTemplate(content: string, vars: Record<string, string | number | null | undefined>) {
   const withNamed = content.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_, key) => {
@@ -64,9 +90,10 @@ function stripOuterContentWrapper(html: string) {
  * Templates live in /emails/templates and support {{variable}} placeholders.
  */
 export async function sendEmail(options: SendEmailOptions) {
-  if (!EMAIL_API) {
-    console.error('EMAIL_API is not configured in environment.');
-    return { success: false, error: 'EMAIL_API not configured' };
+  const emailApiOrKey = SENDGRID_API_KEY || EMAIL_API;
+  if (!emailApiOrKey) {
+    console.error('EMAIL_API or SENDGRID_API_KEY is not configured in environment.');
+    return { success: false, error: 'Email provider not configured' };
   }
 
   const to = Array.isArray(options.to) ? options.to : [options.to];
@@ -113,14 +140,50 @@ export async function sendEmail(options: SendEmailOptions) {
       bcc: options.bcc
     };
 
-    const res = await axios.post(EMAIL_API, payload, {
-      headers: { 'Content-Type': 'application/json' }
-    });
+    const provider = isLikelySendGridApiKey(emailApiOrKey) ? 'sendgrid_key' : 'url_api';
+    const request =
+      provider === 'sendgrid_key'
+        ? axios.post(
+            SENDGRID_API_URL,
+            {
+              personalizations: [
+                {
+                  to: to.map((email) => ({ email })),
+                  ...(options.cc?.length ? { cc: options.cc.map((email) => ({ email })) } : {}),
+                  ...(options.bcc?.length ? { bcc: options.bcc.map((email) => ({ email })) } : {})
+                }
+              ],
+              from: parseFromAddress(options.from || DEFAULT_FROM),
+              subject: options.subject,
+              content: [
+                ...(text ? [{ type: 'text/plain', value: text }] : []),
+                { type: 'text/html', value: html }
+              ],
+              ...(options.replyTo ? { reply_to: { email: options.replyTo } } : {})
+            },
+            {
+              headers: {
+                Authorization: `Bearer ${emailApiOrKey}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          )
+        : isHttpUrl(emailApiOrKey)
+          ? axios.post(emailApiOrKey, payload, {
+              headers: { 'Content-Type': 'application/json' }
+            })
+          : Promise.reject(new Error('EMAIL_API must be a valid URL or a SendGrid API key'));
+
+    const res = await request;
 
     const ok = res.status >= 200 && res.status < 300;
     return ok ? { success: true } : { success: false, error: 'Email API failed' };
   } catch (error: any) {
-    console.error('Email send failed:', error?.response?.data || error);
+    console.error('Email send failed:', {
+      status: error?.response?.status,
+      message: error?.message,
+      response: error?.response?.data
+    });
     return { success: false, error: 'Email send failed' };
   }
 }

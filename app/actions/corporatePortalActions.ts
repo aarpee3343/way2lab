@@ -461,6 +461,176 @@ export async function getCorporateOverview(filter?: {
   };
 }
 
+export async function getCorporateServiceDetails(
+  serviceId: number,
+  options?: {
+    search?: string;
+    usageStatus?: 'ALL' | 'AVAILED' | 'PENDING';
+  }
+) {
+  const session = await getSession();
+  if (!session) return null;
+
+  const parsedServiceId = Number(serviceId);
+  if (!parsedServiceId) return null;
+
+  const baseEmployeeWhere = buildEmployeeWhere(session);
+  const service = await prisma.corporateService.findFirst({
+    where: { id: parsedServiceId, corporateId: session.corporateId },
+    include: {
+      package: {
+        select: {
+          id: true,
+          packageName: true,
+          isPreEmployment: true
+        }
+      },
+      coupon: {
+        select: {
+          id: true,
+          code: true
+        }
+      }
+    }
+  });
+
+  if (!service) return null;
+
+  let assignmentMode: 'ALL_EMPLOYEES' | 'PACKAGE_ASSIGNMENT' = 'ALL_EMPLOYEES';
+  let assignedCustomerIds: number[] | null = null;
+
+  if (service.packageId) {
+    const explicitAssignments = await prisma.employeePackage.findMany({
+      where: {
+        packageId: service.packageId,
+        customer: baseEmployeeWhere
+      },
+      distinct: ['customerId'],
+      select: { customerId: true }
+    });
+
+    if (explicitAssignments.length > 0) {
+      assignmentMode = 'PACKAGE_ASSIGNMENT';
+      assignedCustomerIds = explicitAssignments.map((entry) => entry.customerId);
+    }
+  }
+
+  const employeeWhere: any = {
+    ...baseEmployeeWhere
+  };
+  if (assignedCustomerIds) {
+    employeeWhere.id = { in: assignedCustomerIds };
+  }
+  if (options?.search) {
+    employeeWhere.OR = [
+      { name: { contains: options.search, mode: 'insensitive' } },
+      { email: { contains: options.search, mode: 'insensitive' } },
+      { phone: { contains: options.search, mode: 'insensitive' } },
+      { employeeId: { contains: options.search, mode: 'insensitive' } }
+    ];
+  }
+
+  const employees = await prisma.customer.findMany({
+    where: employeeWhere,
+    orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    select: {
+      id: true,
+      name: true,
+      employeeId: true,
+      email: true,
+      phone: true,
+      department: true,
+      location: true,
+      isActive: true
+    }
+  });
+
+  const employeeIds = employees.map((employee) => employee.id);
+  const usageByEmployee = new Map<number, { availedCount: number; lastAvailedAt: string | null }>();
+
+  if (employeeIds.length > 0) {
+    const usageRows = await prisma.order.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: employeeIds },
+        status: { notIn: ['CANCELLED', 'REJECTED'] },
+        ...(service.packageId ? { packageId: service.packageId } : {}),
+        ...(service.couponId ? { couponId: service.couponId } : {})
+      },
+      _count: { _all: true },
+      _max: { createdAt: true }
+    });
+
+    usageRows.forEach((row) => {
+      usageByEmployee.set(row.userId, {
+        availedCount: row._count._all,
+        lastAvailedAt: row._max.createdAt ? row._max.createdAt.toISOString() : null
+      });
+    });
+  }
+
+  const completeRows = employees.map((employee) => {
+    const usage = usageByEmployee.get(employee.id);
+    const availedCount = usage?.availedCount ?? 0;
+    const usageStatus: 'AVAILED' | 'PENDING' = availedCount > 0 ? 'AVAILED' : 'PENDING';
+
+    return {
+      id: employee.id,
+      name: employee.name || 'Employee',
+      employeeId: employee.employeeId || '',
+      email: employee.email || '',
+      phone: employee.phone || '',
+      department: employee.department || '',
+      location: employee.location || '',
+      employeeStatus: employee.isActive ? 'ACTIVE' : 'INACTIVE',
+      usageStatus,
+      availedCount,
+      lastAvailedAt: usage?.lastAvailedAt || null
+    };
+  });
+
+  const usageFilter = options?.usageStatus && options.usageStatus !== 'ALL' ? options.usageStatus : null;
+  const employeesFiltered = usageFilter
+    ? completeRows.filter((row) => row.usageStatus === usageFilter)
+    : completeRows;
+
+  const availedEmployees = completeRows.filter((row) => row.usageStatus === 'AVAILED').length;
+  const pendingEmployees = completeRows.length - availedEmployees;
+  const totalAvailedOrders = completeRows.reduce((sum, row) => sum + row.availedCount, 0);
+  const perEmployeeLimit = Number(service.selfUsageLimit || 0);
+  const totalQuota = perEmployeeLimit > 0 ? completeRows.length * perEmployeeLimit : null;
+  const remainingQuota = totalQuota !== null ? Math.max(totalQuota - totalAvailedOrders, 0) : null;
+
+  return {
+    service: {
+      id: service.id,
+      name: service.package?.packageName || `Coupon: ${service.coupon?.code || 'N/A'}`,
+      type: service.packageId ? 'PACKAGE' : 'COUPON',
+      packageId: service.packageId,
+      couponCode: service.coupon?.code || null,
+      isPreEmployment: Boolean(service.package?.isPreEmployment),
+      validFrom: service.validFrom.toISOString(),
+      validTill: service.validTill.toISOString(),
+      selfUsageLimit: service.selfUsageLimit,
+      familyUsageLimit: service.familyUsageLimit,
+      selfPaymentType: service.selfPaymentType,
+      familyPaymentType: service.familyPaymentType,
+      assignmentMode
+    },
+    summary: {
+      totalAssigned: completeRows.length,
+      availedEmployees,
+      pendingEmployees,
+      totalAvailedOrders,
+      totalQuota,
+      remainingQuota
+    },
+    employees: employeesFiltered,
+    employeesComplete: completeRows,
+    maskContactInfo: Boolean(session.maskContactInfo)
+  };
+}
+
 export async function getCorporateOnsiteActivities() {
   const session = await getSession();
   if (!session) return null;
@@ -1075,11 +1245,16 @@ export async function createCorporateUser(data: {
   }
 
   try {
+    const normalizedEmail = String(data.email || '').trim().toLowerCase();
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return { success: false, error: 'Valid email is required' };
+    }
+
     await prisma.corporateUser.create({
       data: {
         corporateId: session.corporateId,
         name: data.name,
-        email: data.email,
+        email: normalizedEmail,
         password: await bcrypt.hash(data.password, 10),
         role: data.role,
         canEdit: Boolean(data.canEdit),
@@ -1095,7 +1270,7 @@ export async function createCorporateUser(data: {
       session.corporateId,
       actor,
       'SUB_ADMIN_CREATED',
-      `Created corporate user: ${data.email}`
+      `Created corporate user: ${normalizedEmail}`
     );
 
     revalidatePath('/corp-users');

@@ -58,6 +58,16 @@ model VerificationCode {
   @@map("verification_codes")
 }
 
+model EmailVerificationCode {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  code      String
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("email_verification_codes")
+}
+
 model AppSetting {
   id        Int      @id @default(autoincrement())
   key       String   @unique

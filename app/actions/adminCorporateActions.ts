@@ -7,6 +7,8 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { sendSMS } from '@/lib/sms';
 
+const normalizeEmail = (value: unknown) => String(value || '').trim().toLowerCase();
+
 // --- 1. GET DASHBOARD STATS ---
 export async function getCorporateDashboardStats() {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
@@ -36,6 +38,11 @@ export async function getCorporateDashboardStats() {
 export async function createCorporateAction(data: any) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const normalizedEmail = normalizeEmail(data.email);
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return { success: false, error: 'Valid corporate email is required' };
+    }
+
     const passwordHash = await bcrypt.hash(data.password, 10);
 
     const corporate = await prisma.$transaction(async (tx) => {
@@ -43,7 +50,7 @@ export async function createCorporateAction(data: any) {
         data: {
           companyName: data.companyName,
           contactPerson: data.contactPerson,
-          email: data.email,
+          email: normalizedEmail,
           phone: data.phone,
           password: passwordHash,
           address: data.address,
@@ -62,7 +69,7 @@ export async function createCorporateAction(data: any) {
         data: {
           corporateId: corp.id,
           name: data.contactPerson || data.companyName,
-          email: data.email,
+          email: normalizedEmail,
           password: passwordHash,
           role: 'SUPER_ADMIN',
           canEdit: true,
@@ -745,12 +752,17 @@ export async function bulkUpdateEmployeeStatus(emails: string[], status: boolean
 export async function updateCorporateAction(id: number, data: any) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const normalizedEmail = normalizeEmail(data.email);
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return { success: false, error: 'Valid corporate email is required' };
+    }
+
     // Optional: If password is provided, hash it. If empty, remove it from update data.
     const updateData: any = {
       companyName: data.companyName,
       contactPerson: data.contactPerson,
       phone: data.phone,
-      email: data.email,
+      email: normalizedEmail,
       address: data.address,
       city: data.city,
       state: data.state,
@@ -767,9 +779,44 @@ export async function updateCorporateAction(id: number, data: any) {
       updateData.logoUrl = data.logoUrl || null;
     }
 
-    await prisma.corporate.update({
-      where: { id },
-      data: updateData
+    await prisma.$transaction(async (tx) => {
+      const current = await tx.corporate.findUnique({
+        where: { id },
+        select: { email: true }
+      });
+
+      if (!current) {
+        throw new Error('Corporate not found');
+      }
+
+      await tx.corporate.update({
+        where: { id },
+        data: updateData
+      });
+
+      // Keep primary corporate login in sync with corporate master credentials.
+      if (normalizeEmail(current.email) !== normalizedEmail) {
+        await tx.corporateUser.updateMany({
+          where: {
+            corporateId: id,
+            email: { equals: current.email, mode: 'insensitive' }
+          },
+          data: { email: normalizedEmail }
+        });
+      }
+
+      if (updateData.password) {
+        await tx.corporateUser.updateMany({
+          where: {
+            corporateId: id,
+            OR: [
+              { role: 'SUPER_ADMIN' },
+              { email: { equals: normalizedEmail, mode: 'insensitive' } }
+            ]
+          },
+          data: { password: updateData.password }
+        });
+      }
     });
 
     revalidatePath(`/admin/corporates/${id}`);

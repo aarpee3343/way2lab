@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
 
   reactStrictMode: false,
 
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '15mb',
+      allowedOrigins: ['waytolab.com', 'www.waytolab.com'],
+    },
+  },
+
   images: {
     // Modern & secure
     remotePatterns: [

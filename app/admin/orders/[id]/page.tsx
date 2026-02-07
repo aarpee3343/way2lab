@@ -1,7 +1,8 @@
 // app/admin/orders/[id]/page.tsx
 import { prisma } from '@/lib/db';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { requireAdmin } from '@/lib/admin-auth';
 import {
   updateOrderStatusAction,
   assignTechnicianAction
@@ -68,6 +69,12 @@ export default async function OrderDetailsPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  try {
+    await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
+  } catch {
+    redirect('/admin/login');
+  }
+
   const { id } = await params;
   const orderId = Number(id);
   if (!orderId || Number.isNaN(orderId)) return notFound();
