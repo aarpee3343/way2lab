@@ -13,6 +13,48 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const VALID_STATUS_FILTERS = new Set([
+  'ALL',
+  'PENDING',
+  'ACCEPTED',
+  'PROCESSING',
+  'PARTIAL_COMPLETED',
+  'COMPLETED',
+  'REJECTED',
+  'CANCELLED'
+]);
+
+function normalizeStatusFilter(input?: string | string[]) {
+  const raw = Array.isArray(input) ? input[0] : input;
+  const normalized = String(raw || 'ALL').trim().toUpperCase();
+  return VALID_STATUS_FILTERS.has(normalized) ? normalized : 'ALL';
+}
+
+function normalizeStringFilter(input?: string | string[]) {
+  const raw = Array.isArray(input) ? input[0] : input;
+  return String(raw || '');
+}
+
+function formatDateTime(value?: string | Date | null) {
+  if (!value) return '-';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
+  }).format(date);
+}
+
+function statusLabel(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
 export default async function OrdersPage({
   searchParams
 }: {
@@ -20,10 +62,19 @@ export default async function OrdersPage({
 }) {
   const params = await searchParams;
 
-  const status = (params.status as string) || 'all';
-  const search = (params.search as string) || '';
+  const status = normalizeStatusFilter(params.status);
+  const search = normalizeStringFilter(params.search);
   const page = Number(params.page) || 1;
-  const corp = (params.corp as string) || 'all';
+  const corp = normalizeStringFilter(params.corp) || 'all';
+
+  const buildPageHref = (nextPage: number) => {
+    const sp = new URLSearchParams();
+    if (status !== 'ALL') sp.set('status', status);
+    if (search) sp.set('search', search);
+    if (corp !== 'all') sp.set('corp', corp);
+    sp.set('page', String(nextPage));
+    return `?${sp.toString()}`;
+  };
 
   const {
   orders,
@@ -104,11 +155,14 @@ export default async function OrdersPage({
               defaultValue={status}
               className="admin-form-select"
             >
-              <option value="all">All Status</option>
-              <option value="Pending">Pending</option>
-              <option value="Processing">Processing</option>
-              <option value="Completed">Completed</option>
-              <option value="Cancelled">Cancelled</option>
+              <option value="ALL">All Status</option>
+              <option value="PENDING">Pending</option>
+              <option value="ACCEPTED">Accepted</option>
+              <option value="PROCESSING">Processing</option>
+              <option value="PARTIAL_COMPLETED">Partial Completed</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="REJECTED">Rejected</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
 
             <select
@@ -135,8 +189,7 @@ export default async function OrdersPage({
       </div>
 
       {/* ================= ORDERS TABLE ================= */}
-      <div className="admin-table-container">
-        <table className="admin-table">
+      <table className="admin-table admin-table-container">
           <thead>
             <tr>
               <th>Order</th>
@@ -163,7 +216,7 @@ export default async function OrdersPage({
                       #{order.orderNumber}
                     </div>
                     <div className="admin-table-row-secondary">
-                      {new Date(order.createdAt).toLocaleString()}
+                      {formatDateTime(order.createdAt)}
                     </div>
                   </td>
 
@@ -244,36 +297,35 @@ export default async function OrdersPage({
               </tr>
             )}
           </tbody>
-        </table>
+      </table>
 
-        {/* ================= PAGINATION ================= */}
-        {totalPages > 1 && (
-          <div className="flex justify-between items-center px-6 py-4 border-t bg-slate-50">
-            <span className="text-xs text-slate-500">
-              Page {page} of {totalPages}
-            </span>
+      {/* ================= PAGINATION ================= */}
+      {totalPages > 1 && (
+        <div className="admin-table-container flex justify-between items-center px-6 py-4 border-t bg-slate-50">
+          <span className="text-xs text-slate-500">
+            Page {page} of {totalPages}
+          </span>
 
-            <div className="admin-space-x">
-              {page > 1 && (
-                <Link
-                  href={`?page=${page - 1}`}
-                  className="admin-btn-secondary"
-                >
-                  Previous
-                </Link>
-              )}
-              {page < totalPages && (
-                <Link
-                  href={`?page=${page + 1}`}
-                  className="admin-btn-secondary"
-                >
-                  Next
-                </Link>
-              )}
-            </div>
+          <div className="admin-space-x">
+            {page > 1 && (
+              <Link
+                href={buildPageHref(page - 1)}
+                className="admin-btn-secondary"
+              >
+                Previous
+              </Link>
+            )}
+            {page < totalPages && (
+              <Link
+                href={buildPageHref(page + 1)}
+                className="admin-btn-secondary"
+              >
+                Next
+              </Link>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -313,13 +365,13 @@ function StatusBadge({ status }: { status: string }) {
         Pending
       </Badge>
     );
-  if (status === 'CANCELLED')
+  if (status === 'CANCELLED' || status === 'REJECTED')
     return (
       <Badge color="rose" icon={<XCircle size={14} />}>
-        Cancelled
+        {statusLabel(status)}
       </Badge>
     );
-  return <Badge>{status}</Badge>;
+  return <Badge>{statusLabel(status)}</Badge>;
 }
 
 function PaymentBadge({ status }: { status?: string | null }) {

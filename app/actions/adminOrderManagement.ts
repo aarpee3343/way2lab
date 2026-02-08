@@ -30,12 +30,11 @@ export async function getAdminOrders(params: {
   const limit = 20;
   const skip = (page - 1) * limit;
 
-  const where: any = {
-    status: { notIn: ['CANCELLED', 'REJECTED'] }
-  };
-
-  if (params.status && params.status !== 'all') {
-    where.status = params.status.toUpperCase();
+  const where: any = {};
+  const statusParam = String(params.status || 'ALL').trim().toUpperCase();
+  const validStatuses = new Set(Object.values(OrderStatus));
+  if (statusParam !== 'ALL' && validStatuses.has(statusParam as OrderStatus)) {
+    where.status = statusParam as OrderStatus;
   }
 
   if (params.payment && params.payment !== 'all') {
