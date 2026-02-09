@@ -187,9 +187,13 @@ export default function Footer() {
               <input 
                 type="email" 
                 placeholder="Enter your email" 
+                aria-label="Enter your email for health updates"
                 className="w-full bg-teal-900/30 border border-teal-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 text-white placeholder:text-teal-600"
               />
-              <button className="absolute right-2 top-2 p-2 bg-teal-600 rounded-lg text-white hover:bg-teal-500 transition-colors">
+              <button
+                aria-label="Subscribe to health updates"
+                className="absolute right-2 top-2 p-2 bg-teal-600 rounded-lg text-white hover:bg-teal-500 transition-colors"
+              >
                 <ArrowUpRight size={16} />
               </button>
             </div>
@@ -237,9 +241,12 @@ export default function Footer() {
         </div>
 
         {/* Healthcare Watermark */}
-        <h1 className="text-[15vw] font-bold text-teal-950 leading-none text-center select-none pointer-events-none opacity-5 absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap">
+        <div
+          aria-hidden="true"
+          className="text-[15vw] font-bold text-teal-950 leading-none text-center select-none pointer-events-none opacity-5 absolute -bottom-10 left-1/2 -translate-x-1/2 whitespace-nowrap"
+        >
           WayToLab
-        </h1>
+        </div>
       </div>
 
       {/* Floating Healthcare WhatsApp Button */}

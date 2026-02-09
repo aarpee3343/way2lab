@@ -1,7 +1,7 @@
 // app/admin/orders/create/page.tsx
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   checkCustomerAction, 
   searchAdminTestsAction, 
@@ -70,22 +70,28 @@ export default function AdminCreateOrder() {
   const [paymentModes, setPaymentModes] = useState<string[]>(['Pay Upon Service']);
   const settingsAppliedRef = useRef(false);
 
-  const resetCustomerAndAddress = () => {
+  const resetCustomerAndAddress = useCallback(() => {
     setPhone('');
-    setCustomer(emptyCustomer);
+    setCustomer({ id: null, name: '', email: '', dob: '', age: '', gender: '' });
     setSavedAddresses([]);
     setShowAddrSuggestions(false);
-    setAddress(emptyAddress);
-  };
+    setAddress({
+      id: null,
+      pincode: '',
+      city: '',
+      state: '',
+      line: ''
+    });
+  }, []);
 
-  const resetCartAndDiscounts = () => {
+  const resetCartAndDiscounts = useCallback(() => {
     setCart([]);
     setQuery('');
     setSearchResults([]);
     setDiscountApplied(false);
     setCouponDiscount(0);
     setCouponCode('');
-  };
+  }, []);
 
   useEffect(() => {
     setDiscountApplied(false);
@@ -143,7 +149,7 @@ export default function AdminCreateOrder() {
     setSelectedEmployeeId(null);
     setEmployees([]);
     setEmployeeSearch('');
-  }, [orderType]);
+  }, [orderType, resetCustomerAndAddress, resetCartAndDiscounts]);
 
   useEffect(() => {
     if (orderType !== 'corporate') return;

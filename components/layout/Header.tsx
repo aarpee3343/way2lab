@@ -168,7 +168,11 @@ export default function Header() {
           <div className="flex items-center gap-3">
             
             {/* Cart Icon */}
-            <Link href="/cart" className="relative p-2.5 text-slate-600 hover:bg-teal-50 rounded-full transition-colors group">
+            <Link
+              href="/cart"
+              aria-label={`Cart (${items.length} items)`}
+              className="relative p-2.5 text-slate-600 hover:bg-teal-50 rounded-full transition-colors group"
+            >
               <div className="relative">
                 <ShoppingCart size={22} className="group-hover:text-teal-600 transition-colors" />
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-600 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -194,6 +198,7 @@ export default function Header() {
               <div className="hidden md:block relative" ref={userMenuRef}>
                 <button 
                   onClick={() => setShowUserMenu(!showUserMenu)}
+                  aria-label={showUserMenu ? 'Close account menu' : 'Open account menu'}
                   className="flex items-center gap-2 pl-2 pr-4 py-1.5 bg-white border border-teal-100 rounded-xl hover:shadow-md transition-all group hover:border-teal-300"
                 >
                   <div className="w-9 h-9 bg-gradient-to-br from-teal-500 to-teal-600 text-white rounded-full flex items-center justify-center font-bold shadow-sm">
@@ -247,6 +252,7 @@ export default function Header() {
             {/* Mobile Hamburger */}
             <button 
               onClick={() => setIsMobileOpen(true)}
+              aria-label="Open mobile menu"
               className="md:hidden p-2.5 text-slate-700 bg-white border border-teal-100 rounded-xl active:scale-95 transition-all shadow-sm"
             >
               <Menu size={22} />
@@ -274,7 +280,11 @@ export default function Header() {
                     <Image src="/logo.png" alt="WayToLab" width={140} height={36} className="h-9 w-auto" priority />
                     <span className="font-bold text-lg text-slate-800">WayToLab</span>
                  </div>
-                 <button onClick={() => setIsMobileOpen(false)} className="p-2 bg-white text-teal-600 rounded-full hover:bg-teal-50 border border-teal-200">
+                 <button
+                   onClick={() => setIsMobileOpen(false)}
+                   aria-label="Close mobile menu"
+                   className="p-2 bg-white text-teal-600 rounded-full hover:bg-teal-50 border border-teal-200"
+                 >
                    <X size={20} />
                  </button>
               </div>

@@ -150,7 +150,7 @@ export default function AdminOnsitePage() {
     } else {
       setLabName('');
     }
-  }, [selectedCampId, selectedCamp?.labName]);
+  }, [selectedCamp]);
 
   const handleStartCamp = async () => {
     if (!selectedCorporateId) return toast.error('Select a corporate first');
