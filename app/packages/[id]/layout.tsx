@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { absoluteUrl, truncate } from '@/lib/seo';
+import { buildBreadcrumbSchema, buildFaqSchema } from '@/lib/schema';
 
 type Props = {
   children: React.ReactNode;
@@ -100,52 +101,30 @@ export default async function PackageDetailLayout({ children, params }: Props) {
       }
     : null;
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'Packages', item: absoluteUrl('/packages') },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: pkg?.packageName || 'Package',
-        item: absoluteUrl(`/packages/${pkg?.id || id}`)
-      }
-    ]
-  };
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'Packages', item: absoluteUrl('/packages') },
+    {
+      name: pkg?.packageName || 'Package',
+      item: absoluteUrl(`/packages/${pkg?.id || id}`)
+    }
+  ]);
 
   const faqJsonLd = pkg
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: `What does ${pkg.packageName} include?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `${pkg.packageName} includes ${pkg.tests.length} diagnostic tests. Review the included test list on this page before booking.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `Is home collection available for ${pkg.packageName}?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `Home collection depends on the selected lab and service area. Availability is shown during checkout.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `How do I choose the best lab for ${pkg.packageName}?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `Compare lab availability, pricing, and schedule options, then confirm booking with your preferred lab.`
-            }
-          }
-        ]
-      }
+    ? buildFaqSchema([
+        {
+          question: `What does ${pkg.packageName} include?`,
+          answer: `${pkg.packageName} includes ${pkg.tests.length} diagnostic tests. Review the included test list on this page before booking.`
+        },
+        {
+          question: `Is home collection available for ${pkg.packageName}?`,
+          answer: `Home collection depends on the selected lab and service area. Availability is shown during checkout.`
+        },
+        {
+          question: `How do I choose the best lab for ${pkg.packageName}?`,
+          answer: `Compare lab availability, pricing, and schedule options, then confirm booking with your preferred lab.`
+        }
+      ])
     : null;
 
   return (

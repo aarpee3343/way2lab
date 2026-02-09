@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { absoluteUrl, truncate } from '@/lib/seo';
+import { buildBreadcrumbSchema, buildFaqSchema, buildLabSchema } from '@/lib/schema';
 
 type Props = {
   children: React.ReactNode;
@@ -21,8 +22,12 @@ async function getLab(id: string) {
       state: true,
       pincode: true,
       contactNo: true,
+      email: true,
       rating: true,
-      reviewCount: true
+      reviewCount: true,
+      latitude: true,
+      longitude: true,
+      timings: true
     }
   });
 }
@@ -101,79 +106,49 @@ export default async function LabDetailLayout({ children, params }: Props) {
     : [];
 
   const jsonLd = lab
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'MedicalBusiness',
+    ? buildLabSchema({
+        id: lab.id,
         name: lab.labName,
-        address: {
-          '@type': 'PostalAddress',
-          streetAddress: lab.address || undefined,
-          addressLocality: lab.city || undefined,
-          addressRegion: lab.state || undefined,
-          postalCode: lab.pincode || undefined,
-          addressCountry: 'IN'
-        },
-        telephone: lab.contactNo || undefined,
-        aggregateRating:
-          Number(lab.reviewCount || 0) > 0
-            ? {
-                '@type': 'AggregateRating',
-                ratingValue: Number(lab.rating || 0),
-                reviewCount: Number(lab.reviewCount || 0)
-              }
-            : undefined,
-        url: absoluteUrl(`/labs/${lab.id}`)
-      }
+        phone: lab.contactNo,
+        email: lab.email,
+        address: lab.address,
+        city: lab.city,
+        state: lab.state,
+        pincode: lab.pincode,
+        latitude: lab.latitude,
+        longitude: lab.longitude,
+        rating: Number(lab.rating || 0),
+        reviewCount: Number(lab.reviewCount || 0),
+        timings: lab.timings
+      })
     : null;
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'Labs', item: absoluteUrl('/labs') },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: lab?.labName || 'Lab',
-        item: absoluteUrl(`/labs/${lab?.id || id}`)
-      }
-    ]
-  };
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'Labs', item: absoluteUrl('/labs') },
+    {
+      name: lab?.labName || 'Lab',
+      item: absoluteUrl(`/labs/${lab?.id || id}`)
+    }
+  ]);
 
   const faqJsonLd = lab
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: `Is ${lab.labName} available for home sample collection?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `Home collection depends on test type and pincode serviceability. Confirm slot availability during checkout.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `How can I contact ${lab.labName}?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: lab.contactNo
-                ? `You can reach the lab on ${lab.contactNo}.`
-                : `Contact information is shown on the lab profile when available.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `Which tests and packages are available at ${lab.labName}?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `Available tests and packages are listed on this page and may vary by lab catalog updates.`
-            }
-          }
-        ]
-      }
+    ? buildFaqSchema([
+        {
+          question: `Is ${lab.labName} available for home sample collection?`,
+          answer: `Home collection depends on test type and pincode serviceability. Confirm slot availability during checkout.`
+        },
+        {
+          question: `How can I contact ${lab.labName}?`,
+          answer: lab.contactNo
+            ? `You can reach the lab on ${lab.contactNo}.`
+            : `Contact information is shown on the lab profile when available.`
+        },
+        {
+          question: `Which tests and packages are available at ${lab.labName}?`,
+          answer: `Available tests and packages are listed on this page and may vary by lab catalog updates.`
+        }
+      ])
     : null;
 
   return (

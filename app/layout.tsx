@@ -4,9 +4,12 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 import LayoutClient from "./layout-client";
 import { absoluteUrl, getBaseUrl } from "@/lib/seo";
+import { buildOrganizationSchema, buildWebsiteSchema } from "@/lib/schema";
 
 
 const inter = Inter({ subsets: ["latin"] });
+const organizationSchema = buildOrganizationSchema();
+const websiteSchema = buildWebsiteSchema();
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
@@ -84,31 +87,14 @@ export default function RootLayout({
           type="application/ld+json"
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "WayToLab",
-              url: absoluteUrl("/"),
-              logo: absoluteUrl("/logo.png"),
-              sameAs: []
-            })
+            __html: JSON.stringify(organizationSchema)
           }}
         />
         <script
           type="application/ld+json"
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "WayToLab",
-              url: absoluteUrl("/"),
-              potentialAction: {
-                "@type": "SearchAction",
-                target: `${absoluteUrl("/search")}?q={search_term_string}`,
-                "query-input": "required name=search_term_string"
-              }
-            })
+            __html: JSON.stringify(websiteSchema)
           }}
         />
         <LayoutClient>{children}</LayoutClient>

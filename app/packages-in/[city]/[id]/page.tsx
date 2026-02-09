@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { absoluteUrl, toSlug, truncate } from '@/lib/seo';
+import { buildBreadcrumbSchema } from '@/lib/schema';
 
 type Props = {
   params: Promise<{ city: string; id: string }>;
@@ -97,16 +98,12 @@ export default async function CityPackagePage({ params }: Props) {
     );
   }
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'Packages', item: absoluteUrl('/packages') },
-      { '@type': 'ListItem', position: 3, name: `Packages in ${data.cityName}`, item: absoluteUrl(`/packages-in/${city}`) },
-      { '@type': 'ListItem', position: 4, name: data.pkg.packageName, item: absoluteUrl(`/packages-in/${city}/${id}`) }
-    ]
-  };
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'Packages', item: absoluteUrl('/packages') },
+    { name: `Packages in ${data.cityName}`, item: absoluteUrl(`/packages-in/${city}`) },
+    { name: data.pkg.packageName, item: absoluteUrl(`/packages-in/${city}/${id}`) }
+  ]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/20 via-white to-slate-50 py-12">
@@ -180,4 +177,3 @@ export default async function CityPackagePage({ params }: Props) {
     </div>
   );
 }
-

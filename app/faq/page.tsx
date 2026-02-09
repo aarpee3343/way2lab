@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { absoluteUrl } from '@/lib/seo';
+import { buildBreadcrumbSchema, buildFaqSchema } from '@/lib/schema';
 import FaqAccordion from '@/components/faq/FaqAccordion';
 
 export const metadata: Metadata = {
@@ -100,27 +101,11 @@ const faqs = [
 ];
 
 export default function FaqPage() {
-  const faqJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map((item) => ({
-      '@type': 'Question',
-      name: item.q,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: item.a
-      }
-    }))
-  };
-
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'FAQ', item: absoluteUrl('/faq') }
-    ]
-  };
+  const faqJsonLd = buildFaqSchema(faqs.map((item) => ({ question: item.q, answer: item.a })));
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'FAQ', item: absoluteUrl('/faq') }
+  ]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/20 via-white to-slate-50 py-12">

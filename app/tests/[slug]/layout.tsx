@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { absoluteUrl, toSlug, truncate } from '@/lib/seo';
+import { buildBreadcrumbSchema, buildFaqSchema } from '@/lib/schema';
 
 type Props = {
   children: React.ReactNode;
@@ -109,56 +110,34 @@ export default async function TestDetailLayout({ children, params }: Props) {
       }
     : null;
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'Tests', item: absoluteUrl('/tests') },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: test?.testName || toSlug(slug) || 'Test',
-        item: absoluteUrl(`/tests/${canonicalSlug}`)
-      }
-    ]
-  };
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'Tests', item: absoluteUrl('/tests') },
+    {
+      name: test?.testName || toSlug(slug) || 'Test',
+      item: absoluteUrl(`/tests/${canonicalSlug}`)
+    }
+  ]);
 
   const faqJsonLd = test
-    ? {
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: [
-          {
-            '@type': 'Question',
-            name: `How should I prepare for ${test.testName}?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text:
-                test.preparation ||
-                `Preparation depends on the test protocol. Confirm fasting and medication guidance before sample collection.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `How long does ${test.testName} reporting take?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text:
-                test.scheduleReporting ||
-                `Reporting timelines vary by lab workflow. Exact turnaround time is confirmed at booking.`
-            }
-          },
-          {
-            '@type': 'Question',
-            name: `Can I book ${test.testName} with home collection?`,
-            acceptedAnswer: {
-              '@type': 'Answer',
-              text: `Home collection availability depends on selected lab and serviceability in your pincode.`
-            }
-          }
-        ]
-      }
+    ? buildFaqSchema([
+        {
+          question: `How should I prepare for ${test.testName}?`,
+          answer:
+            test.preparation ||
+            `Preparation depends on the test protocol. Confirm fasting and medication guidance before sample collection.`
+        },
+        {
+          question: `How long does ${test.testName} reporting take?`,
+          answer:
+            test.scheduleReporting ||
+            `Reporting timelines vary by lab workflow. Exact turnaround time is confirmed at booking.`
+        },
+        {
+          question: `Can I book ${test.testName} with home collection?`,
+          answer: `Home collection availability depends on selected lab and serviceability in your pincode.`
+        }
+      ])
     : null;
 
   return (

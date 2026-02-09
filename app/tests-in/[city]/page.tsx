@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { prisma } from '@/lib/db';
 import { absoluteUrl, toSlug, truncate } from '@/lib/seo';
+import { buildBreadcrumbSchema } from '@/lib/schema';
 
 type Props = {
   params: Promise<{ city: string }>;
@@ -85,20 +86,11 @@ export default async function CityTestsPage({ params }: Props) {
   const data = await getCityTests(city);
   const cityLabel = data.cityName || city.replace(/-/g, ' ');
 
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: absoluteUrl('/') },
-      { '@type': 'ListItem', position: 2, name: 'Tests', item: absoluteUrl('/tests') },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: `Tests in ${cityLabel}`,
-        item: absoluteUrl(`/tests-in/${city}`)
-      }
-    ]
-  };
+  const breadcrumbJsonLd = buildBreadcrumbSchema([
+    { name: 'Home', item: absoluteUrl('/') },
+    { name: 'Tests', item: absoluteUrl('/tests') },
+    { name: `Tests in ${cityLabel}`, item: absoluteUrl(`/tests-in/${city}`) }
+  ]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-teal-50/20 via-white to-slate-50 py-12">
@@ -137,4 +129,3 @@ export default async function CityTestsPage({ params }: Props) {
     </div>
   );
 }
-
