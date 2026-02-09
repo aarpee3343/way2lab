@@ -9,7 +9,7 @@ interface LegalLayoutProps {
   title: string;
   subtitle: string;
   updatedAt: string;
-  icon: 'privacy' | 'terms' | 'refund';
+  icon: 'privacy' | 'terms' | 'refund' | 'logo';
   children: React.ReactNode;
 }
 
@@ -18,7 +18,16 @@ export default function LegalLayout({ title, subtitle, updatedAt, icon, children
   const icons = {
     privacy: <ShieldCheck className="w-14 h-14 text-teal-500" />,
     terms: <Scale className="w-14 h-14 text-blue-500" />,
-    refund: <FileText className="w-14 h-14 text-emerald-500" />
+    refund: <FileText className="w-14 h-14 text-emerald-500" />,
+    logo: (
+      <Image
+        src="/logo.png"
+        alt="WayToLab"
+        width={56}
+        height={56}
+        className="object-contain"
+      />
+    )
   };
 
   const iconColors = {

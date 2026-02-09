@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
       title="Healthcare Privacy Policy" 
       subtitle="We protect your medical data with industry-leading security and compliance."
       updatedAt="January 28, 2026"
-      icon="privacy"
+      icon="logo"
     >
       <div className="space-y-8">
         <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-6 rounded-2xl border border-teal-100 mb-8">

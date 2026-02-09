@@ -7,7 +7,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, ShoppingCart, FlaskConical, Building2, 
   Users, Ticket, Briefcase, Menu, Package, Map, Settings, LogOut, MessageSquare,
-  ClipboardList
+  ClipboardList, BarChart3
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -56,6 +56,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Technicians', icon: Users, href: '/admin/technicians' },
     { name: 'Corporates', icon: Briefcase, href: '/admin/corporates' },
     { name: 'Onsite Programme', icon: ClipboardList, href: '/admin/onsite' },
+    { name: 'SEO Health', icon: BarChart3, href: '/admin/seo-health' },
     { name: 'Chats', icon: MessageSquare, href: '/admin/support' },
     { name: 'Settings', icon: Settings, href: '/admin/settings' },
   ];

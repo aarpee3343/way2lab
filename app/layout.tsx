@@ -3,11 +3,13 @@ import { Inter } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next"
 import "./globals.css";
 import LayoutClient from "./layout-client";
+import { absoluteUrl, getBaseUrl } from "@/lib/seo";
 
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: "WayToLab - Advanced Diagnostic Healthcare",
   description:
     "Book diagnostic tests from certified labs with home collection, AI-powered reports, and expert consultation",
@@ -25,6 +27,24 @@ export const metadata: Metadata = {
     title: "WayToLab - Advanced Diagnostic Healthcare",
     description: "Book diagnostic tests from certified labs",
     siteName: "WayToLab",
+    url: absoluteUrl("/"),
+    images: [
+      {
+        url: absoluteUrl("/logo.png"),
+        width: 512,
+        height: 512,
+        alt: "WayToLab"
+      }
+    ]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WayToLab - Advanced Diagnostic Healthcare",
+    description: "Book diagnostic tests from certified labs with home collection.",
+    images: [absoluteUrl("/logo.png")]
+  },
+  alternates: {
+    canonical: absoluteUrl("/")
   },
   icons: {
     icon: [
@@ -60,6 +80,37 @@ export default function RootLayout({
       <body
         className={`${inter.className} antialiased bg-gradient-to-b from-teal-50/20 via-white to-slate-50`}
       >
+        <script
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "WayToLab",
+              url: absoluteUrl("/"),
+              logo: absoluteUrl("/logo.png"),
+              sameAs: []
+            })
+          }}
+        />
+        <script
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "WayToLab",
+              url: absoluteUrl("/"),
+              potentialAction: {
+                "@type": "SearchAction",
+                target: `${absoluteUrl("/search")}?q={search_term_string}`,
+                "query-input": "required name=search_term_string"
+              }
+            })
+          }}
+        />
         <LayoutClient>{children}</LayoutClient>
         <SpeedInsights />
       </body>

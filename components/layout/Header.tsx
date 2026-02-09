@@ -90,6 +90,7 @@ export default function Header() {
     { name: 'Tests', href: '/search', icon: Search },
     { name: 'Packages', href: '/packages', icon: Package },
     { name: 'Labs Network', href: '/labs', icon: Stethoscope },
+    { name: 'FAQ', href: '/faq', icon: Info },
     { name: 'Health Blog', href: '/blogs', icon: Heart },
     // { name: 'About Us', href: '/about', icon: Info },
     // { name: 'Contact', href: '/contact', icon: Phone },

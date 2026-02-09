@@ -6,7 +6,7 @@ export default function RefundPolicy() {
       title="Healthcare Refund Policy" 
       subtitle="Transparent cancellation and refund rules designed for patient convenience."
       updatedAt="January 28, 2026"
-      icon="refund"
+      icon="logo"
     >
       <div className="space-y-8">
         <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-6 rounded-2xl border border-amber-100 mb-8">

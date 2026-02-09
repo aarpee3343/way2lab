@@ -6,7 +6,7 @@ export default function TermsPage() {
       title="Healthcare Terms of Service" 
       subtitle="Medical service terms designed for patient safety and transparency."
       updatedAt="January 28, 2026"
-      icon="terms"
+      icon="logo"
     >
       <div className="space-y-8">
         <div className="bg-gradient-to-r from-teal-50 to-blue-50 p-6 rounded-2xl border border-teal-100 mb-8">

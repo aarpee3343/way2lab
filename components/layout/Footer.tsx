@@ -161,6 +161,7 @@ export default function Footer() {
             <ul className="space-y-4">
               {[
                 { name: 'Contact Us', href: '/contact' },
+                { name: 'FAQ', href: '/faq' },
                 { name: 'Health Blog', href: '/blogs' },
                 { name: 'Privacy Policy', href: '/privacy-policy' },
                 { name: 'Terms of Service', href: '/terms' },
