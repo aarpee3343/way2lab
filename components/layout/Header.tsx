@@ -174,6 +174,7 @@ export default function Header() {
               aria-label={`Cart (${items.length} items)`}
               className="relative p-2.5 text-slate-600 hover:bg-teal-50 rounded-full transition-colors group"
             >
+              <span className="sr-only">Open cart</span>
               <div className="relative">
                 <ShoppingCart size={22} className="group-hover:text-teal-600 transition-colors" />
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-600 rounded-full animate-pulse opacity-0 group-hover:opacity-100 transition-opacity" />

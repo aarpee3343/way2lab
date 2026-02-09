@@ -242,6 +242,7 @@ export default function BlogListingPage() {
                         aria-label={`Read blog ${blog.title}`}
                         className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-colors group/link"
                       >
+                        <span className="sr-only">Read article</span>
                         <ArrowRight size={18} className="group-hover/link:translate-x-1 transition-transform" />
                       </Link>
                     </div>

@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Search, X, ArrowRight, Package, Beaker, Stethoscope, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import SymptomSearchModal from './SymptomSearchModal';
+const SymptomSearchModal = dynamic(() => import('./SymptomSearchModal'), { ssr: false });
 
 // Types for our fast index
 interface SearchItem {

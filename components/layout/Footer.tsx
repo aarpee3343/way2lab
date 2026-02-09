@@ -222,6 +222,7 @@ export default function Footer() {
                     className="w-10 h-10 bg-teal-900/30 border border-teal-800 rounded-full flex items-center justify-center
                               hover:bg-teal-800 hover:border-teal-600 transition-all hover:scale-110"
                   >
+                    <span className="sr-only">{label}</span>
                     <Icon size={18} className="text-teal-400 hover:text-white" />
                   </a>
                 ))}

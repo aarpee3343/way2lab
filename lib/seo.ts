@@ -3,7 +3,20 @@ export const getBaseUrl = () => {
     process.env.NEXT_PUBLIC_SITE_URL ||
     process.env.SITE_URL ||
     process.env.NEXT_PUBLIC_APP_URL;
-  if (fromEnv) return fromEnv.replace(/\/+$/, '');
+  if (fromEnv) {
+    const withProtocol = /^https?:\/\//i.test(fromEnv) ? fromEnv : `https://${fromEnv}`;
+    const normalized = withProtocol.replace(/\/+$/, '');
+    try {
+      const url = new URL(normalized);
+      if (url.hostname === 'waytolab.com') {
+        url.hostname = 'www.waytolab.com';
+        return url.toString().replace(/\/+$/, '');
+      }
+      return normalized;
+    } catch {
+      return normalized;
+    }
+  }
   return 'https://www.waytolab.com';
 };
 
@@ -25,4 +38,3 @@ export const toSlug = (value?: string | null) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
-

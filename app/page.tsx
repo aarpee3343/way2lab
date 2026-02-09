@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import HeroSearch from "@/components/home/HeroSearch";
@@ -62,7 +62,7 @@ export default function Home() {
           </h1>
           
           <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Advanced diagnostic tests from certified labs. <br className="hidden md:block"/>
+            Your Health, Our Precision. Advanced diagnostic tests from certified labs. <br className="hidden md:block"/>
             Home collection • AI-powered reports • Expert consultation
           </p>
 
@@ -140,7 +140,7 @@ export default function Home() {
               <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
                   <h3 className="text-2xl font-bold mb-2">Comprehensive Health Checkups</h3>
-                  <p className="text-slate-400">Starting at ₹499. Includes 60+ parameters with doctor consultation.</p>
+                  <p className="text-slate-400">Starting at â‚¹499. Includes 60+ parameters with doctor consultation.</p>
                 </div>
                 <Link href="/packages" className="bg-gradient-to-r from-teal-500 to-teal-600 text-white px-6 py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-teal-200 transition-all duration-300 flex items-center gap-2 group/btn">
                   Explore Packages 
@@ -243,3 +243,6 @@ export default function Home() {
     </div>
   );
 }
+
+
+
