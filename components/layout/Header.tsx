@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCartStore } from '@/store/useCartStore';
-import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, ShoppingCart, User, LogOut, 
@@ -39,8 +38,9 @@ export default function Header() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await axios.get('/api/auth/me');
-        setUser(res.data.user);
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        setUser(data.user);
       } catch (e) {
         setUser(null);
       } finally {
@@ -76,7 +76,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      await axios.post('/api/auth/logout'); // Need to create this route to clear cookie
+      await fetch('/api/auth/logout', { method: 'POST' }); // Need to create this route to clear cookie
       setUser(null);
       router.push('/login');
       router.refresh(); // Force refresh to clear server cache
@@ -133,6 +133,7 @@ export default function Header() {
                 alt="WayToLab Logo"
                 width={160}
                 height={40}
+                sizes="(max-width: 768px) 40px, 160px"
                 className="h-10 w-auto object-contain transition-transform group-hover:scale-105 duration-300"
                 priority
               />
@@ -277,7 +278,15 @@ export default function Header() {
             >
               <div className="p-6 border-b border-teal-100 bg-gradient-to-r from-teal-50 to-white flex justify-between items-center">
                  <div className="flex items-center gap-3">
-                    <Image src="/logo.png" alt="WayToLab" width={140} height={36} className="h-9 w-auto" priority />
+                    <Image
+                      src="/logo.png"
+                      alt="WayToLab"
+                      width={140}
+                      height={36}
+                      sizes="140px"
+                      className="h-9 w-auto"
+                      priority
+                    />
                     <span className="font-bold text-lg text-slate-800">WayToLab</span>
                  </div>
                  <button

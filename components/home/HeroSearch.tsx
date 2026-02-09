@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import axios from 'axios';
-import { Search, X, ArrowRight, Loader2, Package, Beaker, Stethoscope, Sparkles, TrendingUp } from 'lucide-react';
+import { Search, X, ArrowRight, Package, Beaker, Stethoscope, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SymptomSearchModal from './SymptomSearchModal';
 
@@ -33,8 +32,9 @@ export default function HeroSearch() {
   useEffect(() => {
     const loadSearchIndex = async () => {
       try {
-        const res = await axios.get('/api/search/index');
-        setSearchIndex(res.data);
+        const res = await fetch('/api/search/index');
+        const data = await res.json();
+        setSearchIndex(data);
         setIsIndexLoaded(true);
       } catch (e) {
         console.error("Failed to load search index", e);
@@ -104,6 +104,7 @@ export default function HeroSearch() {
           {query && (
             <button 
               onClick={() => setQuery('')} 
+              aria-label="Clear search query"
               className="p-2 text-slate-400 hover:text-slate-600 transition-colors"
             >
               <X size={18} />
@@ -112,6 +113,7 @@ export default function HeroSearch() {
 
           <button 
             onClick={handleManualSearch}
+            aria-label="Search tests and packages"
             className="bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl active:scale-95 transition-all"
           >
             <ArrowRight size={20} />
@@ -122,7 +124,11 @@ export default function HeroSearch() {
       {/* Helper Link */}
       {!showDropdown && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center mt-4">
-          <button onClick={() => setShowAiModal(true)} className="text-sm font-medium text-slate-600 hover:text-teal-700 flex items-center justify-center gap-2 mx-auto">
+          <button
+            onClick={() => setShowAiModal(true)}
+            aria-label="Analyze symptoms with AI"
+            className="text-sm font-medium text-slate-600 hover:text-teal-700 flex items-center justify-center gap-2 mx-auto"
+          >
             <Stethoscope size={16} className="text-teal-600" />
             <span>Not sure what to test? Analyze by symptoms</span>
           </button>
@@ -171,6 +177,7 @@ export default function HeroSearch() {
                     <p className="text-sm text-slate-500">No direct matches found.</p>
                     <button 
                       onClick={() => setShowAiModal(true)}
+                      aria-label="Try AI symptom search"
                       className="text-xs font-bold text-teal-600 bg-teal-50 px-3 py-2 rounded-lg hover:bg-teal-100 transition-colors flex items-center gap-2 mx-auto w-fit"
                     >
                       <Sparkles size={14} /> Try AI Symptom Search

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import axios from 'axios';
 import HeroSearch from "@/components/home/HeroSearch";
 import TestCard from "@/components/home/TestCard";
 import PackageCard from "@/components/home/PackageCard";
@@ -17,8 +16,9 @@ export default function Home() {
   useEffect(() => {
     async function loadData() {
       try {
-        const res = await axios.get('/api/home-content');
-        setData(res.data);
+        const res = await fetch('/api/home-content');
+        const json = await res.json();
+        setData(json);
       } catch (e) {
         console.error("Failed to load home data", e);
       } finally {
@@ -98,7 +98,7 @@ export default function Home() {
                 <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-teal-600 rounded-2xl flex items-center justify-center mb-5 shadow-lg text-white">
                    <Activity size={26} />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-3">Smart Health Tracking</h3>
+                <h2 className="text-2xl font-bold text-slate-800 mb-3">Smart Health Tracking</h2>
                 <p className="text-slate-600 max-w-md mb-4">Our AI analyzes your reports to show health trends and provide personalized insights.</p>
                 <Link href="/dashboard" className="inline-flex items-center gap-2 text-teal-700 font-semibold text-sm hover:gap-3 transition-all duration-300">
                   View Dashboard <ArrowRight size={16} />

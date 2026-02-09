@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
@@ -46,11 +45,22 @@ export default function BlogListingPage() {
   ];
 
   useEffect(() => {
+    let active = true;
     setLoading(true);
-    axios.get(`/api/blogs?category=${activeCat === 'All' ? '' : activeCat}`)
-      .then(res => setBlogs(res.data))
-      .catch(() => setBlogs([]))
-      .finally(() => setLoading(false));
+    fetch(`/api/blogs?category=${activeCat === 'All' ? '' : activeCat}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (active) setBlogs(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (active) setBlogs([]);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
   }, [activeCat]);
 
   // Format date for display
@@ -229,6 +239,7 @@ export default function BlogListingPage() {
                       </div>
                       <Link 
                         href={`/blogs/${blog.slug}`} 
+                        aria-label={`Read blog ${blog.title}`}
                         className="w-10 h-10 bg-teal-50 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-colors group/link"
                       >
                         <ArrowRight size={18} className="group-hover/link:translate-x-1 transition-transform" />
@@ -254,9 +265,13 @@ export default function BlogListingPage() {
                 <input 
                   type="email" 
                   placeholder="Enter your email address" 
+                  aria-label="Enter your email to subscribe"
                   className="flex-1 px-5 py-3.5 rounded-xl border border-teal-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-100 outline-none"
                 />
-                <button className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-8 py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-teal-200 transition-all">
+                <button
+                  aria-label="Subscribe to health tips"
+                  className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-8 py-3.5 rounded-xl font-bold hover:shadow-xl hover:shadow-teal-200 transition-all"
+                >
                   Subscribe
                 </button>
               </div>

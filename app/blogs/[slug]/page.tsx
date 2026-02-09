@@ -211,13 +211,22 @@ export default async function SingleBlogPage({ params }: Props) {
               <div>
                 <p className="font-bold text-slate-800 text-lg mb-2">Share Health Knowledge</p>
                 <div className="flex gap-3">
-                  <button className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-200 transition-colors">
+                  <button
+                    aria-label="Share article"
+                    className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center text-teal-600 hover:bg-teal-200 transition-colors"
+                  >
                     <Share2 size={20} />
                   </button>
-                  <button className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors">
+                  <button
+                    aria-label="Share on Facebook"
+                    className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 hover:bg-blue-200 transition-colors"
+                  >
                     <span className="font-bold">f</span>
                   </button>
-                  <button className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center text-sky-600 hover:bg-sky-200 transition-colors">
+                  <button
+                    aria-label="Share on LinkedIn"
+                    className="w-12 h-12 bg-sky-100 rounded-full flex items-center justify-center text-sky-600 hover:bg-sky-200 transition-colors"
+                  >
                     <span className="font-bold">in</span>
                   </button>
                 </div>

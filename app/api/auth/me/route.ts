@@ -6,7 +6,7 @@ import { getAuthUser } from '@/lib/auth';
 
 export async function GET(req: Request) {
   const user = await getAuthUser(req);
-  if (!user) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  if (!user) return NextResponse.json({ user: null }, { status: 200 });
 
   try {
     const customer = await prisma.customer.findUnique({

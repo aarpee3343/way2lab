@@ -89,8 +89,8 @@ export default function TestCard({ test }: { test: any }) {
               {/* Right: Discount */}
               {maxDiscount > 0 && (
                 <span
-                  className="text-[11px] font-bold text-rose-600
-                            bg-rose-50 border border-rose-100
+                  className="text-[11px] font-bold text-rose-700
+                            bg-rose-100 border border-rose-200
                             px-2.5 py-1 rounded-full shrink-0"
                 >
                   {Math.round(maxDiscount)}% OFF
@@ -123,7 +123,7 @@ export default function TestCard({ test }: { test: any }) {
                 
                 {/* 2. Max MRP (Crossed Out) */}
                 {maxMRP > finalPrice && (
-                  <span className="text-xs text-slate-400 line-through">
+                  <span className="text-xs text-slate-500 line-through">
                     ₹{Math.round(maxMRP)}
                   </span>
                 )}
@@ -139,6 +139,7 @@ export default function TestCard({ test }: { test: any }) {
             {/* Action Button */}
             <button 
               onClick={handleAdd}
+              aria-label={`Open test ${test.testName}`}
               className="relative w-12 h-12 rounded-full bg-gradient-to-r from-teal-500 to-teal-600 flex items-center justify-center text-white transition-all shadow-md hover:shadow-xl hover:scale-110 group/btn"
             >
               <Plus size={22} strokeWidth={2.5} />

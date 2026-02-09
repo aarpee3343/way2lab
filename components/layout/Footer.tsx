@@ -84,6 +84,7 @@ export default function Footer() {
                 alt="WayToLab Logo"
                 width={200}
                 height={48}
+                sizes="(max-width: 768px) 160px, 200px"
                 className="h-12 w-auto brightness-0 invert opacity-90"
               />
               <div className="flex flex-col">
@@ -131,9 +132,9 @@ export default function Footer() {
 
           {/* Healthcare Links */}
           <div className="md:col-span-2">
-            <h4 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
+            <h3 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
               <Heart size={14} /> Services
-            </h4>
+            </h3>
             <ul className="space-y-4">
               {[
                 { name: 'Diagnostic Tests', href: '/tests' },
@@ -155,9 +156,9 @@ export default function Footer() {
 
           {/* Support Links */}
           <div className="md:col-span-2">
-            <h4 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
+            <h3 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
               <Stethoscope size={14} /> Support
-            </h4>
+            </h3>
             <ul className="space-y-4">
               {[
                 { name: 'Contact Us', href: '/contact' },
@@ -179,9 +180,9 @@ export default function Footer() {
 
           {/* Health Newsletter */}
           <div className="md:col-span-3 flex flex-col items-center text-center">
-            <h4 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
+            <h3 className="font-bold mb-6 text-teal-400 uppercase text-xs tracking-widest flex items-center gap-2">
               <Award size={14} /> Health Updates
-            </h4>
+            </h3>
 
             <div className="relative w-full max-w-sm">
               <input 

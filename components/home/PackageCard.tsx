@@ -52,8 +52,8 @@ export default function PackageCard({ pkg }: { pkg: any }) {
           </div>
 
           {discount > 0 && (
-            <span className="text-[11px] font-bold text-rose-600
-                             bg-rose-50 border border-rose-100
+            <span className="text-[11px] font-bold text-rose-700
+                             bg-rose-100 border border-rose-200
                              px-2.5 py-1 rounded-full">
               {discount}% OFF
             </span>
@@ -89,7 +89,7 @@ export default function PackageCard({ pkg }: { pkg: any }) {
                 </p>
 
                 {discount > 0 && (
-                  <span className="text-xs text-slate-400 line-through">
+                  <span className="text-xs text-slate-500 line-through">
                     ₹{mrp}
                   </span>
                 )}
@@ -102,6 +102,7 @@ export default function PackageCard({ pkg }: { pkg: any }) {
                 e.stopPropagation();
                 openPackage();
               }}
+              aria-label={`Open package ${pkg?.packageName || ''}`}
               className="relative w-12 h-12 rounded-full
                          bg-gradient-to-r from-teal-500 to-teal-600
                          flex items-center justify-center text-white
