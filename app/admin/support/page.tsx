@@ -4,6 +4,7 @@ import { getAdminTickets } from '@/app/actions/adminTicketActions';
 import { getAdminContactRequests } from '@/app/actions/adminContactActions';
 import { ChevronRight, Mail } from 'lucide-react';
 import Link from 'next/link';
+import { formatISTDateTime } from '@/lib/date-time';
 
 export default function AdminSupportCenter() {
   const [tickets, setTickets] = useState<any[]>([]);
@@ -139,7 +140,7 @@ export default function AdminSupportCenter() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-xs text-slate-400">
-                      {req.createdAt ? new Date(req.createdAt).toLocaleString() : '-'}
+                      {formatISTDateTime(req.createdAt)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <Link

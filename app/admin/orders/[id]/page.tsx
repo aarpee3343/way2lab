@@ -10,6 +10,7 @@ import {
 
 import { OrderStatus } from '@prisma/client';
 import UploadReportForm from '../_components/UploadReportForm';
+import { formatISTDateTime } from '@/lib/date-time';
 
 import {
   ArrowLeft,
@@ -105,6 +106,13 @@ export default async function OrderDetailsPage({
     : [];
   
   const assignedTechnician = order.technician;
+  const addressLines = [
+    order.address?.addressLine1,
+    order.address?.addressLine2,
+    order.address?.city,
+    order.address?.state,
+    order.address?.pincode
+  ].filter(Boolean) as string[];
 
   /* ================= BUSINESS LOGIC (UNCHANGED) ================= */
 
@@ -169,11 +177,11 @@ export default async function OrderDetailsPage({
             <ArrowLeft size={18} /> Back
           </Link>
           <a
-            href={`/api/order/${order.id}/pdf`}
+            href={`/api/order/${order.id}/lab-note`}
             target="_blank"
             className="admin-btn-primary"
           >
-            <Printer size={18} /> Print PDF
+            <Printer size={18} /> Print Order Note
           </a>
         </div>
       </div>
@@ -205,7 +213,7 @@ export default async function OrderDetailsPage({
           {/* ORDER DETAILS */}
           <Card title="Order Details" icon={FileText}>
             <InfoItem label="Order ID" value={`#${order.orderNumber || order.id}`} />
-            <InfoItem label="Booking Date" value={bookingDate.toLocaleString()} />
+            <InfoItem label="Booking Date" value={formatISTDateTime(bookingDate)} />
             <InfoItem
               label="Collection Type"
               value={order.collectionType?.replace('_', ' ') || 'N/A'}
@@ -270,7 +278,7 @@ export default async function OrderDetailsPage({
                 <tbody>
                   {order.payments.map(p => (
                     <tr key={p.id}>
-                      <td className="admin-table-row-secondary">{p.createdAt.toLocaleString()}</td>
+                      <td className="admin-table-row-secondary">{formatISTDateTime(p.createdAt)}</td>
                       <td>{p.method}</td>
                       <td>
                         <span className={`admin-badge ${p.status === 'Paid' ? 'admin-badge-success' : 'admin-badge-warning'}`}>
@@ -412,11 +420,15 @@ export default async function OrderDetailsPage({
               </div>
               <div className="flex items-start gap-2 admin-table-row-secondary">
                 <MapPin size={14} className="mt-1" />
-                <span>
-                  {order.address?.addressLine1}, {order.address?.city}
-                  <br />
-                  {order.address?.pincode}
-                </span>
+                {addressLines.length > 0 ? (
+                  <span className="flex flex-col">
+                    {addressLines.map((line, idx) => (
+                      <span key={`${line}-${idx}`}>{line}</span>
+                    ))}
+                  </span>
+                ) : (
+                  <span>N/A</span>
+                )}
               </div>
             </div>
           </Card>
@@ -479,7 +491,7 @@ export default async function OrderDetailsPage({
                     {a.oldValue && `${a.oldValue} → `}{a.newValue}
                   </p>
                   <p className="text-[10px] text-slate-400">
-                    {a.createdAt.toLocaleString()} • {a.performedBy}
+                    {formatISTDateTime(a.createdAt)} • {a.performedBy}
                   </p>
                 </li>
               ))}

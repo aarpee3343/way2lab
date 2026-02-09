@@ -4,10 +4,42 @@ import { prisma } from '@/lib/db';
 import crypto from 'crypto';
 import { getAuthUser } from '@/lib/auth';
 import { parseHealthProfile } from '@/lib/ai/healthProfile';
+import { downloadEncryptedFile } from '@/lib/gcs';
+import { decryptBuffer } from '@/lib/crypto';
+import { extractTextFromPdf } from '@/lib/pdfText';
+import { generateReportSummaryFromPdf } from '@/lib/aiReportSummary';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const PROMPT_VERSION = '2026-02-05-v1';
 const TIME_WINDOW_DAYS = 30;
+type CompactSignal = { name: string; value?: unknown; unit?: string; status?: string };
+
+const extractCompactSignals = (input: any): CompactSignal[] => {
+  if (!input || typeof input !== 'object') return [];
+
+  if (Array.isArray(input.labSignals)) {
+    return input.labSignals
+      .map((r: any) => ({
+        name: r?.name || r?.testName || r?.parameter || r?.component || r?.title,
+        value: r?.value ?? r?.result ?? r?.reading ?? r?.observed,
+        unit: r?.unit,
+        status: r?.status || r?.flag
+      }))
+      .filter((r: CompactSignal) => Boolean(r.name))
+      .slice(0, 12);
+  }
+
+  const results = Array.isArray(input.results) ? input.results : [];
+  return results
+    .map((r: any) => ({
+      name: r?.testName || r?.name || r?.parameter || r?.component || r?.title,
+      value: r?.value ?? r?.result ?? r?.reading ?? r?.observed,
+      unit: r?.unit,
+      status: r?.status || r?.flag
+    }))
+    .filter((r: CompactSignal) => Boolean(r.name))
+    .slice(0, 12);
+};
 
 export async function POST(req: Request) {
   try {
@@ -55,6 +87,7 @@ export async function POST(req: Request) {
     let combinedContext = "";
     let analyzedCount = 0;
     const sourceOrderIds: number[] = [];
+    const signalsByOrder = new Map<number, CompactSignal[]>();
 
     sortedHistory.forEach(order => {
       sourceOrderIds.push(order.id);
@@ -63,19 +96,11 @@ export async function POST(req: Request) {
 
       try {
         const json = JSON.parse(order.reportSummary.content);
-        const results = Array.isArray(json.results) ? json.results : [];
-        const compactResults = results
-          .map((r: any) => ({
-            name: r.testName || r.name || r.parameter || r.component || r.title,
-            value: r.value ?? r.result ?? r.reading ?? r.observed,
-            unit: r.unit,
-            status: r.status || r.flag
-          }))
-          .filter((r: any) => r.name)
-          .slice(0, 12);
+        const compactResults = extractCompactSignals(json);
 
         if (compactResults.length > 0) {
           analyzedCount++;
+          signalsByOrder.set(order.id, compactResults);
           combinedContext += `|${date}:${JSON.stringify(compactResults)}`;
           return;
         }
@@ -86,6 +111,40 @@ export async function POST(req: Request) {
         }
       } catch (e) {}
     });
+
+    // Vercel-safe fallback: if no persisted summary signals exist, parse latest report PDF on-demand.
+    if (analyzedCount === 0) {
+      const latestReport = await prisma.orderReport.findFirst({
+        where: {
+          orderId: currentOrder.id,
+          storagePath: { not: null }
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+
+      if (latestReport?.storagePath && latestReport.iv && latestReport.authTag) {
+        try {
+          const encrypted = await downloadEncryptedFile(latestReport.storagePath);
+          const decrypted = decryptBuffer(encrypted, latestReport.iv, latestReport.authTag);
+          const text = await extractTextFromPdf(decrypted);
+
+          if (text && text.length >= 50) {
+            const summaryJsonString = await generateReportSummaryFromPdf(text);
+            const parsedSummary = JSON.parse(summaryJsonString);
+            const fallbackSignals = extractCompactSignals(parsedSummary);
+
+            if (fallbackSignals.length > 0) {
+              const date = new Date().toISOString().split('T')[0];
+              analyzedCount = 1;
+              combinedContext += `|${date}:${JSON.stringify(fallbackSignals)}`;
+              signalsByOrder.set(currentOrder.id, fallbackSignals);
+            }
+          }
+        } catch (fallbackErr) {
+          console.error('On-demand PDF analysis fallback failed:', fallbackErr);
+        }
+      }
+    }
 
     // 4. THE SMART LOCK (Hashing)
     const hashPayload = `${orderId}|${combinedContext || 'no-signal'}|reports:${reportCount}|analyzed:${analyzedCount}`;
@@ -238,6 +297,7 @@ Rules:
       sourceOrderId: currentOrder.id,
       sourceOrderIds,
       timeWindowDays: TIME_WINDOW_DAYS,
+      labSignals: signalsByOrder.get(currentOrder.id) || [],
       warnings
     });
 

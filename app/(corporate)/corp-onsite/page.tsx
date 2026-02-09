@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Activity, Calendar, Users } from 'lucide-react';
 import { getCorporateOnsiteActivities } from '@/app/actions/corporatePortalActions';
+import { formatISTDateTime, formatISTTime } from '@/lib/date-time';
 
 type Camp = {
   id: number;
@@ -54,7 +55,7 @@ export default function CorporateOnsitePage() {
           </p>
         </div>
         <div className="text-xs text-slate-400">
-          Auto-refreshing every 15s{lastUpdated ? ` - Updated ${lastUpdated.toLocaleTimeString()}` : ''}
+          Auto-refreshing every 15s{lastUpdated ? ` - Updated ${formatISTTime(lastUpdated)}` : ''}
         </div>
       </div>
 
@@ -82,7 +83,7 @@ function Section({ title, items }: { title: string; items: Camp[] }) {
               <div className="text-sm font-bold text-slate-800">{camp.title}</div>
               <div className="text-xs text-slate-500 flex items-center gap-2">
                 <Calendar size={14} /> Started{' '}
-                {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '-'}
+                {formatISTDateTime(camp.startedAt)}
               </div>
               <div className="text-xs text-slate-500 flex items-center gap-2">
                 <Users size={14} /> Expected: {camp.expectedHeadcount ?? '-'} - Booked:{' '}

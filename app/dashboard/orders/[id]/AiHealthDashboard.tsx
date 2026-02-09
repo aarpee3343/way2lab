@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
   Loader2,
@@ -63,11 +63,11 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
   const router = useRouter();
   const [generating, setGenerating] = useState(false);
   const [showDietModal, setShowDietModal] = useState(false);
+  const [autoRequested, setAutoRequested] = useState(false);
   
   // Safe Parse Data
   const [aiData, setAiData] = useState<HealthProfile | null>(() => parseHealthProfileJson(dataString));
-
-  if (!aiData) return <div className="p-4 text-slate-500 italic">Analysis pending...</div>;
+  const shouldAutoGenerate = !aiData;
 
   const hasDiet = !!(aiData?.dietPlan?.plan && Array.isArray(aiData.dietPlan.plan) && aiData.dietPlan.plan.length > 0);
   const score = aiData?.healthScore || 0;
@@ -78,13 +78,12 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
   const lastUpdatedLabel = formatHealthDateTime(aiData?.lastUpdated || aiData?.generatedAt);
   const warnings = aiData?.warnings || [];
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async (forceRefresh = true) => {
     setGenerating(true);
     try {
-      // Allow user to refresh data for this specific order
       const res = await axios.post('/api/ai/generate-diet', { 
         orderId: orderId,
-        forceRefresh: true // Force AI to re-evaluate this specific report context
+        forceRefresh
       });
       if (res.data?.error) {
         toast.error(res.data.error);
@@ -100,7 +99,29 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
     } finally {
       setGenerating(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    if (!shouldAutoGenerate || autoRequested || generating) return;
+    setAutoRequested(true);
+    void handleGenerate(false);
+  }, [autoRequested, generating, handleGenerate, shouldAutoGenerate]);
+
+  if (!aiData) {
+    return (
+      <div className="p-4 border border-slate-200 bg-slate-50 rounded-xl space-y-3">
+        <p className="text-slate-600 text-sm">AI analysis is being prepared for this report.</p>
+        <button
+          onClick={() => handleGenerate(true)}
+          disabled={generating}
+          className="inline-flex items-center gap-2 px-3 py-2 text-xs font-bold text-white bg-slate-900 rounded-lg hover:bg-black disabled:opacity-60"
+        >
+          <RefreshCcw size={12} className={generating ? "animate-spin" : ""} />
+          {generating ? "Generating..." : "Generate Analysis"}
+        </button>
+      </div>
+    );
+  }
 
   const downloadPDF = () => {
     if (!hasDiet) return;

@@ -11,9 +11,6 @@ import {
 import { toast } from '@/lib/safe-toast';
 import { getCorporateEmployees, getCorporateOverview } from '@/app/actions/corporatePortalActions';
 
-// NOTE: I removed the unused action imports. 
-// If you plan to add a "Quick Create User" button here later, add them back.
-
 export default function CorporateDashboardPage() {
   const router = useRouter();
   const [filters, setFilters] = useState({

@@ -1,16 +1,56 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useBookingStore } from '@/store/useBookingStore';
 import { useCartStore } from '@/store/useCartStore';
+import { getISTDateInputValue } from '@/lib/date-time';
 import { motion } from 'framer-motion';
 import { ChevronRight, Sun, Moon, Home, Building2, AlertTriangle, ArrowLeft, Calendar, Clock } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 
+const IST_OFFSET_MINUTES = 330;
+const MORNING_END_HOUR = 12; // Morning slots up to 11:00 - 12:00
+
+const toIstEpoch = (year: number, month: number, day: number, hour: number, minute = 0) =>
+  Date.UTC(year, month - 1, day, hour, minute) - IST_OFFSET_MINUTES * 60 * 1000;
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+const parseHourMinute = (value: string) => {
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null;
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
+  return { hour, minute };
+};
+
+const resolveLabWindow = (timings: unknown) => {
+  const fallback = { from: '08:00', to: '20:00' };
+  if (!timings) return fallback;
+
+  if (typeof timings === 'string') {
+    const normalized = timings.trim();
+    const rangeMatch = normalized.match(/(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})/);
+    if (rangeMatch) return { from: rangeMatch[1], to: rangeMatch[2] };
+    return fallback;
+  }
+
+  if (typeof timings === 'object') {
+    const raw = timings as Record<string, unknown>;
+    const from = typeof raw.from === 'string' ? raw.from : null;
+    const to = typeof raw.to === 'string' ? raw.to : null;
+    if (from && to) return { from, to };
+  }
+
+  return fallback;
+};
+
 export default function SchedulePage() {
   const router = useRouter();
-  const { items } = useCartStore();
+  const { items, lab } = useCartStore();
   const { setSchedule } = useBookingStore();
   
   const [selectedDate, setSelectedDate] = useState(0); 
@@ -28,26 +68,110 @@ export default function SchedulePage() {
     }
   }, [hasNonPathology, type]);
 
-  // Generate 14 days
-  const dates = Array.from({length: 14}, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() + i + 1);
-    return { 
-      day: d.toLocaleDateString('en-US', { weekday: 'short' }), 
-      date: d.getDate(),
-      full: d.toISOString().split('T')[0]
-    };
-  });
+  const dates = useMemo(
+    () =>
+      Array.from({ length: 14 }, (_, i) => {
+        const d = new Date(Date.now() + i * 24 * 60 * 60 * 1000);
+        const day = new Intl.DateTimeFormat('en-IN', {
+          weekday: 'short',
+          timeZone: 'Asia/Kolkata'
+        }).format(d);
+        const date = Number(
+          new Intl.DateTimeFormat('en-IN', {
+            day: '2-digit',
+            timeZone: 'Asia/Kolkata'
+          }).format(d)
+        );
+        return {
+          day,
+          date,
+          full: getISTDateInputValue(d)
+        };
+      }),
+    []
+  );
 
-  const slots = [
-    { label: 'Morning', icon: Sun, times: ['06:00 AM - 07:00 AM', '07:00 AM - 08:00 AM', '08:00 AM - 09:00 AM', '09:00 AM - 10:00 AM', '10:00 AM - 11:00 AM'] },
-    { label: 'Afternoon', icon: Sun, times: ['12:00 PM - 01:00 PM', '02:00 PM - 03:00 PM'] },
-    { label: 'Evening', icon: Moon, times: ['05:00 PM - 06:00 PM', '06:00 PM - 07:00 PM'] },
-  ];
+  const selectedDay = dates[selectedDate] || dates[0];
+  const selectedDateIso = selectedDay?.full || '';
+
+  const labWindow = useMemo(() => resolveLabWindow(lab?.timings), [lab?.timings]);
+
+  const sundayClosedMessage = useMemo(() => {
+    if (!selectedDateIso) return '';
+    const [y, m, d] = selectedDateIso.split('-').map(Number);
+    const middayEpoch = toIstEpoch(y, m, d, 12, 0);
+    const weekdayShort = new Intl.DateTimeFormat('en-IN', {
+      weekday: 'short',
+      timeZone: 'Asia/Kolkata'
+    }).format(new Date(middayEpoch));
+    return weekdayShort === 'Sun'
+      ? 'Sunday schedule is limited to morning slots. Afternoon and evening slots are unavailable.'
+      : '';
+  }, [selectedDateIso]);
+
+  const slotSections = useMemo(() => {
+    if (!selectedDateIso) return [];
+
+    const [y, m, d] = selectedDateIso.split('-').map(Number);
+    const nowPlus14Hours = Date.now() + 14 * 60 * 60 * 1000;
+    const fromParsed = parseHourMinute(labWindow.from);
+    const toParsed = parseHourMinute(labWindow.to);
+
+    if (!fromParsed || !toParsed) return [];
+
+    let startHour = fromParsed.hour;
+    let endHour = toParsed.hour;
+
+    if (toParsed.minute > 0) endHour += 1;
+    startHour = Math.max(0, Math.min(23, startHour));
+    endHour = Math.max(0, Math.min(24, endHour));
+    if (endHour <= startHour) return [];
+
+    const middayEpoch = toIstEpoch(y, m, d, 12, 0);
+    const weekdayShort = new Intl.DateTimeFormat('en-IN', {
+      weekday: 'short',
+      timeZone: 'Asia/Kolkata'
+    }).format(new Date(middayEpoch));
+    const isSunday = weekdayShort === 'Sun';
+
+    const morning: string[] = [];
+    const afternoon: string[] = [];
+    const evening: string[] = [];
+
+    for (let hour = startHour; hour < endHour; hour += 1) {
+      const slotStartEpoch = toIstEpoch(y, m, d, hour, 0);
+      if (slotStartEpoch < nowPlus14Hours) continue;
+
+      const nextHour = hour + 1;
+      const label = `${pad(hour)}:00 - ${pad(nextHour)}:00`;
+
+      if (hour < MORNING_END_HOUR) {
+        morning.push(label);
+        continue;
+      }
+
+      if (isSunday) continue;
+
+      if (hour < 17) afternoon.push(label);
+      else evening.push(label);
+    }
+
+    return [
+      { label: 'Morning', icon: Sun, times: morning },
+      { label: 'Afternoon', icon: Sun, times: afternoon },
+      { label: 'Evening', icon: Moon, times: evening }
+    ];
+  }, [labWindow.from, labWindow.to, selectedDateIso]);
+
+  useEffect(() => {
+    if (!slotSections.some((section) => section.times.includes(selectedTime))) {
+      setSelectedTime('');
+    }
+  }, [selectedTime, slotSections]);
 
   const handleNext = () => {
     if (!selectedTime) return toast.error("Please select a time slot");
-    setSchedule(dates[selectedDate].full, selectedTime, type, '');
+    setSchedule(selectedDateIso, selectedTime, type, '');
     router.push('/checkout'); // Final Review Page
   };
 
@@ -127,27 +251,48 @@ export default function SchedulePage() {
           </div>
         </section>
 
+        <section className="space-y-3">
+          {/* <div className="bg-teal-50 border border-teal-200 rounded-xl p-3 text-sm text-teal-900">
+            Slots follow lab operating hours ({labWindow.from} - {labWindow.to}) with 1-hour windows.
+            You can book only slots from available slots.
+          </div> */}
+          {sundayClosedMessage && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-900">
+              {sundayClosedMessage}
+            </div>
+          )}
+          {slotSections.every((section) => section.times.length === 0) && (
+            <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-sm text-rose-900">
+              No slots are available for this day.
+            </div>
+          )}
+        </section>
+
         {/* Time Slots */}
         <section className="space-y-8">
-          {slots.map((section) => (
+          {slotSections.map((section) => (
             <div key={section.label}>
               <div className="flex items-center gap-2 mb-3 ml-1 text-slate-400">
                 <section.icon size={16} />
                 <span className="text-xs font-bold uppercase tracking-widest">{section.label}</span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {section.times.map((t) => (
-                  <motion.button key={t} whileTap={{ scale: 0.98 }} onClick={() => setSelectedTime(t)}
-                    className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
-                      selectedTime === t 
-                        ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500 shadow-sm' 
-                        : 'bg-white text-slate-600 border-slate-100 shadow-sm hover:border-slate-300'
-                    }`}
-                  >
-                    {t}
-                  </motion.button>
-                ))}
-              </div>
+              {section.times.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {section.times.map((t) => (
+                    <motion.button key={t} whileTap={{ scale: 0.98 }} onClick={() => setSelectedTime(t)}
+                      className={`py-3 px-3 rounded-xl text-xs font-bold border transition-all ${
+                        selectedTime === t 
+                          ? 'bg-blue-50 border-blue-500 text-blue-700 ring-1 ring-blue-500 shadow-sm' 
+                          : 'bg-white text-slate-600 border-slate-100 shadow-sm hover:border-slate-300'
+                      }`}
+                    >
+                      {t}
+                    </motion.button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400">No slots available in this window.</p>
+              )}
             </div>
           ))}
         </section>
@@ -160,7 +305,7 @@ export default function SchedulePage() {
           <div className="flex-1">
              <p className="text-xs text-slate-400 font-bold uppercase mb-0.5">Selected Slot</p>
              <div className="flex items-center gap-2 text-sm font-bold text-slate-800">
-               <Calendar size={14} className="text-blue-600"/> {dates[selectedDate].date} {dates[selectedDate].day}
+               <Calendar size={14} className="text-blue-600"/> {selectedDay?.date} {selectedDay?.day}
                <span className="text-slate-300">|</span>
                <Clock size={14} className="text-blue-600"/> {selectedTime || '--:--'}
              </div>

@@ -8,12 +8,38 @@ import type {
 // ===================== PRISMA CLIENT SETUP =====================
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
+const withIstTimezone = (url?: string) => {
+  if (!url) return undefined;
+  try {
+    const parsed = new URL(url);
+    // Ensure every PostgreSQL session uses IST for timestamp evaluation/storage.
+    const existingOptions = parsed.searchParams.get('options');
+    if (!existingOptions) {
+      parsed.searchParams.set('options', '-c TimeZone=Asia/Kolkata');
+    } else if (!/timezone\s*=\s*asia\/kolkata/i.test(existingOptions)) {
+      parsed.searchParams.set('options', `${existingOptions} -c TimeZone=Asia/Kolkata`);
+    }
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+};
+
+const prismaDbUrl = withIstTimezone(process.env.DATABASE_URL);
+
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
     log: process.env.NODE_ENV === 'development' 
       ? ['query', 'error', 'warn'] 
       : ['error'],
+    ...(prismaDbUrl
+      ? {
+          datasources: {
+            db: { url: prismaDbUrl }
+          }
+        }
+      : {})
   });
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;

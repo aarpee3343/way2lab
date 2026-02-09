@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { 
   Loader2, ArrowRight, Activity, Utensils, Lock, 
@@ -46,11 +46,13 @@ export default function LatestHealthWidget({ order }: { order: any }) {
   const router = useRouter();
   const [generating, setGenerating] = useState(false);
   const [showDietModal, setShowDietModal] = useState(false);
+  const [autoRequested, setAutoRequested] = useState(false);
   
   // Safe Parse JSON
   const [aiData, setAiData] = useState<HealthProfile | null>(() => {
     return parseHealthProfileJson(order?.reportSummary?.content);
   });
+  const shouldAutoGenerate = Boolean(order?.id) && !aiData;
 
   const hasDiet = !!(aiData?.dietPlan?.plan?.length > 0);
   const score = aiData?.healthScore || 0;
@@ -61,10 +63,13 @@ export default function LatestHealthWidget({ order }: { order: any }) {
   const lastUpdatedLabel = formatHealthDateTime(aiData?.lastUpdated || aiData?.generatedAt);
   const warnings = aiData?.warnings || [];
 
-  const handleGenerate = async () => {
+  const handleGenerate = useCallback(async (forceRefresh = true) => {
     setGenerating(true);
     try {
-      const res = await axios.post('/api/ai/generate-diet', { orderId: order.id });
+      const res = await axios.post('/api/ai/generate-diet', {
+        orderId: order.id,
+        forceRefresh
+      });
       if (res.data?.error) {
         toast.error(res.data.error);
         return;
@@ -80,7 +85,13 @@ export default function LatestHealthWidget({ order }: { order: any }) {
     } finally {
       setGenerating(false);
     }
-  };
+  }, [order?.id]);
+
+  useEffect(() => {
+    if (!shouldAutoGenerate || autoRequested || generating) return;
+    setAutoRequested(true);
+    void handleGenerate(false);
+  }, [autoRequested, generating, handleGenerate, shouldAutoGenerate]);
 
   const downloadPDF = () => {
     if (!hasDiet) return;

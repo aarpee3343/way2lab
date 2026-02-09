@@ -10,6 +10,7 @@ import {
 import { toast } from '@/lib/safe-toast';
 import { useDashboard } from '@/hooks/useDashboard';
 import type { Customer } from '@/lib/types/dashboard';
+import { getISTDateInputValue } from '@/lib/date-time';
 
 type ProfileForm = Omit<Partial<Customer>, 'dateOfBirth'> & {
   dateOfBirth?: string | Date | null;
@@ -286,9 +287,9 @@ export default function ProfilePage() {
                   </label>
                   <input
                     type="date"
-                    value={user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : ''}
+                    value={user.dateOfBirth ? getISTDateInputValue(new Date(user.dateOfBirth)) : ''}
                     onChange={(e) => handleChange('dateOfBirth', e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
+                    max={getISTDateInputValue()}
                     className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>

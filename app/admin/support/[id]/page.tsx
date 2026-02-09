@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { getTicketMessages, adminReplyToTicket, uploadAdminTicketAttachment } from '@/app/actions/adminTicketActions';
 import { Send, ArrowLeft, Paperclip } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
+import { formatISTTime } from '@/lib/date-time';
 
 const ATTACHMENT_PREFIX = '__ATTACHMENT__::';
 
@@ -120,7 +121,7 @@ export default function TicketDetailAdmin({ params }: { params: Promise<{ id: st
                   )}
                 </div>
                 <span className="text-[9px] font-black text-slate-400 mt-2 px-1 uppercase tracking-widest">
-                  {msg.senderName} - {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {msg.senderName} - {formatISTTime(msg.createdAt)}
                 </span>
               </div>
             );

@@ -46,7 +46,21 @@ function formatDateTime(value?: string | Date | null) {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: true,
+    hour12: false,
+    timeZone: 'Asia/Kolkata'
+  }).format(date);
+}
+
+function formatDate(value?: string | Date | null) {
+  if (!value) return '-';
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour12: false,
     timeZone: 'Asia/Kolkata'
   }).format(date);
 }
@@ -248,6 +262,10 @@ export default async function OrdersPage({
                     <span className="admin-badge-default text-[10px] uppercase tracking-wide mt-1">
                       {order.collectionType?.replace('_', ' ') || 'onsite'}
                     </span>
+                    <div className="admin-table-row-secondary mt-1">
+                      Schedule: {formatDate(order.preferredDate)}
+                      {order.preferredTimeSlot ? ` | ${order.preferredTimeSlot}` : ''}
+                    </div>
                   </td>
 
                   {/* TYPE */}

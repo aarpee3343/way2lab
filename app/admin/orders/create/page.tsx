@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import Link from 'next/link';
+import { getISTDateInputValue } from '@/lib/date-time';
 // ✅ Import Google Autocomplete
 import Autocomplete from "react-google-autocomplete";
 
@@ -95,7 +96,7 @@ export default function AdminCreateOrder() {
   const [logistics, setLogistics] = useState({
     collectionType: 'center_visit', 
     homeCharges: 0,
-    date: new Date().toISOString().split('T')[0],
+    date: getISTDateInputValue(),
     time: '',
     instructions: '',
     paymentMode: 'Pay Upon Service'
@@ -773,10 +774,10 @@ export default function AdminCreateOrder() {
                  <label className="admin-form-label">Time</label>
                  <select className="w-full mt-1 admin-form-input" value={logistics.time} onChange={e => setLogistics({...logistics, time: e.target.value})}>
                      <option value="">Select</option>
-                     <option value="07:00 - 08:00">07:00 - 08:00 AM</option>
-                     <option value="08:00 - 09:00">08:00 - 09:00 AM</option>
-                     <option value="09:00 - 10:00">09:00 - 10:00 AM</option>
-                     <option value="10:00 - 11:00">10:00 - 11:00 AM</option>
+                     <option value="07:00 - 08:00">07:00 - 08:00</option>
+                     <option value="08:00 - 09:00">08:00 - 09:00</option>
+                     <option value="09:00 - 10:00">09:00 - 10:00</option>
+                     <option value="10:00 - 11:00">10:00 - 11:00</option>
                  </select>
               </div>
               <div>

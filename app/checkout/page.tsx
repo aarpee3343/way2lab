@@ -15,11 +15,14 @@ import { motion } from 'framer-motion';
 
 export default function ReviewOrderPage() {
   const router = useRouter();
-  const { items, totals, lab } = useCartStore();
+  const { items, totals, lab, coupon } = useCartStore();
   const { patientType, selectedAddressId, selectedFamilyMemberId, collectionType, scheduleDate, scheduleTime } = useBookingStore();
 
   const [loading, setLoading] = useState(true); // Start as true
   const [data, setData] = useState<any>(null); 
+  const [user, setUser] = useState<any>(null);
+  const [patient, setPatient] = useState<any>(null);
+  const [placingOrder, setPlacingOrder] = useState(false);
   
   useEffect(() => {
     const loadDetails = async () => {
@@ -32,18 +35,39 @@ export default function ReviewOrderPage() {
           axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`)
         ]);
 
+        const userData = userRes.data.user;
+        setUser(userData);
         const address = addrRes.data.find((a: any) => a.id === selectedAddressId);
-        let patientName = userRes.data.user.name;
+        let patientName = userData.name;
         let patientRel = 'Self';
+        let patientPayload = {
+          name: userData.name,
+          dob: userData.dateOfBirth || null,
+          gender: userData.gender || null,
+          phone: userData.phone || null,
+          uhid: userData.uhid || null,
+          type: 'self',
+          relation: 'Self'
+        };
 
         if(patientType === 'family_member') {
           const member = famRes.data.find((m: any) => m.id === selectedFamilyMemberId);
           if(member) {
             patientName = member.name;
             patientRel = member.relationship;
+            patientPayload = {
+              name: member.name,
+              dob: member.dateOfBirth || null,
+              gender: member.gender || null,
+              phone: member.phone || null,
+              uhid: member.uhid || null,
+              type: 'family',
+              relation: member.relationship
+            };
           }
         }
 
+        setPatient(patientPayload);
         setData({ address, patientName, patientRel });
       } catch (e: any) { 
         console.error(e); 
@@ -64,7 +88,97 @@ export default function ReviewOrderPage() {
   }, [patientType, router, selectedAddressId, selectedFamilyMemberId]);
 
   const handlePlaceOrder = async () => {
-    router.push('/checkout/confirm');
+    if (!items.length) return toast.error('Cart is empty');
+    if (!selectedAddressId || !scheduleDate || !scheduleTime) return toast.error('Schedule or address missing');
+    if (!patient || !user || !data?.address) return toast.error('Unable to load patient details');
+
+    setPlacingOrder(true);
+    try {
+      const patientTypeKey: 'self' | 'family' =
+        patientType === 'family_member' ? 'family' : 'self';
+
+      const getCorporatePaymentType = (item: any) =>
+        !item?.isCorporate
+          ? null
+          : patientTypeKey === 'self'
+            ? item.corporatePaymentSelf
+            : item.corporatePaymentFamily;
+
+      const getEffectivePrice = (item: any) => {
+        const paymentType = getCorporatePaymentType(item);
+        if (paymentType === 'CORPORATE_PAYS') return 0;
+        return Number(item.price || 0);
+      };
+
+      const isCorporatePackageOrder = items.some((i) => i.isCorporate === true);
+      const isCorporateCovered =
+        !!user.corporateId &&
+        items.some((i) => i.isCorporate === true && getCorporatePaymentType(i) === 'CORPORATE_PAYS');
+
+      const mrpTotal = items.reduce((sum, i) => sum + (Number(i.basePrice) || Number(i.price || 0)), 0);
+      const sellingTotal = items.reduce((sum, i) => sum + Number(i.price || 0), 0);
+      const payableTotal = items.reduce((sum, i) => sum + getEffectivePrice(i), 0);
+
+      const testDiscount = mrpTotal - sellingTotal;
+      const couponDiscount = Number(totals?.couponDiscount || 0);
+      const homeCharge =
+        collectionType === 'home_collection' && !isCorporatePackageOrder
+          ? Number(lab?.homeCollectionCharges || 0)
+          : 0;
+
+      const finalTotal = Math.max(0, payableTotal - couponDiscount + homeCharge);
+
+      const payload = {
+        labId: items[0].labId,
+        items,
+        patientDetails: {
+          name: patient.name,
+          type: patient.type,
+          relation: patient.relation,
+          dob: patient.dob || null,
+          gender: patient.gender || null,
+          phone: patient.phone || null,
+          uhid: patient.uhid || null
+        },
+        addressId: selectedAddressId,
+        schedule: {
+          date: scheduleDate,
+          time: scheduleTime,
+          type: collectionType
+        },
+        paymentMode:
+          isCorporateCovered && finalTotal === 0
+            ? 'Corporate Credit'
+            : 'Pay Upon Service',
+        paymentStatus:
+          isCorporateCovered && finalTotal === 0
+            ? 'CORPORATE_BILLING'
+            : 'PENDING',
+        totals: {
+          subtotal: mrpTotal,
+          discount: testDiscount + couponDiscount,
+          homeCollection: homeCharge,
+          final: finalTotal
+        },
+        couponCode: coupon?.code || null
+      };
+
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/orders`, payload);
+      if (res.data?.success) {
+        router.push(`/order-success?id=${res.data.orderId}`);
+      } else {
+        toast.error(res.data?.message || 'Order failed');
+      }
+    } catch (e: any) {
+      if (e.response?.status === 401) {
+        toast.error('Session expired.');
+        router.push('/login?redirect=/checkout');
+      } else {
+        toast.error(e.response?.data?.message || 'Order failed');
+      }
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   if (loading) return (
@@ -178,7 +292,7 @@ export default function ReviewOrderPage() {
             </div>
             <div>
               <p className="font-bold text-slate-800">Pay Upon Service</p>
-              <p className="text-xs text-slate-500 mt-0.5">Cash, UPI, or Card at collection</p>
+              <p className="text-xs text-slate-500 mt-0.5">Cash or UPI at collection</p>
             </div>
           </div>
           <div className="bg-blue-600 rounded-full p-1 shadow-md shadow-blue-200">
@@ -216,9 +330,10 @@ export default function ReviewOrderPage() {
 
           <button 
             onClick={handlePlaceOrder}
-            className="flex-1 bg-slate-900 text-white h-14 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 flex items-center justify-center gap-2 hover:bg-black active:scale-[0.98] transition-all"
+            disabled={placingOrder}
+            className="flex-1 bg-slate-900 text-white h-14 rounded-2xl font-bold text-lg shadow-xl shadow-slate-200 flex items-center justify-center gap-2 hover:bg-black active:scale-[0.98] transition-all disabled:opacity-60"
           >
-            Confirm & Book <ShieldCheck size={18} className="opacity-60"/>
+            {placingOrder ? 'Booking...' : 'Confirm & Book'} <ShieldCheck size={18} className="opacity-60"/>
           </button>
         </div>
       </motion.div>

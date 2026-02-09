@@ -11,6 +11,7 @@ import {
   closeCorporateTicket,
   uploadCorporateTicketAttachment
 } from '@/app/actions/corporatePortalActions';
+import { formatISTTime } from '@/lib/date-time';
 
 const ATTACHMENT_PREFIX = '__ATTACHMENT__::';
 
@@ -267,7 +268,7 @@ export default function CorporateSupportPage() {
                   )}
                 </div>
                 <span className="text-[9px] font-bold text-slate-400 mt-2 px-1 uppercase tracking-widest">
-                  {msg.senderName} - {new Date(msg.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {msg.senderName} - {formatISTTime(msg.createdAt)}
                 </span>
               </div>
             );

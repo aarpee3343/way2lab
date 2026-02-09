@@ -13,6 +13,7 @@ import {
   Users
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
+import { formatISTDateTime } from '@/lib/date-time';
 import {
   getOnsiteCorporates,
   getOnsiteCorporatePackages,
@@ -374,7 +375,7 @@ export default function AdminOnsitePage() {
                   <div>
                     <div className="text-sm font-bold text-slate-800">{camp.title}</div>
                     <div className="text-xs text-slate-400">
-                      {camp.status} - Started {camp.startedAt ? new Date(camp.startedAt).toLocaleString() : '-'}
+                      {camp.status} - Started {formatISTDateTime(camp.startedAt)}
                     </div>
                     <div className="text-xs text-slate-400">
                       Expected {camp.expectedHeadcount ?? '-'} - Booked {camp._count?.entries ?? 0}

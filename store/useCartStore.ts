@@ -22,6 +22,7 @@ export interface CartLab {
   labName: string;
   servicePincode: string;
   homeCollectionCharges?: number;
+  timings?: unknown;
 }
 
 interface CartState {

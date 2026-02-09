@@ -22,6 +22,7 @@ import {
   Package
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
+import { getISTDateInputValue } from '@/lib/date-time';
 
 /* ---------------- HELPERS ---------------- */
 // ... (Keep your existing formatDate, getAgeLabel, isRescheduleAllowed helpers here) ...
@@ -364,11 +365,11 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
               <button onClick={() => setOpen(false)}><X/></button>
             </div>
             <div className="space-y-4">
-              <input type="date" className="w-full border p-3 rounded-xl" onChange={e => setNewDate(e.target.value)} min={new Date(Date.now() + 86400000).toISOString().split('T')[0]} />
+              <input type="date" className="w-full border p-3 rounded-xl" onChange={e => setNewDate(e.target.value)} min={getISTDateInputValue(new Date(Date.now() + 86400000))} />
               <select className="w-full border p-3 rounded-xl" onChange={e => setNewTime(e.target.value)}>
-                <option>07:00 AM - 08:00 AM</option>
-                <option>08:00 AM - 09:00 AM</option>
-                <option>09:00 AM - 10:00 AM</option>
+                <option>07:00 - 08:00</option>
+                <option>08:00 - 09:00</option>
+                <option>09:00 - 10:00</option>
               </select>
               <button onClick={handleConfirmReschedule} className="w-full bg-black text-white py-3 rounded-xl font-bold">Confirm</button>
             </div>

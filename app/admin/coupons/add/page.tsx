@@ -8,6 +8,7 @@ import { Ticket, Save, ArrowLeft, Calendar, Loader2, Sparkles } from 'lucide-rea
 import Link from 'next/link';
 import { toast } from '@/lib/safe-toast';
 import { useRouter } from 'next/navigation';
+import { getISTDateTimeLocalValue } from '@/lib/date-time';
 
 export default function CreateCouponPage() {
   const router = useRouter();
@@ -20,7 +21,7 @@ export default function CreateCouponPage() {
   const [type, setType] = useState('PERCENTAGE');
   const [value, setValue] = useState('');
   const [scope, setScope] = useState('GLOBAL');
-  const [startDate, setStartDate] = useState(new Date().toISOString().slice(0, 16));
+  const [startDate, setStartDate] = useState(getISTDateTimeLocalValue());
   const [expiryDate, setExpiryDate] = useState('');
   
   // Multi-select states

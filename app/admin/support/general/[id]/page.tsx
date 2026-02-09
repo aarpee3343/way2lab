@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Mail, User, Clock } from 'lucide-react';
 import { getAdminContactRequest } from '@/app/actions/adminContactActions';
+import { formatISTDateTime } from '@/lib/date-time';
 
 export default function GeneralRequestDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -51,7 +52,7 @@ export default function GeneralRequestDetail({ params }: { params: Promise<{ id:
             <Mail size={16} className="text-slate-400" /> {request.email || 'No email'}
           </div>
           <div className="flex items-center gap-2 text-sm text-slate-600">
-            <Clock size={16} className="text-slate-400" /> {request.createdAt ? new Date(request.createdAt).toLocaleString() : '-'}
+            <Clock size={16} className="text-slate-400" /> {formatISTDateTime(request.createdAt)}
           </div>
         </div>
 

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Clock } from 'lucide-react';
 import { getCorporateActivities } from '@/app/actions/corporatePortalActions';
+import { formatISTDateTime } from '@/lib/date-time';
 
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<any[]>([]);
@@ -42,7 +43,7 @@ export default function ActivityLogsPage() {
                 <div className="flex justify-between items-start">
                   <p className="text-sm font-black text-slate-800">{log.performedBy}</p>
                   <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase">
-                    <Clock size={12}/> {new Date(log.createdAt).toLocaleString()}
+                    <Clock size={12}/> {formatISTDateTime(log.createdAt)}
                   </span>
                 </div>
                 <p className="text-xs text-slate-500 mt-1">{log.details}</p>

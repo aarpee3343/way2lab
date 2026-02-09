@@ -285,6 +285,7 @@ function SearchContent() {
         labName: labData.lab.labName,
         servicePincode: location.pincode,
         homeCollectionCharges: Number(labData.lab.homeCollectionCharges || 0),
+        timings: labData.lab.timings ?? null
       },
       cartItems
     );

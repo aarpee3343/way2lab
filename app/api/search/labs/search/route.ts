@@ -139,7 +139,7 @@ export async function POST(req: Request) {
           rating: Number(lab.rating) || 4.5,
           reviews: lab.reviewCount || 0,
           features: lab.features ? JSON.parse(JSON.stringify(lab.features)) : [],
-          timings: lab.timings ? JSON.parse(JSON.stringify(lab.timings)) : "08:00 AM - 08:00 PM",
+          timings: lab.timings ? JSON.parse(JSON.stringify(lab.timings)) : "08:00 - 20:00",
           distance: distanceStr,
           accreditation: 'NABL',
           homeCollectionCharges: Number(lab.homeCollectionCharges)

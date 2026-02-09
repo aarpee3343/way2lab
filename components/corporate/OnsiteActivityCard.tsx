@@ -1,3 +1,5 @@
+import { formatISTDateTime } from '@/lib/date-time';
+
 type OnsiteActivity = {
   campId?: number;
   title?: string | null;
@@ -24,7 +26,7 @@ export default function OnsiteActivityCard({ activity }: { activity?: OnsiteActi
     : { background: '#e2e8f0' };
 
   const startedLabel = activity?.startedAt
-    ? new Date(activity.startedAt).toLocaleString()
+    ? formatISTDateTime(activity.startedAt)
     : null;
 
   return (

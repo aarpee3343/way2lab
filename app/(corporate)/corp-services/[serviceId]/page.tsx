@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import { getCorporateServiceDetails } from '@/app/actions/corporatePortalActions';
+import { formatISTDateTime } from '@/lib/date-time';
 
 type UsageFilter = 'ALL' | 'AVAILED' | 'PENDING';
 
@@ -319,7 +320,7 @@ export default function CorporateServiceDetailsPage() {
                     </td>
                     <td className="px-4 py-5 text-center font-black text-slate-700">{employee.availedCount}</td>
                     <td className="px-8 py-5 text-right text-xs font-bold text-slate-500">
-                      {employee.lastAvailedAt ? new Date(employee.lastAvailedAt).toLocaleString() : '-'}
+                      {formatISTDateTime(employee.lastAvailedAt)}
                     </td>
                   </tr>
                 ))}

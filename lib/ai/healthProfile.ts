@@ -1,3 +1,4 @@
+import { formatISTDateTime } from '@/lib/date-time';
 import { z } from 'zod';
 
 const toTrimmedString = z.preprocess((value) => {
@@ -86,10 +87,26 @@ export const parseHealthProfile = (input: unknown): HealthProfile => {
   return HealthProfileSchema.parse({});
 };
 
+export const isHealthProfileLike = (input: unknown): boolean => {
+  if (!input || typeof input !== 'object') return false;
+  const obj = input as Record<string, unknown>;
+  return (
+    'dataHash' in obj ||
+    'promptVersion' in obj ||
+    'healthScore' in obj ||
+    'summaryHeadline' in obj ||
+    'dietPlan' in obj ||
+    'recommendations' in obj ||
+    'lifestyle' in obj
+  );
+};
+
 export const parseHealthProfileJson = (input?: string | null): HealthProfile | null => {
   if (!input) return null;
   try {
-    return parseHealthProfile(JSON.parse(input));
+    const parsed = JSON.parse(input);
+    if (!isHealthProfileLike(parsed)) return null;
+    return parseHealthProfile(parsed);
   } catch {
     return null;
   }
@@ -97,7 +114,6 @@ export const parseHealthProfileJson = (input?: string | null): HealthProfile | n
 
 export const formatHealthDateTime = (value?: string | null) => {
   if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  return date.toLocaleString();
+  const formatted = formatISTDateTime(value);
+  return formatted === '-' ? '' : formatted;
 };
