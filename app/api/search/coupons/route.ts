@@ -21,23 +21,28 @@ export async function GET() {
     const baseWhere = {
       isActive: true,
       startDate: { lte: currentDate },
-      OR: [{ expiryDate: null }, { expiryDate: { gte: currentDate } }]
+      AND: [{ OR: [{ expiryDate: null }, { expiryDate: { gte: currentDate } }] }]
     };
 
     const where = corporateId
       ? {
           ...baseWhere,
-          OR: [
-            { corporateServices: { none: {} } },
+          AND: [
+            ...(baseWhere.AND || []),
             {
-              corporateServices: {
-                some: {
-                  corporateId,
-                  isActive: true,
-                  validFrom: { lte: currentDate },
-                  validTill: { gte: currentDate }
+              OR: [
+                { corporateServices: { none: {} } },
+                {
+                  corporateServices: {
+                    some: {
+                      corporateId,
+                      isActive: true,
+                      validFrom: { lte: currentDate },
+                      validTill: { gte: currentDate }
+                    }
+                  }
                 }
-              }
+              ]
             }
           ]
         }

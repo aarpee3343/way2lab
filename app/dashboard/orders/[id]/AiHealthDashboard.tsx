@@ -69,12 +69,12 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
   const [aiData, setAiData] = useState<HealthProfile | null>(() => parseHealthProfileJson(dataString));
   const shouldAutoGenerate = !aiData;
 
-  const hasDiet = !!(aiData?.dietPlan?.plan && Array.isArray(aiData.dietPlan.plan) && aiData.dietPlan.plan.length > 0);
+  const hasDiet = Array.isArray(aiData?.dietPlan?.plan) && aiData.dietPlan.plan.length > 0;
   const score = aiData?.healthScore || 0;
   const reportCount = aiData?.reportCount || 0;
   const analyzedCount = aiData?.analyzedCount || 0;
-  const firstDay = hasDiet ? aiData.dietPlan.plan[0] : {};
-  const todayName = firstDay.day || "Day 1";
+  const firstDay: any = hasDiet ? aiData?.dietPlan?.plan?.[0] ?? {} : {};
+  const todayName = firstDay?.day || "Day 1";
   const lastUpdatedLabel = formatHealthDateTime(aiData?.lastUpdated || aiData?.generatedAt);
   const warnings = aiData?.warnings || [];
 
@@ -221,7 +221,7 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
                </div>
                
                <button 
-                 onClick={handleGenerate}
+                 onClick={() => void handleGenerate(true)}
                  disabled={generating}
                  className="text-xs font-bold text-slate-500 hover:text-blue-600 flex items-center justify-center md:justify-start gap-1 bg-white px-3 py-1.5 rounded-lg transition-colors border border-slate-200 shadow-sm mt-3"
                >
@@ -269,9 +269,9 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
                  </div>
                  
                  <div className="bg-white/80 p-4 rounded-2xl border border-emerald-50 shadow-sm space-y-1 backdrop-blur-sm">
-                    <MealRow label="Breakfast" value={firstDay.breakfast} />
-                    <MealRow label="Lunch" value={firstDay.lunch} />
-                    <MealRow label="Dinner" value={firstDay.dinner} />
+                    <MealRow label="Breakfast" value={String(firstDay?.breakfast || '')} />
+                    <MealRow label="Lunch" value={String(firstDay?.lunch || '')} />
+                    <MealRow label="Dinner" value={String(firstDay?.dinner || '')} />
                  </div>
                </div>
                <button onClick={() => setShowDietModal(true)} className="mt-4 w-full py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all hover:shadow-lg hover:shadow-emerald-200">
@@ -289,7 +289,7 @@ export default function AiHealthDashboard({ dataString, orderId, orderNumber }: 
                    <p className="text-slate-400 text-sm mb-8 leading-relaxed">
                      Unlock a 7-day meal plan designed to improve your health score.
                    </p>
-                   <button onClick={handleGenerate} disabled={generating} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
+                   <button onClick={() => void handleGenerate(true)} disabled={generating} className="w-full bg-emerald-500 hover:bg-emerald-400 text-white py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20">
                      {generating ? <Loader2 className="animate-spin"/> : <CheckCircle2 size={18} />}
                      {generating ? 'Analyzing...' : 'Unlock for Free'}
                    </button>

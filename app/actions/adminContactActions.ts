@@ -7,7 +7,8 @@ export async function getAdminContactRequests() {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
 
   const requests = await prisma.contactRequest.findMany({
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
+    take: 500
   });
 
   return requests.map((r) => ({

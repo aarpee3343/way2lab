@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { sendSMS } from '@/lib/sms';
+import { generateOtpCode, hashOtpCode, verifyOtpCode } from '@/lib/otp';
+import { getRequestIp, rateLimit } from '@/lib/rate-limit';
 
 const OTP_EXPIRY_MINUTES = 10;
 
@@ -13,6 +15,19 @@ export async function POST(req: Request) {
   try {
     const { action, phone, code, newPassword } = await req.json();
     const normalizedPhone = normalizePhone(phone);
+    const ip = getRequestIp(req);
+
+    const rl = await rateLimit({
+      key: `auth:password-reset:${action}:${normalizedPhone || ip}`,
+      limit: action === 'SEND' ? 4 : 20,
+      windowSec: 60,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, message: 'Too many requests. Please try again shortly.' },
+        { status: 429 }
+      );
+    }
 
     if (!normalizedPhone || normalizedPhone.length !== 10) {
       return NextResponse.json(
@@ -33,13 +48,13 @@ export async function POST(req: Request) {
         );
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateOtpCode();
       const expiresAt = new Date(Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000);
 
       await prisma.verificationCode.upsert({
         where: { phone: normalizedPhone },
-        update: { code: otp, expiresAt },
-        create: { phone: normalizedPhone, code: otp, expiresAt }
+        update: { code: hashOtpCode(otp), expiresAt },
+        create: { phone: normalizedPhone, code: hashOtpCode(otp), expiresAt }
       });
 
       const sent = await sendSMS(normalizedPhone, 'OTP', [otp]);
@@ -79,7 +94,7 @@ export async function POST(req: Request) {
         );
       }
 
-      if (record.code !== code) {
+      if (!verifyOtpCode(record.code, code)) {
         return NextResponse.json(
           { success: false, message: 'Invalid OTP' },
           { status: 400 }

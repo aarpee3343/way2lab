@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { generateCustomerUHID } from '@/lib/utils/generators';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
+import { verifyOtpCode } from '@/lib/otp';
+import { getRequestIp, rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: Request) {
   try {
@@ -17,8 +20,19 @@ export async function POST(req: Request) {
       phoneOtp,
       emailOtp
     } = await req.json();
-
     const normalizedEmail = email ? String(email).trim().toLowerCase() : '';
+    const ip = getRequestIp(req);
+    const rl = await rateLimit({
+      key: `auth:register:${normalizedEmail || phone || ip}`,
+      limit: 8,
+      windowSec: 60,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, message: 'Too many requests. Please try again shortly.' },
+        { status: 429 }
+      );
+    }
 
     if (!normalizedEmail && !phone) {
       return NextResponse.json(
@@ -55,7 +69,7 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
-      if (!phoneOtp || record.code !== phoneOtp) {
+      if (!phoneOtp || !verifyOtpCode(record.code, phoneOtp)) {
         return NextResponse.json(
           { success: false, message: 'Invalid phone OTP' },
           { status: 400 }
@@ -71,7 +85,7 @@ export async function POST(req: Request) {
 
     // 3. Hash Password (if provided)
     // If Google login, we generate a random secure string if no password is sent
-    const passToHash = password || Math.random().toString(36).slice(-10) + Date.now();
+    const passToHash = password || `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
     const hashedPassword = await bcrypt.hash(passToHash, 10);
 
     // 4. Generate UHID (shared generator for all customer creation flows)
@@ -107,7 +121,7 @@ export async function POST(req: Request) {
             { status: 400 }
           );
         }
-        if (!emailOtp || emailRecord.code !== emailOtp) {
+        if (!emailOtp || !verifyOtpCode(emailRecord.code, emailOtp)) {
           return NextResponse.json(
             { success: false, message: 'Invalid email OTP', code: 'EMAIL_OTP_INVALID' },
             { status: 400 }
@@ -145,6 +159,13 @@ export async function POST(req: Request) {
         corporateId: assignedCorporateId
       },
     });
+
+    if (phone) {
+      await prisma.verificationCode.delete({ where: { phone } }).catch(() => null);
+    }
+    if (normalizedEmail) {
+      await prisma.emailVerificationCode.delete({ where: { email: normalizedEmail } }).catch(() => null);
+    }
 
     return NextResponse.json({
       success: true,

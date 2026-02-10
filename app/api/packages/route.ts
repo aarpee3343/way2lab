@@ -6,12 +6,19 @@ import { safeData } from '@/lib/utils';
 
 export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, Number(searchParams.get('page') || '1'));
+    const limit = Math.min(500, Math.max(1, Number(searchParams.get('limit') || '200')));
+    const skip = (page - 1) * limit;
+
     const packages = await prisma.package.findMany({
       where: { isActive: true, isCorporate: false },
       include: {
         tests: true // We need to count tests
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
     });
 
     const formatted = packages.map(pkg => ({

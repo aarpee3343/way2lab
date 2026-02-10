@@ -5,6 +5,9 @@ import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 import { sendSMS } from '@/lib/sms';
 import { OrderStatus } from '@prisma/client';
+import { generateOrderNumber } from '@/lib/utils/generators';
+import { applyCouponDiscount, toMoney } from '@/lib/pricing';
+import { getIdempotentResponse, storeIdempotentResponse } from '@/lib/idempotency';
 
 const normalizeGender = (input?: string | null): string => {
   if (!input) return 'Other';
@@ -14,6 +17,7 @@ const normalizeGender = (input?: string | null): string => {
   return 'Other';
 };
 
+
 // 1. GET ORDERS (List)
 export async function GET(req: Request) {
   const user = await getAuthUser(req);
@@ -21,8 +25,8 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get('status');
-  const limit = parseInt(searchParams.get('limit') || '10');
-  const page = parseInt(searchParams.get('page') || '1');
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '10')));
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
   const skip = (page - 1) * limit;
 
   try {
@@ -65,7 +69,20 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { labId, items, patientDetails, addressId, schedule, paymentMode, paymentStatus, totals, couponCode } = body;
+    const idempotencyKeyHeader = req.headers.get('idempotency-key') || req.headers.get('x-idempotency-key') || '';
+    const idempotencyKeyBody = typeof body?.idempotencyKey === 'string' ? body.idempotencyKey : '';
+    const idempotencyKey = String(idempotencyKeyHeader || idempotencyKeyBody || '').trim();
+    const idempotencyRoute = '/api/orders';
+    const idempotencyMethod = 'POST';
+
+    if (idempotencyKey) {
+      const existing = await getIdempotentResponse(idempotencyKey, idempotencyRoute, idempotencyMethod, user.id);
+      if (existing) {
+        return NextResponse.json(existing.responseBody, { status: existing.responseCode });
+      }
+    }
+
+    const { labId, items, patientDetails, addressId, schedule, paymentMode, paymentStatus, couponCode } = body;
 
     // Basic Validation
     if (!Array.isArray(items) || items.length === 0) {
@@ -193,24 +210,132 @@ export async function POST(req: Request) {
     const corporatePaysForBenefit =
       isCorporateBenefitOnlyOrder && hasCorporatePaymentDecision && corporatePaysForAll;
 
-    // Coupon Lookup
-    let couponId: number | null = null;
-    if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
-      if (coupon) couponId = coupon.id;
+    const normalizedItems = (items || [])
+      .map((item: any) => ({
+        id: Number(item.id),
+        type: item.type === 'package' ? 'package' : 'test',
+        name: String(item.name || ''),
+      }))
+      .filter((item: any) => Number.isFinite(item.id));
+
+    const selectedLabId = labId ? Number(labId) : null;
+    const testIds = Array.from(new Set(normalizedItems.filter((i: any) => i.type === 'test').map((i: any) => i.id)));
+    const packageIds = Array.from(new Set(normalizedItems.filter((i: any) => i.type === 'package').map((i: any) => i.id)));
+
+    const [labTests, labPackages, baseTests, basePackages, selectedLab] = await Promise.all([
+      selectedLabId && testIds.length
+        ? prisma.labTest.findMany({
+            where: { labId: selectedLabId, testId: { in: testIds }, available: true },
+            select: { id: true, testId: true, price: true, discount: true },
+          })
+        : Promise.resolve([]),
+      selectedLabId && packageIds.length
+        ? prisma.labPackage.findMany({
+            where: { labId: selectedLabId, packageId: { in: packageIds }, available: true, package: { isActive: true } },
+            select: { id: true, packageId: true, price: true, discount: true },
+          })
+        : Promise.resolve([]),
+      testIds.length
+        ? prisma.test.findMany({
+            where: { id: { in: testIds }, isActive: true },
+            select: { id: true, price: true, discount: true, testName: true },
+          })
+        : Promise.resolve([]),
+      packageIds.length
+        ? prisma.package.findMany({
+            where: { id: { in: packageIds }, isActive: true },
+            select: { id: true, price: true, discount: true, packageName: true },
+          })
+        : Promise.resolve([]),
+      selectedLabId ? prisma.lab.findUnique({ where: { id: selectedLabId }, select: { homeCollectionCharges: true } }) : Promise.resolve(null),
+    ]);
+
+    const labTestMap = new Map(labTests.map((t) => [t.testId, t]));
+    const labPackageMap = new Map(labPackages.map((p) => [p.packageId, p]));
+    const testMap = new Map(baseTests.map((t) => [t.id, t]));
+    const packageMap = new Map(basePackages.map((p) => [p.id, p]));
+
+    const pricedItems = normalizedItems.map((item: any) => {
+      let basePrice = 0;
+      let discount = 0;
+      let itemName = item.name;
+
+      if (item.type === 'test') {
+        const labMatch = labTestMap.get(item.id);
+        const base = testMap.get(item.id);
+        if (labMatch) {
+          basePrice = Number(labMatch.price || 0);
+          discount = Number(labMatch.discount || 0);
+        } else if (base) {
+          basePrice = Number(base.price || 0);
+          discount = Number(base.discount || 0);
+          itemName = base.testName || itemName;
+        }
+      } else {
+        const labMatch = labPackageMap.get(item.id);
+        const base = packageMap.get(item.id);
+        if (labMatch) {
+          basePrice = Number(labMatch.price || 0);
+          discount = Number(labMatch.discount || 0);
+        } else if (base) {
+          basePrice = Number(base.price || 0);
+          discount = Number(base.discount || 0);
+          itemName = base.packageName || itemName;
+        }
+      }
+
+      const price = toMoney(basePrice * (1 - discount / 100));
+
+      return {
+        ...item,
+        itemName,
+        basePrice: toMoney(basePrice),
+        discount: toMoney(discount),
+        price: price < 0 ? 0 : price,
+      };
+    });
+
+    const invalidPricedItem = pricedItems.find((item: any) => item.basePrice <= 0);
+    if (invalidPricedItem) {
+      return NextResponse.json(
+        { success: false, message: `Unable to resolve pricing for ${invalidPricedItem.type} ${invalidPricedItem.id}` },
+        { status: 400 }
+      );
     }
 
-    // Generate Order Number
-    const prefix = new Date().toISOString().slice(2, 7).replace('-', '');
-    const count = await prisma.order.count();
-    const orderNumber = `${prefix}${String(count + 1).padStart(6, '0')}`;
+    const computedBaseTotal = toMoney(pricedItems.reduce((sum, item) => sum + item.basePrice, 0));
+    const computedNetTotal = toMoney(pricedItems.reduce((sum, item) => sum + item.price, 0));
+    const computedItemDiscount = toMoney(computedBaseTotal - computedNetTotal);
+
+    // Coupon Lookup and validation
+    let couponId: number | null = null;
+    let couponDiscountAmount = 0;
+    if (couponCode) {
+      const now = new Date();
+      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+      if (coupon && coupon.isActive && new Date(coupon.startDate) <= now && (!coupon.expiryDate || new Date(coupon.expiryDate) >= now)) {
+        couponId = coupon.id;
+        couponDiscountAmount = applyCouponDiscount(computedNetTotal, {
+          discountType: coupon.discountType,
+          discountValue: Number(coupon.discountValue || 0),
+          minOrderValue: Number(coupon.minOrderValue || 0),
+          maxDiscountAmount: Number(coupon.maxDiscountAmount || 0),
+        });
+      }
+    }
+
+    const orderNumber = await generateOrderNumber();
 
     // Transaction
     const primaryPackageId =
       packageItems.length === 1 ? Number(packageItems[0].id) : null;
 
-    let resolvedHomeCollection = Number(totals.homeCollection || 0);
-    let resolvedFinalAmount = Number(totals.final || 0);
+    let resolvedHomeCollection =
+      schedule?.type === 'home_collection'
+        ? Number(selectedLab?.homeCollectionCharges || 0)
+        : 0;
+    let resolvedDiscountAmount = toMoney(computedItemDiscount + couponDiscountAmount);
+    let resolvedFinalAmount = toMoney(computedBaseTotal - resolvedDiscountAmount + resolvedHomeCollection);
     let resolvedPaymentMode = paymentMode;
     let resolvedPaymentStatus = paymentStatus || null;
 
@@ -222,6 +347,7 @@ export async function POST(req: Request) {
     if (corporatePaysForBenefit) {
       resolvedFinalAmount = 0;
       resolvedHomeCollection = 0;
+      resolvedDiscountAmount = computedBaseTotal;
       resolvedPaymentMode = 'Corporate Credit';
       resolvedPaymentStatus = 'CORPORATE_BILLING';
     }
@@ -257,8 +383,8 @@ export async function POST(req: Request) {
           preferredDate: new Date(schedule.date),
           preferredTimeSlot: schedule.time,
 
-          totalAmount: Number(totals.subtotal),
-          discountAmount: Number(totals.discount),
+          totalAmount: computedBaseTotal,
+          discountAmount: resolvedDiscountAmount,
           homeCollectionCharges: resolvedHomeCollection,
           finalAmount: resolvedFinalAmount,
           
@@ -268,9 +394,9 @@ export async function POST(req: Request) {
           status: 'PENDING',
 
           items: {
-            create: items.map((item: any) => ({
+            create: pricedItems.map((item: any) => ({
               itemType: item.type,
-              itemName: item.name,
+              itemName: item.itemName,
               basePrice: Number(item.basePrice),
               price: Number(item.price),
               discount: Number(item.discount || 0),
@@ -314,12 +440,25 @@ export async function POST(req: Request) {
       console.error("Failed to send Order SMS:", smsError);
     }
 
-    return NextResponse.json({
+    const responsePayload = {
       success: true,
       orderId: order.id,
       orderNumber: order.orderNumber,
       data: order
-    }, { status: 201 });
+    };
+
+    if (idempotencyKey) {
+      await storeIdempotentResponse({
+        key: idempotencyKey,
+        route: idempotencyRoute,
+        method: idempotencyMethod,
+        userId: user.id,
+        responseCode: 201,
+        responseBody: responsePayload,
+      });
+    }
+
+    return NextResponse.json(responsePayload, { status: 201 });
 
   } catch (error: any) {
     console.error("Order Create Error:", error);

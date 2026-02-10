@@ -3,9 +3,10 @@ import { prisma } from '@/lib/db';
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const id = Number(params.id);
+  const { id: idParam } = await params;
+  const id = Number(idParam);
   if (!id || Number.isNaN(id)) {
     return NextResponse.json({ message: 'Invalid lab id' }, { status: 400 });
   }

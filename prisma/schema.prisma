@@ -20,6 +20,9 @@ model Admin {
   updatedAt     DateTime      @updatedAt @map("updated_at")
   onsiteCamps   OnsiteCamp[]
   onsiteEntries OnsiteEntry[]
+  auditLogs     AdminAuditLog[]
+  receivedPayments Payment[]           @relation("PaymentReceivedByAdmin")
+  createdRefunds PaymentRefund[]       @relation("RefundCreatedByAdmin")
 
   @@map("admins")
 }
@@ -107,8 +110,103 @@ model Customer {
   familyMembers       FamilyMember[]
   onsiteEntries       OnsiteEntry[]
   orders              Order[]
+  campaignRecipients  EmailCampaignRecipient[]
 
   @@map("customers")
+}
+
+model NewsletterSubscriber {
+  id                Int                     @id @default(autoincrement())
+  email             String                  @unique
+  name              String?
+  status            NewsletterStatus        @default(SUBSCRIBED)
+  unsubscribeToken  String                  @unique @map("unsubscribe_token")
+  source            String?                 @db.VarChar(50)
+  subscribedAt      DateTime                @default(now()) @map("subscribed_at")
+  unsubscribedAt    DateTime?               @map("unsubscribed_at")
+  lastEmailSentAt   DateTime?               @map("last_email_sent_at")
+  createdAt         DateTime                @default(now()) @map("created_at")
+  updatedAt         DateTime                @updatedAt @map("updated_at")
+  campaignRecipients EmailCampaignRecipient[]
+
+  @@map("newsletter_subscribers")
+}
+
+model EmailCampaign {
+  id                 Int                     @id @default(autoincrement())
+  subject            String
+  templateName       String?                 @map("template_name")
+  contentHtml        String                  @map("content_html")
+  audienceType       CampaignAudienceType    @map("audience_type")
+  personalize        Boolean                 @default(false)
+  totalRecipients    Int                     @default(0) @map("total_recipients")
+  sentCount          Int                     @default(0) @map("sent_count")
+  failedCount        Int                     @default(0) @map("failed_count")
+  unsubscribedSkipped Int                    @default(0) @map("unsubscribed_skipped")
+  status             CampaignStatus          @default(DRAFT)
+  startedAt          DateTime?               @map("started_at")
+  completedAt        DateTime?               @map("completed_at")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  recipients         EmailCampaignRecipient[]
+
+  @@map("email_campaigns")
+}
+
+model EmailCampaignRecipient {
+  id              Int                    @id @default(autoincrement())
+  campaignId      Int                    @map("campaign_id")
+  subscriberId    Int?                   @map("subscriber_id")
+  customerId      Int?                   @map("customer_id")
+  email           String
+  name            String?
+  status          CampaignRecipientStatus @default(PENDING)
+  providerMessage String?                @map("provider_message")
+  errorMessage    String?                @map("error_message")
+  sentAt          DateTime?              @map("sent_at")
+  createdAt       DateTime               @default(now()) @map("created_at")
+  campaign        EmailCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriber      NewsletterSubscriber?  @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  customer        Customer?              @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId, status])
+  @@index([email])
+  @@map("email_campaign_recipients")
+}
+
+model ApiIdempotencyKey {
+  id           Int      @id @default(autoincrement())
+  key          String   @unique @db.VarChar(128)
+  userId       Int?     @map("user_id")
+  route        String   @db.VarChar(120)
+  method       String   @db.VarChar(10)
+  responseCode Int      @map("response_code")
+  responseBody Json     @map("response_body")
+  createdAt    DateTime @default(now()) @map("created_at")
+  expiresAt    DateTime @map("expires_at")
+
+  @@index([userId, route, method])
+  @@index([expiresAt])
+  @@map("api_idempotency_keys")
+}
+
+model AdminAuditLog {
+  id         Int            @id @default(autoincrement())
+  actorType  AuditActorType @default(ADMIN) @map("actor_type")
+  adminId    Int?           @map("admin_id")
+  adminEmail String?        @map("admin_email")
+  action     String         @db.VarChar(120)
+  entityType String?        @map("entity_type") @db.VarChar(80)
+  entityId   String?        @map("entity_id") @db.VarChar(120)
+  metadata   Json?
+  ipAddress  String?        @map("ip_address") @db.VarChar(64)
+  userAgent  String?        @map("user_agent")
+  createdAt  DateTime       @default(now()) @map("created_at")
+  admin      Admin?         @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([action, createdAt])
+  @@index([adminId, createdAt])
+  @@map("admin_audit_logs")
 }
 
 model CustomerAddress {
@@ -399,6 +497,7 @@ model Order {
   items                  OrderItem[]
   reportSummary          OrderReportSummary?
   reports                OrderReport[]
+  refunds                PaymentRefund[]
   address                CustomerAddress?    @relation(fields: [addressId], references: [id])
   associate              Associate?          @relation(fields: [associateId], references: [id])
   coupon                 Coupon?             @relation(fields: [couponId], references: [id])
@@ -439,12 +538,43 @@ model Payment {
   transactionId String?  @map("transaction_id")
   amount        Decimal  @db.Decimal(10, 2)
   status        String   @default("verified")
+  paymentType   String   @default("PAYMENT") @map("payment_type")
+  gateway       String?
+  refundedAmount Decimal @default(0.00) @map("refunded_amount") @db.Decimal(10, 2)
+  receivedByAdminId Int? @map("received_by_admin_id")
   notes         String?
   paymentDate   DateTime @default(now()) @map("payment_date")
   createdAt     DateTime @default(now()) @map("created_at")
   order         Order    @relation(fields: [orderId], references: [id])
+  receivedByAdmin Admin? @relation("PaymentReceivedByAdmin", fields: [receivedByAdminId], references: [id], onDelete: SetNull)
+  refunds       PaymentRefund[]
 
+  @@index([orderId, paymentDate])
+  @@index([status])
   @@map("payments")
+}
+
+model PaymentRefund {
+  id               Int          @id @default(autoincrement())
+  orderId          Int          @map("order_id")
+  paymentId        Int?         @map("payment_id")
+  amount           Decimal      @db.Decimal(10, 2)
+  reason           String
+  mode             String       @default("Manual")
+  transactionId    String?      @map("transaction_id")
+  notes            String?
+  status           RefundStatus @default(INITIATED)
+  createdByAdminId Int?         @map("created_by_admin_id")
+  processedAt      DateTime?    @map("processed_at")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payment          Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  createdByAdmin   Admin?       @relation("RefundCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([orderId, status])
+  @@index([createdAt])
+  @@map("payment_refunds")
 }
 
 model OrderReport {
@@ -792,5 +922,42 @@ enum OrderStatus {
   PARTIAL_COMPLETED
   COMPLETED
   REJECTED
+  CANCELLED
+}
+
+enum NewsletterStatus {
+  SUBSCRIBED
+  UNSUBSCRIBED
+}
+
+enum CampaignStatus {
+  DRAFT
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CampaignAudienceType {
+  SUBSCRIBERS
+  CUSTOMERS
+  CUSTOM_LIST
+}
+
+enum CampaignRecipientStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED_UNSUBSCRIBED
+}
+
+enum AuditActorType {
+  ADMIN
+  SYSTEM
+}
+
+enum RefundStatus {
+  INITIATED
+  PROCESSED
+  FAILED
   CANCELLED
 }

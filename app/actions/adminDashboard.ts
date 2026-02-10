@@ -38,9 +38,14 @@ export async function getAdminDashboardStats() {
   let todayOrders = 0;
   let pendingOrders = 0;
   let completedOrders = 0;
+  let totalCollected = 0;
+  let totalRefunded = 0;
+  let netRevenue = 0;
+  let outstanding = 0;
 
   try {
-    [totalOrders, todayOrders, pendingOrders, completedOrders] = await Promise.all([
+    const [ordersAgg, paymentsAgg, refundsAgg] = await Promise.all([
+      Promise.all([
       prisma.order.count(),
 
       prisma.order.count({
@@ -68,7 +73,27 @@ export async function getAdminDashboardStats() {
           status: OrderStatus.COMPLETED
         }
       })
+      ]),
+      prisma.payment.aggregate({
+        _sum: { amount: true }
+      }),
+      prisma.paymentRefund.aggregate({
+        where: { status: 'PROCESSED' },
+        _sum: { amount: true }
+      })
     ]);
+
+    [totalOrders, todayOrders, pendingOrders, completedOrders] = ordersAgg;
+    totalCollected = Number(paymentsAgg._sum.amount ?? 0);
+    totalRefunded = Number(refundsAgg._sum.amount ?? 0);
+    netRevenue = totalCollected - totalRefunded;
+
+    const billedAgg = await prisma.order.aggregate({
+      where: { status: { notIn: [OrderStatus.CANCELLED, OrderStatus.REJECTED] } },
+      _sum: { finalAmount: true }
+    });
+    const totalBilled = Number(billedAgg._sum.finalAmount ?? 0);
+    outstanding = Math.max(0, totalBilled - netRevenue);
   } catch (err) {
     console.error('Dashboard stats query failed:', err);
   }
@@ -80,6 +105,19 @@ export async function getAdminDashboardStats() {
     totalOrders,
     todayOrders,
     pendingOrders,
-    completedOrders
+    completedOrders,
+    totalCollected,
+    totalRefunded,
+    netRevenue,
+    outstanding
   };
+}
+
+export async function getAdminOrderCount() {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  try {
+    return await prisma.order.count();
+  } catch {
+    return 0;
+  }
 }

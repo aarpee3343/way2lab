@@ -33,7 +33,8 @@ export default function LegalLayout({ title, subtitle, updatedAt, icon, children
   const iconColors = {
     privacy: 'bg-gradient-to-br from-teal-500/10 to-teal-600/10 border-teal-200',
     terms: 'bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-200',
-    refund: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border-emerald-200'
+    refund: 'bg-gradient-to-br from-emerald-500/10 to-emerald-600/10 border-emerald-200',
+    logo: 'bg-gradient-to-br from-teal-500/10 to-teal-600/10 border-teal-200'
   };
 
   return (

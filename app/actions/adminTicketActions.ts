@@ -16,7 +16,8 @@ export async function getAdminTickets() {
       corporate: { select: { companyName: true } },
       _count: { select: { messages: true } }
     },
-    orderBy: { updatedAt: 'desc' }
+    orderBy: { updatedAt: 'desc' },
+    take: 500
   });
 }
 
@@ -24,7 +25,8 @@ export async function getTicketMessages(ticketId: number) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   return await prisma.ticketMessage.findMany({
     where: { ticketId },
-    orderBy: { createdAt: 'asc' }
+    orderBy: { createdAt: 'asc' },
+    take: 1000
   });
 }
 

@@ -109,7 +109,9 @@ export async function getAdminOrders(params: {
         },
         lab: {
           select: {
-            labName: true
+            labName: true,
+            latitude: true,
+            longitude: true
           }
         }
       },

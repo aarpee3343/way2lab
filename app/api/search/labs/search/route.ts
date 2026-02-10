@@ -49,14 +49,91 @@ export async function POST(req: Request) {
 
     if (labsInArea.length === 0) return NextResponse.json([]);
 
+    const normalizedItems = (items as any[])
+      .map((item) => ({
+        id: Number(item.id),
+        type: item.type === 'package' ? 'package' : 'test',
+        name: String(item.name || ''),
+      }))
+      .filter((item) => Number.isFinite(item.id));
+
+    const labIds = labsInArea.map(({ lab }) => lab.id);
+    const requestedTestIds = Array.from(new Set(normalizedItems.filter((i) => i.type === 'test').map((i) => i.id)));
+    const requestedPackageIds = Array.from(new Set(normalizedItems.filter((i) => i.type === 'package').map((i) => i.id)));
+
+    const [labTests, labPackages] = await Promise.all([
+      requestedTestIds.length
+        ? prisma.labTest.findMany({
+            where: {
+              labId: { in: labIds },
+              testId: { in: requestedTestIds },
+              available: true,
+            },
+            select: {
+              id: true,
+              labId: true,
+              testId: true,
+              price: true,
+              discount: true,
+            },
+          })
+        : Promise.resolve([]),
+      requestedPackageIds.length
+        ? prisma.labPackage.findMany({
+            where: {
+              labId: { in: labIds },
+              packageId: { in: requestedPackageIds },
+              available: true,
+              package: { isActive: true },
+            },
+            select: {
+              id: true,
+              labId: true,
+              packageId: true,
+              price: true,
+              discount: true,
+              package: {
+                select: {
+                  isCorporate: true,
+                  corporateId: true,
+                },
+              },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const testMap = new Map<string, { id: number; price: number; discount: number }>();
+    for (const row of labTests) {
+      testMap.set(`${row.labId}:${row.testId}`, {
+        id: row.id,
+        price: Number(row.price),
+        discount: Number(row.discount || 0),
+      });
+    }
+
+    const packageMap = new Map<
+      string,
+      { id: number; price: number; discount: number; isCorporate: boolean; corporateId: number | null }
+    >();
+    for (const row of labPackages) {
+      packageMap.set(`${row.labId}:${row.packageId}`, {
+        id: row.id,
+        price: Number(row.price),
+        discount: Number(row.discount || 0),
+        isCorporate: Boolean(row.package?.isCorporate),
+        corporateId: row.package?.corporateId ?? null,
+      });
+    }
+
     // 2. Process Labs
-    const results = await Promise.all(labsInArea.map(async ({ lab }) => {
+    const results = labsInArea.map(({ lab }) => {
       let finalTotal = 0;
       let baseTotal = 0;
       const foundItems: any[] = [];
       const missingItems: any[] = [];
 
-      for (const item of items) {
+      for (const item of normalizedItems) {
         let basePrice = 0;
         let discount = 0;
         let sellingPrice = 0;
@@ -65,29 +142,21 @@ export async function POST(req: Request) {
         let isCorporate = false;
 
         if (item.type === 'test') {
-          const lt = await prisma.labTest.findFirst({
-            where: { labId: lab.id, testId: Number(item.id), available: true }
-          });
+          const lt = testMap.get(`${lab.id}:${item.id}`);
           if (lt) {
-            basePrice = Number(lt.price);
-            discount = Number(lt.discount);
+            basePrice = lt.price;
+            discount = lt.discount;
             labItemId = lt.id;
             found = true;
           }
         } else if (item.type === 'package') {
-          const lp = await prisma.labPackage.findFirst({
-            where: { labId: lab.id, packageId: Number(item.id), available: true, package: { isActive: true } },
-            include: {
-              package: { select: { isCorporate: true, corporateId: true } }
-            }
-          });
+          const lp = packageMap.get(`${lab.id}:${item.id}`);
           if (lp) {
-            const pkg = lp.package;
-            const isCorporatePackage = Boolean(pkg?.isCorporate);
-            const isAllowed = !isCorporatePackage || (corporateId && pkg?.corporateId === corporateId);
+            const isCorporatePackage = lp.isCorporate;
+            const isAllowed = !isCorporatePackage || (corporateId && lp.corporateId === corporateId);
             if (isAllowed) {
-              basePrice = Number(lp.price);
-              discount = Number(lp.discount);
+              basePrice = lp.price;
+              discount = lp.discount;
               labItemId = lp.id;
               found = true;
               isCorporate = isCorporatePackage;
@@ -151,7 +220,7 @@ export async function POST(req: Request) {
         missingItems,
         isFullMatch: missingItems.length === 0
       };
-    }));
+    });
 
     // ✅ FIX 2: Filter out nulls (labs with 0 matching items)
     const validResults = results.filter(r => r !== null);

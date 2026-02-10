@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 import { prisma } from '@/lib/db';
 import { sendSMS } from '@/lib/sms';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import {
   generateOrderNumber,
   generateCustomerUHID
@@ -294,7 +295,7 @@ export async function placeAdminOrderAction(data: any) {
       /* ---------- A. Customer ---------- */
       if (!customerId) {
         const uhid = await generateCustomerUHID();
-        const passwordSeed = Math.random().toString(36).slice(-10) + Date.now();
+        const passwordSeed = `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
         const hashedPassword = await bcrypt.hash(passwordSeed, 10);
         const email = typeof data.email === 'string' && data.email.trim() ? data.email.trim() : null;
 

@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { toast } from '@/lib/safe-toast';
 
 // Helper to check count (Server Action)
-import { getAdminDashboardStats } from '@/app/actions/adminDashboard';
+import { getAdminOrderCount } from '@/app/actions/adminDashboard';
 
 export default function OrderAlerter() {
   const lastCountRef = useRef<number>(0);
@@ -16,8 +16,7 @@ export default function OrderAlerter() {
 
     const checkOrders = async () => {
       try {
-        const stats = await getAdminDashboardStats();
-        const currentCount = stats.totalOrders;
+        const currentCount = await getAdminOrderCount();
 
         // If count increased, play sound
         if (lastCountRef.current > 0 && currentCount > lastCountRef.current) {
@@ -34,8 +33,8 @@ export default function OrderAlerter() {
     // Initial check
     checkOrders();
 
-    // Poll every 10 seconds
-    const interval = setInterval(checkOrders, 10000);
+    // Poll every 20 seconds
+    const interval = setInterval(checkOrders, 20000);
     return () => clearInterval(interval);
   }, []);
 

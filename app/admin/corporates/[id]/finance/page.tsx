@@ -1,54 +1,324 @@
 'use client';
-import { CreditCard, TrendingDown, Clock, Download, Plus } from 'lucide-react';
 
-export default function CorporateFinanceAdmin() {
+import { use, useEffect, useState } from 'react';
+import { RefreshCw, Wallet, RotateCcw, AlertCircle, HandCoins } from 'lucide-react';
+import { toast } from '@/lib/safe-toast';
+import {
+  getCorporateFinanceOverviewAction,
+  initiateRefundAction,
+  recordManualPaymentAction,
+} from '@/app/actions/adminFinanceActions';
+
+type CorpFinanceData = Awaited<ReturnType<typeof getCorporateFinanceOverviewAction>>;
+
+function formatINR(value: number) {
+  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(
+    Number(value || 0)
+  );
+}
+
+export default function CorporateFinancePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const corporateId = Number(id);
+
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<CorpFinanceData>(null);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
+  const [savingPayment, setSavingPayment] = useState(false);
+  const [savingRefund, setSavingRefund] = useState(false);
+
+  const [paymentForm, setPaymentForm] = useState({
+    orderId: '',
+    amount: '',
+    method: 'Bank Transfer',
+    transactionId: '',
+    notes: '',
+  });
+
+  const [refundForm, setRefundForm] = useState({
+    orderId: '',
+    amount: '',
+    reason: '',
+    transactionId: '',
+    notes: '',
+  });
+
+  const load = async (nextFrom?: string, nextTo?: string) => {
+    setLoading(true);
+    try {
+      const res = await getCorporateFinanceOverviewAction(corporateId, {
+        from: nextFrom || from || undefined,
+        to: nextTo || to || undefined,
+      });
+      setData(res);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [corporateId]);
+
+  const onRecordPayment = async () => {
+    const orderId = Number(paymentForm.orderId);
+    const amount = Number(paymentForm.amount);
+    if (!orderId || !amount || amount <= 0) {
+      toast.error('Enter valid order id and amount');
+      return;
+    }
+
+    setSavingPayment(true);
+    try {
+      const res = await recordManualPaymentAction({
+        orderId,
+        amount,
+        method: paymentForm.method,
+        transactionId: paymentForm.transactionId || undefined,
+        notes: paymentForm.notes || undefined,
+      });
+      if (!res.success) {
+        toast.error(res.error || 'Failed to record payment');
+        return;
+      }
+      toast.success('Payment recorded');
+      setPaymentForm((prev) => ({ ...prev, amount: '', transactionId: '', notes: '' }));
+      await load();
+    } finally {
+      setSavingPayment(false);
+    }
+  };
+
+  const onRefund = async () => {
+    const orderId = Number(refundForm.orderId);
+    const amount = Number(refundForm.amount);
+    if (!orderId || !amount || amount <= 0 || !refundForm.reason.trim()) {
+      toast.error('Enter valid refund details');
+      return;
+    }
+
+    setSavingRefund(true);
+    try {
+      const res = await initiateRefundAction({
+        orderId,
+        amount,
+        reason: refundForm.reason,
+        mode: 'Corporate Manual',
+        transactionId: refundForm.transactionId || undefined,
+        notes: refundForm.notes || undefined,
+      });
+      if (!res.success) {
+        toast.error(res.error || 'Refund failed');
+        return;
+      }
+      toast.success('Refund processed');
+      setRefundForm((prev) => ({ ...prev, amount: '', reason: '', transactionId: '', notes: '' }));
+      await load();
+    } finally {
+      setSavingRefund(false);
+    }
+  };
+
+  if (loading || !data) return <div className="p-10 text-center text-slate-400">Loading finance data...</div>;
+
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-slate-900 p-6 rounded-3xl text-white">
-          <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Total Outstanding Dues</p>
-          <h2 className="text-3xl font-black">₹4,85,200</h2>
-          <div className="mt-4 flex items-center gap-2 text-rose-400 text-xs font-bold">
-            <TrendingDown size={14}/> 15% Increase from last month
-          </div>
-        </div>
-        
-        <div className="bg-white border border-slate-200 p-6 rounded-3xl">
-          <p className="text-[10px] font-black uppercase text-slate-400 mb-2">Wallet Credit Limit</p>
-          <h2 className="text-3xl font-black text-slate-900">₹10,00,000</h2>
-          <button className="mt-4 text-blue-600 text-xs font-black uppercase tracking-widest hover:underline">Update Limit</button>
+    <div className="admin-space-y">
+      <div className="admin-page-header">
+        <h1 className="admin-page-title">{data.corporate.companyName} Finance</h1>
+        <p className="admin-page-subtitle">Billing, collections, and refunds for this corporate account.</p>
+        <div className="flex gap-2 mt-2">
+          <a
+            className="admin-btn-secondary"
+            href={`/api/admin/corporates/${corporateId}/finance/invoice?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
+          >
+            Download Invoice (PDF)
+          </a>
+          <a
+            className="admin-btn-secondary"
+            href={`/api/admin/corporates/${corporateId}/finance/statement?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
+          >
+            Download Statement (CSV)
+          </a>
         </div>
       </div>
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="font-black text-slate-800 text-sm uppercase">Financial Ledger / Invoices</h3>
-          <button className="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-black flex items-center gap-2">
-            <Plus size={14}/> Record Payment
+      <div className="admin-card p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <label className="admin-form-label">From</label>
+            <input type="date" className="admin-form-input" value={from} onChange={(e) => setFrom(e.target.value)} />
+          </div>
+          <div>
+            <label className="admin-form-label">To</label>
+            <input type="date" className="admin-form-input" value={to} onChange={(e) => setTo(e.target.value)} />
+          </div>
+          <div className="flex gap-2">
+            <button className="admin-btn-primary" onClick={() => load(from, to)}>
+              <RefreshCw size={16} /> Apply
+            </button>
+            <button
+              className="admin-btn-secondary"
+              onClick={() => {
+                setFrom('');
+                setTo('');
+                void load('', '');
+              }}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="admin-stat-grid">
+        <StatCard icon={Wallet} label="Billed" value={formatINR(data.summary.billed)} tone="text-slate-900" />
+        <StatCard icon={HandCoins} label="Collected" value={formatINR(data.summary.paid)} tone="text-emerald-700" />
+        <StatCard icon={RotateCcw} label="Refunded" value={formatINR(data.summary.refunded)} tone="text-amber-700" />
+        <StatCard icon={AlertCircle} label="Outstanding" value={formatINR(data.summary.outstanding)} tone="text-rose-700" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="admin-card p-5">
+          <h2 className="admin-form-title mb-4">Record Corporate Payment</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              className="admin-form-input"
+              placeholder="Order ID"
+              value={paymentForm.orderId}
+              onChange={(e) => setPaymentForm((p) => ({ ...p, orderId: e.target.value }))}
+            />
+            <input
+              className="admin-form-input"
+              placeholder="Amount"
+              value={paymentForm.amount}
+              onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))}
+            />
+            <input
+              className="admin-form-input"
+              placeholder="Method"
+              value={paymentForm.method}
+              onChange={(e) => setPaymentForm((p) => ({ ...p, method: e.target.value }))}
+            />
+            <input
+              className="admin-form-input"
+              placeholder="Transaction ID"
+              value={paymentForm.transactionId}
+              onChange={(e) => setPaymentForm((p) => ({ ...p, transactionId: e.target.value }))}
+            />
+            <textarea
+              className="admin-form-textarea md:col-span-2"
+              rows={3}
+              placeholder="Notes"
+              value={paymentForm.notes}
+              onChange={(e) => setPaymentForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+          <button className="admin-btn-primary mt-3" onClick={onRecordPayment} disabled={savingPayment}>
+            {savingPayment ? 'Saving...' : 'Record Payment'}
           </button>
         </div>
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-400 font-black uppercase text-[10px]">
-            <tr>
-              <th className="px-6 py-4">Transaction Date</th>
-              <th className="px-6 py-4">Service Description</th>
-              <th className="px-6 py-4">Utilization</th>
-              <th className="px-6 py-4">Amount</th>
-              <th className="px-6 py-4 text-right">Invoice</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            <tr>
-              <td className="px-6 py-4 font-bold">Jan 2026 Billing</td>
-              <td className="px-6 py-4 text-slate-500 text-xs">Annual Health Checkup Batch #1</td>
-              <td className="px-6 py-4 font-bold">142 Employees</td>
-              <td className="px-6 py-4 font-black text-slate-900">₹2,13,000</td>
-              <td className="px-6 py-4 text-right">
-                <button className="text-blue-600 hover:bg-blue-50 p-2 rounded-lg"><Download size={18}/></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div className="admin-card p-5">
+          <h2 className="admin-form-title mb-4">Process Refund</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <input
+              className="admin-form-input"
+              placeholder="Order ID"
+              value={refundForm.orderId}
+              onChange={(e) => setRefundForm((p) => ({ ...p, orderId: e.target.value }))}
+            />
+            <input
+              className="admin-form-input"
+              placeholder="Amount"
+              value={refundForm.amount}
+              onChange={(e) => setRefundForm((p) => ({ ...p, amount: e.target.value }))}
+            />
+            <input
+              className="admin-form-input md:col-span-2"
+              placeholder="Reason"
+              value={refundForm.reason}
+              onChange={(e) => setRefundForm((p) => ({ ...p, reason: e.target.value }))}
+            />
+            <input
+              className="admin-form-input"
+              placeholder="Refund Transaction ID"
+              value={refundForm.transactionId}
+              onChange={(e) => setRefundForm((p) => ({ ...p, transactionId: e.target.value }))}
+            />
+            <textarea
+              className="admin-form-textarea"
+              rows={3}
+              placeholder="Notes"
+              value={refundForm.notes}
+              onChange={(e) => setRefundForm((p) => ({ ...p, notes: e.target.value }))}
+            />
+          </div>
+          <button className="admin-btn-primary mt-3" onClick={onRefund} disabled={savingRefund}>
+            {savingRefund ? 'Processing...' : 'Process Refund'}
+          </button>
+        </div>
+      </div>
+
+      <div className="admin-card p-5">
+        <h2 className="admin-form-title mb-3">Corporate Orders</h2>
+        <div className="admin-table-container">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Patient</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th>Amount</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.orders.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">No orders in selected range</td>
+                </tr>
+              ) : (
+                data.orders.map((o) => (
+                  <tr key={o.id}>
+                    <td>#{o.orderNumber || o.id}</td>
+                    <td>{o.patientName || '-'}</td>
+                    <td>{o.status}</td>
+                    <td>{o.paymentStatus || 'Pending'}</td>
+                    <td>{formatINR(o.finalAmount)}</td>
+                    <td>{new Date(o.createdAt).toLocaleString()}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  tone,
+}: {
+  icon: any;
+  label: string;
+  value: string;
+  tone: string;
+}) {
+  return (
+    <div className="admin-stat-card">
+      <div className="admin-stat-icon-container bg-slate-900">
+        <Icon size={20} />
+      </div>
+      <div>
+        <p className="admin-stat-label">{label}</p>
+        <h3 className={`admin-stat-value ${tone}`}>{value}</h3>
       </div>
     </div>
   );

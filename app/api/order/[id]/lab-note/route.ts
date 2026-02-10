@@ -133,9 +133,7 @@ function drawHeader(
   if (logo) {
     try {
       doc.image(logo, 40, 19, {
-        fit: [150, 60], // prevents overflow
-        align: 'left',
-        valign: 'center'
+        fit: [150, 60] // prevents overflow
       });
     } catch {
       doc

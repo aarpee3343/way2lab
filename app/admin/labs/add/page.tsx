@@ -33,6 +33,9 @@ export default function AddLabWizard() {
   const [citiesList, setCitiesList] = useState<string[]>([]);
   const [pincodesList, setPincodesList] = useState<string[]>([]);
   const [fetchingLoc, setFetchingLoc] = useState(false);
+  const [identityCitiesList, setIdentityCitiesList] = useState<string[]>([]);
+  const [identityPincodesList, setIdentityPincodesList] = useState<string[]>([]);
+  const [fetchingIdentityLoc, setFetchingIdentityLoc] = useState(false);
 
   const [coverageState, setCoverageState] = useState('');
   const [coverageCity, setCoverageCity] = useState('');
@@ -97,6 +100,37 @@ export default function AddLabWizard() {
   }, []);
 
   // LOCATION HANDLERS
+  const handleIdentityStateChange = async (stateName: string) => {
+    setForm(prev => ({ ...prev, state: stateName, city: '', pincode: '' }));
+    setIdentityCitiesList([]);
+    setIdentityPincodesList([]);
+
+    if (!stateName) return;
+
+    setFetchingIdentityLoc(true);
+    try {
+      const cities = await fetchCities(stateName);
+      setIdentityCitiesList(cities);
+    } finally {
+      setFetchingIdentityLoc(false);
+    }
+  };
+
+  const handleIdentityCityChange = async (cityName: string) => {
+    setForm(prev => ({ ...prev, city: cityName, pincode: '' }));
+    setIdentityPincodesList([]);
+
+    if (!cityName) return;
+
+    setFetchingIdentityLoc(true);
+    try {
+      const pins = await fetchPincodes(cityName);
+      setIdentityPincodesList(Array.from(new Set(pins)));
+    } finally {
+      setFetchingIdentityLoc(false);
+    }
+  };
+
   const handleStateChange = async (stateName: string) => {
     setCoverageState(stateName);
     setCoverageCity('');
@@ -342,7 +376,7 @@ export default function AddLabWizard() {
                         <select
                           className="admin-form-select"
                           value={form.state}
-                          onChange={e => setForm({ ...form, state: e.target.value })}
+                          onChange={e => handleIdentityStateChange(e.target.value)}
                         >
                           <option value="">Select State</option>
                           {statesList.map(s => (
@@ -360,11 +394,39 @@ export default function AddLabWizard() {
                     </div>
                     <div>
                       <label className="admin-form-label">City</label>
-                      <input className="admin-form-input" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
+                      {identityCitiesList.length > 0 || form.state ? (
+                        <select
+                          className="admin-form-select"
+                          disabled={!form.state || fetchingIdentityLoc}
+                          value={form.city}
+                          onChange={e => handleIdentityCityChange(e.target.value)}
+                        >
+                          <option value="">{fetchingIdentityLoc ? 'Loading...' : 'Select City'}</option>
+                          {identityCitiesList.map(c => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input className="admin-form-input" value={form.city} onChange={e => setForm({ ...form, city: e.target.value })} />
+                      )}
                     </div>
                     <div>
                       <label className="admin-form-label">Pincode *</label>
-                      <input className="admin-form-input font-mono" maxLength={6} value={form.pincode} onChange={e => setForm({ ...form, pincode: e.target.value })} />
+                      {identityPincodesList.length > 0 || form.city ? (
+                        <select
+                          className="admin-form-select font-mono"
+                          disabled={!form.city || fetchingIdentityLoc}
+                          value={form.pincode}
+                          onChange={e => setForm({ ...form, pincode: e.target.value })}
+                        >
+                          <option value="">{fetchingIdentityLoc ? 'Loading...' : 'Select Pincode'}</option>
+                          {identityPincodesList.map(pin => (
+                            <option key={pin} value={pin}>{pin}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input className="admin-form-input font-mono" maxLength={6} value={form.pincode} onChange={e => setForm({ ...form, pincode: e.target.value })} />
+                      )}
                     </div>
                   </div>
                 </div>

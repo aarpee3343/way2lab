@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, use, useCallback } from 'react';
+import Link from 'next/link';
 import { 
   getCorporateDetails, 
   mapDomainAction, 
@@ -327,6 +328,9 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
         <div className="text-right">
           <div className="text-4xl font-black text-blue-600">{corp._count?.employees || 0}</div>
           <div className="text-xs font-bold text-slate-400 uppercase">Total Employees</div>
+          <Link href={`/admin/corporates/${corpId}/finance`} className="mt-3 inline-flex text-xs font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100 hover:bg-sky-100">
+            Open Finance
+          </Link>
           {isArchived && (
             <button
               onClick={handleRestoreCorporate}

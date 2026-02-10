@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { issueAdminToken, setAdminAuthCookie } from '@/lib/admin-auth';
+import { verifyOtpCode } from '@/lib/otp';
 
 const ADMIN_OTP_PHONE = process.env.ADMIN_OTP_PHONE || '+919457590000';
 
@@ -20,7 +21,7 @@ export async function POST(req: Request) {
       where: { phone: ADMIN_OTP_PHONE }
     });
 
-    if (!otpRecord || otpRecord.code !== otp) {
+    if (!otpRecord || !verifyOtpCode(otpRecord.code, otp)) {
       return NextResponse.json({ success: false, message: 'Invalid OTP' }, { status: 400 });
     }
 

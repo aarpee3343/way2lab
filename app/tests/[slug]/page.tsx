@@ -25,8 +25,7 @@ export default function TestDetailPage({ params }: { params: Promise<{ slug: str
     axios.get(`/api/tests/${slug}`)
       .then(res => {
         setTest(res.data);
-        // Check if test is bookmarked (simulated)
-        setIsBookmarked(Math.random() > 0.5);
+        setIsBookmarked(false);
       })
       .catch(() => toast.error("Failed to load test details"))
       .finally(() => setLoading(false));

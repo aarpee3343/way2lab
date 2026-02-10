@@ -1,47 +1,19 @@
 // lib/utils/generators.ts - UPDATED VERSION
 import { prisma } from '@/lib/db';
+import crypto from 'node:crypto';
 
 export async function generateOrderNumber(): Promise<string> {
   const date = new Date();
-  const year = date.getFullYear().toString().slice(-2); // Last 2 digits
+  const year = date.getFullYear().toString().slice(-2);
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
-  
-  // Format: YYMMDD (e.g., 260123 for 2026-01-23)
-  const datePrefix = `${year}${month}${day}`;
-  
-  // Use transaction to prevent race conditions
-  return await prisma.$transaction(async (tx) => {
-    // Find the last order number for today
-    const lastOrder = await tx.order.findFirst({
-      where: {
-        orderNumber: {
-          startsWith: datePrefix
-        }
-      },
-      orderBy: {
-        id: 'desc'
-      },
-      select: {
-        orderNumber: true
-      }
-    });
-
-    let sequence = 1;
-    if (lastOrder?.orderNumber) {
-      // Extract sequence number (last 4 digits)
-      const lastSeq = parseInt(lastOrder.orderNumber.slice(-4)) || 0;
-      sequence = lastSeq + 1;
-      
-      // Safety check: if sequence exceeds 9999, add a day
-      if (sequence > 9999) {
-        throw new Error('Daily order limit exceeded');
-      }
-    }
-
-    // Format: YYMMDD + 4-digit sequence (e.g., 2601230001)
-    return `${datePrefix}${String(sequence).padStart(4, '0')}`;
-  });
+  const hh = String(date.getHours()).padStart(2, '0');
+  const mm = String(date.getMinutes()).padStart(2, '0');
+  const ss = String(date.getSeconds()).padStart(2, '0');
+  const ms = String(date.getMilliseconds()).padStart(3, '0');
+  const random = String(crypto.randomInt(0, 1000)).padStart(3, '0');
+  // Format: YYMMDDHHMMSSmmmRRR
+  return `${year}${month}${day}${hh}${mm}${ss}${ms}${random}`;
 }
 
 export async function generateCustomerUHID(): Promise<string> {

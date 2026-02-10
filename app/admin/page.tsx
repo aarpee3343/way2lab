@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { getAdminDashboardStats } from '@/app/actions/adminDashboard';
 import { 
-  Package, Calendar, Clock, CheckCircle2, TrendingUp 
+  Package, Calendar, Clock, CheckCircle2, TrendingUp, Wallet, RotateCcw, HandCoins, AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
@@ -55,6 +55,30 @@ export default function AdminDashboard() {
       val: stats.completedOrders, 
       icon: CheckCircle2, 
       color: 'bg-indigo-500' 
+    },
+    { 
+      label: 'Collected', 
+      val: `₹${Number(stats.totalCollected || 0).toFixed(0)}`, 
+      icon: Wallet, 
+      color: 'bg-emerald-600' 
+    },
+    { 
+      label: 'Refunded', 
+      val: `₹${Number(stats.totalRefunded || 0).toFixed(0)}`, 
+      icon: RotateCcw, 
+      color: 'bg-amber-500' 
+    },
+    { 
+      label: 'Net Revenue', 
+      val: `₹${Number(stats.netRevenue || 0).toFixed(0)}`, 
+      icon: HandCoins, 
+      color: 'bg-sky-600' 
+    },
+    { 
+      label: 'Outstanding', 
+      val: `₹${Number(stats.outstanding || 0).toFixed(0)}`, 
+      icon: AlertCircle, 
+      color: 'bg-rose-500' 
     },
   ];
 

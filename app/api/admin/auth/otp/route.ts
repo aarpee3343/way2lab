@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { sendSMS } from '@/lib/sms';
+import { generateOtpCode, hashOtpCode, verifyOtpCode } from '@/lib/otp';
+import { getRequestIp, rateLimit } from '@/lib/rate-limit';
 
 const ADMIN_OTP_PHONE = process.env.ADMIN_OTP_PHONE || '+919457590000';
 const OTP_TTL_MS = 10 * 60 * 1000;
@@ -9,6 +11,18 @@ const RESEND_COOLDOWN_MS = 30 * 1000;
 export async function POST(req: Request) {
   try {
     const { action, code } = await req.json();
+    const ip = getRequestIp(req);
+    const rl = await rateLimit({
+      key: `admin:otp:${action}:${ip}`,
+      limit: action === 'SEND' ? 3 : 20,
+      windowSec: 60,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { success: false, message: 'Too many requests. Please try again shortly.' },
+        { status: 429 }
+      );
+    }
 
     if (action === 'SEND') {
       const existing = await prisma.verificationCode.findUnique({
@@ -22,13 +36,13 @@ export async function POST(req: Request) {
         );
       }
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = generateOtpCode();
       const expiresAt = new Date(Date.now() + OTP_TTL_MS);
 
       await prisma.verificationCode.upsert({
         where: { phone: ADMIN_OTP_PHONE },
-        update: { code: otp, expiresAt, createdAt: new Date() },
-        create: { phone: ADMIN_OTP_PHONE, code: otp, expiresAt }
+        update: { code: hashOtpCode(otp), expiresAt, createdAt: new Date() },
+        create: { phone: ADMIN_OTP_PHONE, code: hashOtpCode(otp), expiresAt }
       });
 
       const sent = await sendSMS(ADMIN_OTP_PHONE, 'OTP', [otp]);
@@ -54,7 +68,7 @@ export async function POST(req: Request) {
         );
       }
 
-      if (record.code !== code) {
+      if (!verifyOtpCode(record.code, code)) {
         return NextResponse.json({ success: false, message: 'Invalid OTP' }, { status: 400 });
       }
 

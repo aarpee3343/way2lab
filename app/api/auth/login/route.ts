@@ -2,12 +2,23 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { getRequestIp, rateLimit } from '@/lib/rate-limit';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: Request) {
   try {
     const { identifier, password, isOtpLogin, phone } = await req.json();
+    const ip = getRequestIp(req);
+    const key = String(identifier || phone || ip);
+    const rl = await rateLimit({
+      key: `auth:login:${key}`,
+      limit: 10,
+      windowSec: 60,
+    });
+    if (!rl.allowed) {
+      return NextResponse.json({ success: false, message: 'Too many login attempts. Please wait.' }, { status: 429 });
+    }
 
     let user;
 

@@ -24,13 +24,12 @@ export default function LiveMap() {
       // Fetch Pending Home Collections
       const { orders } = await getAdminOrders({ status: 'Pending', page: 1 });
       
-      // MOCK GEOCODING
       const mapped = orders
-        .filter((o: any) => o.collectionType === 'home_collection')
+        .filter((o: any) => o.collectionType === 'home_collection' && o.lab?.latitude && o.lab?.longitude)
         .map((o: any) => ({
           ...o,
-          lat: 28.4595 + (Math.random() * 0.05 - 0.025),
-          lng: 77.0266 + (Math.random() * 0.05 - 0.025)
+          lat: Number(o.lab.latitude),
+          lng: Number(o.lab.longitude)
         }));
       setLocations(mapped);
     }

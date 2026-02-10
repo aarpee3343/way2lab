@@ -3,6 +3,7 @@
 import { requireAdmin } from '@/lib/admin-auth';
 import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { generateOrderNumber, generateCustomerUHID } from '@/lib/utils/generators';
 import { OrderStatus, Prisma } from '@prisma/client';
@@ -150,7 +151,7 @@ export async function createOnsiteEmployee(data: {
   });
 
   if (existing) {
-    const updateData: Prisma.CustomerUpdateInput = {
+    const updateData: Prisma.CustomerUncheckedUpdateInput = {
       corporateId,
       name: existing.name || name,
       employeeId: employeeId || existing.employeeId || null,
@@ -167,7 +168,7 @@ export async function createOnsiteEmployee(data: {
   }
 
   const uhid = await generateCustomerUHID();
-  const passwordSeed = Math.random().toString(36).slice(-10) + Date.now();
+  const passwordSeed = `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
   const hashedPassword = await bcrypt.hash(passwordSeed, 10);
 
   const loginMethod = email ? 'email' : 'phone';

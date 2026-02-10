@@ -2,16 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import { 
   Facebook, Twitter, Linkedin, Instagram, ArrowUpRight, 
   MessageCircle, Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award, Building2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { subscribeNewsletterAction } from '@/app/actions/newsletterActions';
+import { toast } from '@/lib/safe-toast';
 
 export default function Footer() {
   const pathname = usePathname();
   const currentYear = new Date().getFullYear();
+  const [subscriberEmail, setSubscriberEmail] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   // Hide logic
   const isDashboard = pathname?.startsWith('/dashboard');
@@ -19,6 +24,29 @@ export default function Footer() {
   const isBookingFlow = pathname === '/cart' || pathname?.startsWith('/checkout');
 
   if (isDashboard || isAdmin || isBookingFlow) return null;
+
+  const handleSubscribe = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!subscriberEmail.trim()) {
+      toast.error('Please enter your email.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await subscribeNewsletterAction({ email: subscriberEmail });
+      if (res.success) {
+        toast.success(res.message || 'Subscribed successfully.');
+        setSubscriberEmail('');
+      } else {
+        toast.error(res.error || 'Unable to subscribe.');
+      }
+    } catch {
+      toast.error('Unable to subscribe right now.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <footer className="relative bg-gradient-to-b from-teal-900 via-teal-950 to-slate-950 text-white overflow-hidden pt-24 pb-8">
@@ -184,20 +212,24 @@ export default function Footer() {
               <Award size={14} /> Health Updates
             </h3>
 
-            <div className="relative w-full max-w-sm">
+            <form className="relative w-full max-w-sm" onSubmit={handleSubscribe}>
               <input 
                 type="email" 
                 placeholder="Enter your email" 
                 aria-label="Enter your email for health updates"
+                value={subscriberEmail}
+                onChange={(e) => setSubscriberEmail(e.target.value)}
                 className="w-full bg-teal-900/30 border border-teal-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-teal-500 text-white placeholder:text-teal-600"
               />
               <button
+                type="submit"
                 aria-label="Subscribe to health updates"
+                disabled={submitting}
                 className="absolute right-2 top-2 p-2 bg-teal-600 rounded-lg text-white hover:bg-teal-500 transition-colors"
               >
-                <ArrowUpRight size={16} />
+                {submitting ? '...' : <ArrowUpRight size={16} />}
               </button>
-            </div>
+            </form>
 
             <p className="text-xs text-teal-600 mt-3 max-w-sm">
               Subscribe for health tips, offers, and medical insights.
