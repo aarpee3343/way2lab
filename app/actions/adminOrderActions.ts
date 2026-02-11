@@ -10,6 +10,7 @@ import {
   generateOrderNumber,
   generateCustomerUHID
 } from '@/lib/utils/generators';
+import { getISTDateInputValue } from '@/lib/date-time';
 
 /* ---------------------------------------------------
    1. Check Customer & Fetch Addresses
@@ -37,7 +38,7 @@ export async function checkCustomerAction(phone: string) {
       name: customer.name,
       email: customer.email,
       gender: customer.gender,
-      dob: customer.dateOfBirth?.toISOString().split('T')[0],
+      dob: customer.dateOfBirth ? getISTDateInputValue(new Date(customer.dateOfBirth)) : undefined,
       age,
       addresses: customer.addresses
     }
@@ -129,7 +130,7 @@ export async function getCorporateEmployeeDetailsForOrder(
       email: customer.email,
       phone: customer.phone,
       gender: customer.gender,
-      dob: customer.dateOfBirth?.toISOString().split('T')[0],
+      dob: customer.dateOfBirth ? getISTDateInputValue(new Date(customer.dateOfBirth)) : undefined,
       age,
       addresses: customer.addresses,
       employeeId: customer.employeeId,
