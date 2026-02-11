@@ -11,6 +11,7 @@ import {
   normalizePaymentState,
   toStoredPaymentStatus,
 } from '@/lib/payment-state';
+import { getCorporateBillableAmountForOrder, getCorporateBillableOrders } from '@/lib/corporate-finance';
 
 type FinanceFilters = {
   from?: string;
@@ -42,7 +43,13 @@ async function recalculateOrderPaymentStatus(orderId: number) {
   const [order, paymentAgg, refundAgg] = await Promise.all([
     prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, finalAmount: true, paymentStatus: true },
+      select: {
+        id: true,
+        finalAmount: true,
+        paymentStatus: true,
+        packageId: true,
+        customer: { select: { corporateId: true } },
+      },
     }),
     prisma.payment.aggregate({
       where: { orderId },
@@ -56,7 +63,13 @@ async function recalculateOrderPaymentStatus(orderId: number) {
 
   if (!order) return null;
 
-  const finalAmount = money(order.finalAmount);
+  let finalAmount = money(order.finalAmount);
+  if (order.customer?.corporateId && order.packageId) {
+    const billableAmount = await getCorporateBillableAmountForOrder(orderId);
+    if (billableAmount !== null && billableAmount > 0) {
+      finalAmount = billableAmount;
+    }
+  }
   const paid = money(paymentAgg._sum.amount);
   const refunded = money(refundAgg._sum.amount);
   const netPaid = paid - refunded;
@@ -99,7 +112,13 @@ export async function updateOrderPaymentStatusManualAction(input: {
     const [order, paidAgg, refundedAgg] = await Promise.all([
       prisma.order.findUnique({
         where: { id: orderId },
-        select: { id: true, finalAmount: true, paymentStatus: true },
+        select: {
+          id: true,
+          finalAmount: true,
+          paymentStatus: true,
+          packageId: true,
+          customer: { select: { corporateId: true } },
+        },
       }),
       prisma.payment.aggregate({ where: { orderId }, _sum: { amount: true } }),
       prisma.paymentRefund.aggregate({ where: { orderId, status: 'PROCESSED' }, _sum: { amount: true } }),
@@ -111,7 +130,13 @@ export async function updateOrderPaymentStatusManualAction(input: {
       return { success: false, error: `Transition not allowed: ${current} -> ${targetStatus}` };
     }
 
-    const finalAmount = money(order.finalAmount);
+    let finalAmount = money(order.finalAmount);
+    if (order.customer?.corporateId && order.packageId) {
+      const billableAmount = await getCorporateBillableAmountForOrder(orderId);
+      if (billableAmount !== null && billableAmount > 0) {
+        finalAmount = billableAmount;
+      }
+    }
     const paid = money(paidAgg._sum.amount);
     const refunded = money(refundedAgg._sum.amount);
     const netPaid = paid - refunded;
@@ -188,7 +213,13 @@ export async function recordManualPaymentAction(input: {
 
     const existingOrder = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true, finalAmount: true },
+      select: {
+        id: true,
+        finalAmount: true,
+        paymentStatus: true,
+        packageId: true,
+        customer: { select: { corporateId: true } },
+      },
     });
     if (!existingOrder) return { success: false, error: 'Order not found' };
 
@@ -203,7 +234,13 @@ export async function recordManualPaymentAction(input: {
       }),
     ]);
 
-    const finalAmount = money(existingOrder.finalAmount);
+    let finalAmount = money(existingOrder.finalAmount);
+    if (existingOrder.customer?.corporateId && existingOrder.packageId) {
+      const billableAmount = await getCorporateBillableAmountForOrder(orderId);
+      if (billableAmount !== null && billableAmount > 0) {
+        finalAmount = billableAmount;
+      }
+    }
     const paid = money(paymentAgg._sum.amount);
     const refunded = money(refundAgg._sum.amount);
     const netPaid = paid - refunded;
@@ -613,90 +650,73 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
 
   const { start, end } = toDateRange(filters?.from, filters?.to);
 
-  const [
-    billedAgg,
-    paymentsAgg,
-    refundsAgg,
-    corporateOrders,
-    payments,
-    refunds,
-  ] = await Promise.all([
-    prisma.order.aggregate({
-      where: {
-        createdAt: { gte: start, lte: end },
-        status: { notIn: ['CANCELLED', 'REJECTED'] },
-        customer: { corporateId: corpId },
-      },
-      _sum: { finalAmount: true },
-    }),
-    prisma.payment.aggregate({
-      where: {
-        paymentDate: { gte: start, lte: end },
-        order: { customer: { corporateId: corpId } },
-      },
-      _sum: { amount: true },
-    }),
-    prisma.paymentRefund.aggregate({
-      where: {
-        createdAt: { gte: start, lte: end },
-        status: 'PROCESSED',
-        order: { customer: { corporateId: corpId } },
-      },
-      _sum: { amount: true },
-    }),
-    prisma.order.findMany({
-      where: {
-        createdAt: { gte: start, lte: end },
-        customer: { corporateId: corpId },
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        patientName: true,
-        finalAmount: true,
-        paymentStatus: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    }),
-    prisma.payment.findMany({
-      where: {
-        paymentDate: { gte: start, lte: end },
-        order: { customer: { corporateId: corpId } },
-      },
-      select: {
-        id: true,
-        orderId: true,
-        amount: true,
-        method: true,
-        status: true,
-        transactionId: true,
-        paymentDate: true,
-      },
-      orderBy: { paymentDate: 'desc' },
-      take: 100,
-    }),
-    prisma.paymentRefund.findMany({
-      where: {
-        createdAt: { gte: start, lte: end },
-        order: { customer: { corporateId: corpId } },
-      },
-      select: {
-        id: true,
-        orderId: true,
-        amount: true,
-        reason: true,
-        status: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 100,
-    }),
+  const billableOrders = await getCorporateBillableOrders({
+    corporateId: corpId,
+    start,
+    end
+  });
+  const billed = billableOrders.reduce((sum, row) => sum + Number(row.unitPrice || 0), 0);
+  const billableOrderIds = billableOrders.map((row) => row.orderId);
+
+  const [paymentsAgg, refundsAgg, payments, refunds] = await Promise.all([
+    billableOrderIds.length
+      ? prisma.payment.aggregate({
+          where: {
+            paymentDate: { gte: start, lte: end },
+            orderId: { in: billableOrderIds },
+          },
+          _sum: { amount: true },
+        })
+      : Promise.resolve({ _sum: { amount: 0 } as any }),
+    billableOrderIds.length
+      ? prisma.paymentRefund.aggregate({
+          where: {
+            createdAt: { gte: start, lte: end },
+            status: 'PROCESSED',
+            orderId: { in: billableOrderIds },
+          },
+          _sum: { amount: true },
+        })
+      : Promise.resolve({ _sum: { amount: 0 } as any }),
+    billableOrderIds.length
+      ? prisma.payment.findMany({
+          where: {
+            paymentDate: { gte: start, lte: end },
+            orderId: { in: billableOrderIds },
+          },
+          select: {
+            id: true,
+            orderId: true,
+            amount: true,
+            method: true,
+            status: true,
+            transactionId: true,
+            paymentDate: true,
+          },
+          orderBy: { paymentDate: 'desc' },
+          take: 100,
+        })
+      : Promise.resolve([]),
+    billableOrderIds.length
+      ? prisma.paymentRefund.findMany({
+          where: {
+            createdAt: { gte: start, lte: end },
+            orderId: { in: billableOrderIds },
+          },
+          select: {
+            id: true,
+            orderId: true,
+            amount: true,
+            reason: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 100,
+        })
+      : Promise.resolve([]),
   ]);
 
-  const billed = money(billedAgg._sum.finalAmount);
   const paid = money(paymentsAgg._sum.amount);
   const refunded = money(refundsAgg._sum.amount);
   const net = paid - refunded;
@@ -710,10 +730,16 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
       netCollected: net,
       outstanding: Math.max(0, billed - net),
     },
-    orders: corporateOrders.map((o) => ({
-      ...o,
-      finalAmount: money(o.finalAmount),
-      createdAt: o.createdAt.toISOString(),
+    orders: billableOrders.map((o) => ({
+      id: o.orderId,
+      orderNumber: o.orderNumber,
+      patientName: o.employeeName,
+      finalAmount: money(o.unitPrice),
+      paymentStatus: o.paymentStatus,
+      status: o.status,
+      createdAt: o.bookedAt,
+      completedAt: o.completedAt,
+      packageName: o.packageName,
     })),
     payments: payments.map((p) => ({
       ...p,

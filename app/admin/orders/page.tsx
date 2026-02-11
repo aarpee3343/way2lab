@@ -203,7 +203,11 @@ export default async function OrdersPage({
       </div>
 
       {/* ================= ORDERS TABLE ================= */}
-      <table className="admin-table admin-table-container">
+      <div className="admin-card">
+        <div className="admin-card-body p-0">
+          <div className="max-h-[68vh] overflow-auto">
+            <div className="min-w-[1100px]">
+              <table className="admin-table admin-table-container">
           <thead>
             <tr>
               <th>Order</th>
@@ -315,7 +319,11 @@ export default async function OrdersPage({
               </tr>
             )}
           </tbody>
-      </table>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ================= PAGINATION ================= */}
       {totalPages > 1 && (

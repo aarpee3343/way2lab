@@ -6,6 +6,7 @@ import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { sendSMS } from '@/lib/sms';
+import { getCorporateServiceEmployeeReport } from '@/lib/corporate-service-report';
 
 const normalizeEmail = (value: unknown) => String(value || '').trim().toLowerCase();
 
@@ -875,6 +876,64 @@ export async function deleteCorporateServiceAction(serviceId: number) {
   }
 }
 
+// --- 10b. DEACTIVATE SERVICE (KEEP HISTORY) ---
+export async function deactivateCorporateServiceAction(serviceId: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN'] });
+  try {
+    const service = await prisma.corporateService.findUnique({
+      where: { id: serviceId },
+      select: { id: true, corporateId: true, packageId: true, isActive: true }
+    });
+
+    if (!service) {
+      return { success: false, error: 'Service not found' };
+    }
+    if (!service.isActive) {
+      return { success: true };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.corporateService.update({
+        where: { id: serviceId },
+        data: { isActive: false }
+      });
+
+      // Keep package ownership but disable active booking for this package.
+      if (service.packageId) {
+        await tx.package.update({
+          where: { id: service.packageId },
+          data: { isActive: false }
+        });
+      }
+    });
+
+    revalidatePath(`/admin/corporates/${service.corporateId}`);
+    revalidatePath(`/admin/corporates/${service.corporateId}/services/${serviceId}`);
+    revalidatePath('/admin/corporates/services');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to deactivate service' };
+  }
+}
+
+// --- 10c. SERVICE EMPLOYEE REPORT ---
+export async function getCorporateServiceEmployeeReportAction(data: {
+  corporateId: number;
+  serviceId: number;
+  status?: 'ALL' | 'PENDING' | 'IN_PROCESS' | 'AVAILED';
+  from?: string;
+  to?: string;
+}) {
+  await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
+  return getCorporateServiceEmployeeReport({
+    corporateId: Number(data.corporateId),
+    serviceId: Number(data.serviceId),
+    status: data.status,
+    from: data.from,
+    to: data.to
+  });
+}
+
 // --- 11. ASSIGN PACKAGE TO SPECIFIC EMPLOYEES ---
 export async function assignEmployeesToPackageAction(data: {
   corporateId: number;
@@ -974,5 +1033,127 @@ export async function clearPackageAssignmentsAction(data: {
   } catch (error: any) {
     console.error(error);
     return { success: false, error: error.message || 'Failed to clear assignments' };
+  }
+}
+
+// --- 13. CORPORATE MANAGEMENT DETAILS (PROFILE + SPOCS) ---
+export async function getCorporateManagementDetailsAction(corporateId: number) {
+  await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
+  if (!corporateId) return null;
+
+  const corp = await prisma.corporate.findUnique({
+    where: { id: corporateId },
+    select: {
+      id: true,
+      companyName: true,
+      contactPerson: true,
+      email: true,
+      phone: true,
+      address: true,
+      city: true,
+      state: true,
+      pincode: true,
+      panNumber: true,
+      gstin: true,
+      employeeCount: true,
+      isActive: true,
+      users: {
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          canEdit: true,
+          maskContactInfo: true,
+          accessDept: true,
+          accessLocation: true,
+          isActive: true,
+          createdAt: true
+        }
+      }
+    }
+  });
+
+  if (!corp) return null;
+
+  return {
+    ...corp,
+    users: corp.users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() }))
+  };
+}
+
+// --- 14. CREATE CORPORATE SPOC/USER BY ADMIN ---
+export async function createCorporateUserByAdminAction(data: {
+  corporateId: number;
+  name: string;
+  email: string;
+  password: string;
+  role: 'SUPER_ADMIN' | 'DEPT_HEAD' | 'LOCATION_MANAGER';
+  canEdit?: boolean;
+  maskContactInfo?: boolean;
+  accessDept?: string;
+  accessLocation?: string;
+}) {
+  await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
+  try {
+    const corporateId = Number(data.corporateId);
+    if (!corporateId) return { success: false, error: 'Invalid corporate' };
+
+    const normalizedEmail = normalizeEmail(data.email);
+    if (!normalizedEmail || !normalizedEmail.includes('@')) {
+      return { success: false, error: 'Valid email is required' };
+    }
+    if (!data.password || String(data.password).length < 8) {
+      return { success: false, error: 'Password must be at least 8 characters' };
+    }
+
+    await prisma.corporateUser.create({
+      data: {
+        corporateId,
+        name: String(data.name || '').trim(),
+        email: normalizedEmail,
+        password: await bcrypt.hash(String(data.password), 10),
+        role: data.role,
+        canEdit: Boolean(data.canEdit),
+        maskContactInfo: data.maskContactInfo !== false,
+        accessDept: data.accessDept || null,
+        accessLocation: data.accessLocation || null,
+        isActive: true
+      }
+    });
+
+    revalidatePath(`/admin/corporates/${corporateId}/management`);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to create user' };
+  }
+}
+
+// --- 15. TOGGLE CORPORATE USER STATUS BY ADMIN ---
+export async function setCorporateUserActiveStatusByAdminAction(data: {
+  corporateId: number;
+  userId: number;
+  isActive: boolean;
+}) {
+  await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
+  try {
+    const corporateId = Number(data.corporateId);
+    const userId = Number(data.userId);
+    if (!corporateId || !userId) return { success: false, error: 'Invalid payload' };
+
+    const updated = await prisma.corporateUser.updateMany({
+      where: { id: userId, corporateId },
+      data: { isActive: Boolean(data.isActive) }
+    });
+
+    if (updated.count === 0) {
+      return { success: false, error: 'User not found' };
+    }
+
+    revalidatePath(`/admin/corporates/${corporateId}/management`);
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || 'Failed to update user status' };
   }
 }

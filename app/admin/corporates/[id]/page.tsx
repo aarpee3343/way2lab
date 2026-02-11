@@ -10,7 +10,6 @@ import {
   getAdminInventory,
   updateCorporateEmployeeStatus,
   updateCorporateAction,      
-  deleteCorporateServiceAction, 
   setCorporateActiveStatus       
 } from '@/app/actions/adminCorporateActions';
 import BulkEmployeeUpload from '@/components/admin/BulkEmployeeUpload';
@@ -121,17 +120,6 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       refresh();
     } else {
       toast.error(res.error);
-    }
-  };
-
-  const handleRemoveService = async (serviceId: number) => {
-    if(!confirm("Remove this service? The package will be released back to inventory.")) return;
-    const res = await deleteCorporateServiceAction(serviceId);
-    if(res.success) {
-        toast.success("Service Removed");
-        refresh();
-    } else {
-        toast.error(res.error);
     }
   };
 
@@ -305,7 +293,7 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       )}
 
       {/* Header Stats */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex justify-between items-start">
+      <div className="bg-gradient-to-r from-sky-50 via-cyan-50 to-indigo-50 p-6 rounded-2xl border border-sky-100 shadow-sm flex justify-between items-start gap-4">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-black text-slate-900">{corp.companyName}</h1>
@@ -328,6 +316,9 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
         <div className="text-right">
           <div className="text-4xl font-black text-blue-600">{corp._count?.employees || 0}</div>
           <div className="text-xs font-bold text-slate-400 uppercase">Total Employees</div>
+          <Link href={`/admin/corporates/${corpId}/management`} className="mt-3 inline-flex text-xs font-bold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100 hover:bg-indigo-100">
+            Manage Corporate
+          </Link>
           <Link href={`/admin/corporates/${corpId}/finance`} className="mt-3 inline-flex text-xs font-bold text-sky-700 bg-sky-50 px-3 py-1.5 rounded-lg border border-sky-100 hover:bg-sky-100">
             Open Finance
           </Link>
@@ -383,9 +374,37 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200">
-        <button onClick={() => setActiveTab('employees')} className={`px-6 py-3 font-bold text-sm border-b-2 transition-all ${activeTab === 'employees' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}`}>Employees</button>
-        <button onClick={() => setActiveTab('services')} className={`px-6 py-3 font-bold text-sm border-b-2 transition-all ${activeTab === 'services' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}`}>Services</button>
+      <div className="rounded-2xl border border-slate-200 bg-white p-2 inline-flex flex-wrap gap-2">
+        <button
+          onClick={() => setActiveTab('employees')}
+          className={`px-4 py-2 font-bold text-xs rounded-xl transition-all ${
+            activeTab === 'employees'
+              ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          Employees
+        </button>
+        <button
+          onClick={() => setActiveTab('services')}
+          className={`px-4 py-2 font-bold text-xs rounded-xl transition-all ${
+            activeTab === 'services'
+              ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          Services
+        </button>
+        <button
+          onClick={() => setActiveTab('financial')}
+          className={`px-4 py-2 font-bold text-xs rounded-xl transition-all ${
+            activeTab === 'financial'
+              ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-md'
+              : 'bg-slate-50 text-slate-600 hover:bg-slate-100'
+          }`}
+        >
+          Financial
+        </button>
       </div>
 
       {/* --- EMPLOYEES TAB (Same as before) --- */}
@@ -653,20 +672,34 @@ export default function CorporateDetails({ params }: { params: Promise<{ id: str
                         <span className="text-[10px] text-slate-400">Limits: {s.selfUsageLimit} (Self) / {s.familyUsageLimit} (Fam)</span>
                      </div>
                      
-                     {/* DELETE SERVICE BUTTON */}
-                     <button 
-                        onClick={() => handleRemoveService(s.id)}
-                        disabled={isArchived}
-                        className="w-8 h-8 flex items-center justify-center rounded-lg bg-red-50 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-100 disabled:opacity-40"
-                        title="Remove Service"
-                     >
-                        <Trash2 size={16} />
-                     </button>
+                    <Link
+                      href={`/admin/corporates/${corpId}/services/${s.id}`}
+                      className="text-xs font-bold text-blue-700 bg-blue-50 border border-blue-100 px-3 py-1.5 rounded-lg hover:bg-blue-100"
+                    >
+                      View Details
+                    </Link>
                 </div>
               </div>
             ))}
           </div>
 
+        </div>
+      )}
+
+      {activeTab === 'financial' && (
+        <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+          <h3 className="text-lg font-bold text-slate-800">Corporate Financials</h3>
+          <p className="text-sm text-slate-500 mt-1">
+            Open detailed billing, collections, refunds, statements, and invoice exports.
+          </p>
+          <div className="mt-4">
+            <Link
+              href={`/admin/corporates/${corpId}/finance`}
+              className="admin-btn-primary inline-flex"
+            >
+              Open Financial Dashboard
+            </Link>
+          </div>
         </div>
       )}
     </div>

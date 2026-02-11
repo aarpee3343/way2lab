@@ -2,47 +2,79 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Plus, List, LayoutDashboard } from 'lucide-react';
+import { Building2, Plus, List, LayoutDashboard, BriefcaseBusiness, Landmark, Sparkles, ArrowLeft } from 'lucide-react';
 
 export default function CorporateLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const navs = [
+  const mainNavs = [
     { name: 'Dashboard', href: '/admin/corporates', icon: LayoutDashboard },
-    { name: 'View All', href: '/admin/corporates/list', icon: List },
+    { name: 'All Corporates', href: '/admin/corporates/list', icon: List },
     { name: 'Create Corporate', href: '/admin/corporates/create', icon: Building2 },
-    { name: 'Manage Services', href: '/admin/corporates/services', icon: Plus }, 
+    { name: 'Services Desk', href: '/admin/corporates/services', icon: Plus }
   ];
 
+  const currentCorporateMatch = pathname.match(/^\/admin\/corporates\/(\d+)/);
+  const currentCorporateId = currentCorporateMatch?.[1];
+
+  const corporateSubNav = currentCorporateId
+    ? [
+        { name: 'Overview', href: `/admin/corporates/${currentCorporateId}`, icon: BriefcaseBusiness },
+        { name: 'Management', href: `/admin/corporates/${currentCorporateId}/management`, icon: Building2 },
+        { name: 'Finance', href: `/admin/corporates/${currentCorporateId}/finance`, icon: Landmark }
+      ]
+    : [];
+
+  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+
   return (
-    <div className="admin-space-y">
-      {/* Submenu Bar */}
-      <div className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-20 -mt-6 -mx-6">
-        <div className="flex flex-wrap items-center gap-2">
-          {navs.map(n => {
-            const isActive = pathname === n.href;
-            return (
-              <Link 
-                key={n.href} 
+    <div className="corp-admin-shell">
+      <div className="corp-admin-topbar">
+        <div className="corp-admin-topbar-inner">
+          <div className="corp-admin-brand">
+            <div className="corp-admin-brand-icon">
+              <Sparkles size={16} />
+            </div>
+            <div>
+              <p className="corp-admin-brand-title">Corporate Command Center</p>
+              <p className="corp-admin-brand-subtitle">Accounts, services, billing and operations</p>
+            </div>
+          </div>
+
+          <div className="corp-admin-main-nav">
+            {mainNavs.map((n) => (
+              <Link
+                key={n.href}
                 href={n.href}
-                className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-colors ${
-                  isActive
-                    ? 'bg-slate-900 text-white shadow'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
+                className={`corp-admin-nav-pill ${isActive(n.href) ? 'active' : ''}`}
               >
-                <n.icon size={16} /> {n.name}
+                <n.icon size={15} />
+                <span>{n.name}</span>
               </Link>
-            )
-          })}
+            ))}
+          </div>
         </div>
-        <Link href="/admin" className="text-xs font-bold text-slate-400 hover:text-slate-800 uppercase tracking-wide">
-          Back to Admin
-        </Link>
       </div>
 
-      <div className="pt-6 px-6 pb-20">
-        {children}
+      {corporateSubNav.length > 0 && (
+        <div className="corp-admin-subnav-wrap">
+          <div className="corp-admin-subnav">
+            {corporateSubNav.map((n) => (
+              <Link
+                key={n.href}
+                href={n.href}
+                className={`corp-admin-subnav-pill ${isActive(n.href) ? 'active' : ''}`}
+              >
+                <n.icon size={14} />
+                <span>{n.name}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="corp-admin-content">
+        <div className="corp-admin-content-inner">{children}</div>
       </div>
     </div>
   );

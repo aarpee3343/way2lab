@@ -29,7 +29,7 @@ export async function generateOrderNumber(params: OrderNumberParams): Promise<st
   const run = async (db: Prisma.TransactionClient) => {
     await db.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
     const rows = await db.$queryRaw<{ maxSerial: bigint | number | null }[]>`
-      SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM ${sequenceStartIndex}) AS BIGINT)), 0) AS "maxSerial"
+      SELECT COALESCE(MAX(CAST(SUBSTRING(order_number FROM CAST(${sequenceStartIndex} AS INT)) AS BIGINT)), 0) AS "maxSerial"
       FROM orders
       WHERE order_number LIKE ${`${bucket}%`}
         AND order_number ~ ${bucketPattern}

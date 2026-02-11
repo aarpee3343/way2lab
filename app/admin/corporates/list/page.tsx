@@ -51,8 +51,11 @@ export default function CorporateListPage() {
 
   return (
     <div className="admin-space-y">
-      <div className="flex items-center justify-between">
-        <h1 className="admin-page-title">All Corporates</h1>
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50 to-cyan-50 p-5">
+        <div>
+          <h1 className="admin-page-title">All Corporates</h1>
+          <p className="text-sm text-slate-600">Search, archive, restore, and open corporate workspaces.</p>
+        </div>
         <Link href="/admin/corporates/create" className="admin-btn-primary text-xs">Create Corporate</Link>
       </div>
 

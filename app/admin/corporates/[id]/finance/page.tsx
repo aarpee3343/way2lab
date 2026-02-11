@@ -131,6 +131,12 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
         <div className="flex gap-2 mt-2">
           <a
             className="admin-btn-secondary"
+            href={`/admin/corporates/${corporateId}/finance/billed-employees?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
+          >
+            Billed Employees
+          </a>
+          <a
+            className="admin-btn-secondary"
             href={`/api/admin/corporates/${corporateId}/finance/invoice?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
           >
             Download Invoice (PDF)
@@ -262,17 +268,18 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
       </div>
 
       <div className="admin-card p-5">
-        <h2 className="admin-form-title mb-3">Corporate Orders</h2>
+        <h2 className="admin-form-title mb-3">Corporate Billable Orders</h2>
         <div className="admin-table-container">
           <table className="admin-table">
             <thead>
               <tr>
                 <th>Order</th>
-                <th>Patient</th>
+                <th>Employee</th>
+                <th>Package</th>
                 <th>Status</th>
                 <th>Payment</th>
-                <th>Amount</th>
-                <th>Date</th>
+                <th>Bill Amount</th>
+                <th>Completed</th>
               </tr>
             </thead>
             <tbody>
@@ -285,10 +292,11 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
                   <tr key={o.id}>
                     <td>#{o.orderNumber || o.id}</td>
                     <td>{o.patientName || '-'}</td>
+                    <td>{(o as any).packageName || '-'}</td>
                     <td>{o.status}</td>
                     <td>{o.paymentStatus || 'Pending'}</td>
                     <td>{formatINR(o.finalAmount)}</td>
-                    <td>{new Date(o.createdAt).toLocaleString()}</td>
+                    <td>{(o as any).completedAt ? new Date((o as any).completedAt).toLocaleString('en-IN') : '-'}</td>
                   </tr>
                 ))
               )}

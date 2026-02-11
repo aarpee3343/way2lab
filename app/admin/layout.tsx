@@ -129,7 +129,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <button onClick={handleLogout} className="admin-btn-secondary text-xs">
               <LogOut size={14} /> Logout
             </button>
-            <div className="admin-version-badge">v2.5.0</div>
+            <div className="admin-version-badge">v1.5.0</div>
           </div>
         </header>
 

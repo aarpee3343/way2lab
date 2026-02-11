@@ -41,8 +41,11 @@ export default function CorporateServicesPage() {
 
   return (
     <div className="admin-space-y">
-      <div className="flex items-center justify-between">
-        <h1 className="admin-page-title">Corporate Services</h1>
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 p-5">
+        <div>
+          <h1 className="admin-page-title">Corporate Services</h1>
+          <p className="text-sm text-slate-600">Manage service assignments and quickly jump to corporate detail workspaces.</p>
+        </div>
         <Link href="/admin/corporates" className="admin-btn-secondary text-xs">Back</Link>
       </div>
 
