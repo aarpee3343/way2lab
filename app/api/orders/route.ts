@@ -324,7 +324,12 @@ export async function POST(req: Request) {
       }
     }
 
-    const orderNumber = await generateOrderNumber();
+    const orderCategory =
+      schedule?.type === 'onsite'
+        ? 'ONSITE'
+        : corporateId
+          ? 'CORPORATE'
+          : 'GENERAL';
 
     // Transaction
     const primaryPackageId =
@@ -353,6 +358,8 @@ export async function POST(req: Request) {
     }
 
     const order = await prisma.$transaction(async (tx) => {
+      const orderNumber = await generateOrderNumber({ category: orderCategory, tx });
+
       // Backfill Self Data
       let { dob: patientDob, gender: patientGender, uhid: patientUHID } = patientDetails;
       

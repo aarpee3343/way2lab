@@ -421,9 +421,9 @@ export async function createOnsiteBooking(data: {
   const discountAmount = mrp - sellingPrice;
   const finalAmount = corporatePays ? 0 : sellingPrice;
 
-  const orderNumber = await generateOrderNumber();
-
   const order = await prisma.$transaction(async (tx) => {
+    const orderNumber = await generateOrderNumber({ category: 'ONSITE', tx });
+
     if (!camp.labName && resolvedLabName) {
       await tx.onsiteCamp.update({
         where: { id: campId },

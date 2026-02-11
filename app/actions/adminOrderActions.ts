@@ -333,7 +333,8 @@ export async function placeAdminOrderAction(data: any) {
       }
 
       /* ---------- C. Order ---------- */
-      const orderNumber = await generateOrderNumber();
+      const orderCategory = data.collectionType === 'onsite' ? 'ONSITE' : 'ADMIN';
+      const orderNumber = await generateOrderNumber({ category: orderCategory, tx });
 
       let couponId: number | null = null;
       let discountAmount = 0;
