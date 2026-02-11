@@ -1,8 +1,8 @@
-// app/admin/corporates/layout.tsx
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Building2, Plus, List, LayoutDashboard, BriefcaseBusiness, Landmark, Sparkles, ArrowLeft } from 'lucide-react';
+import { Building2, Plus, List, LayoutDashboard, BriefcaseBusiness, Landmark, Sparkles } from 'lucide-react';
+import './corporate-admin.css';
 
 export default function CorporateLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

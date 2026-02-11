@@ -2,10 +2,12 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin-auth';
 import { formatISTDateTime } from '@/lib/date-time';
-import {
-  deactivateCorporateServiceAction
-} from '@/app/actions/adminCorporateActions';
+import { deactivateCorporateServiceAction } from '@/app/actions/adminCorporateActions';
 import { getCorporateServiceEmployeeReport } from '@/lib/corporate-service-report';
+import Button from '@/components/admin/corporate/Button';
+import Card from '@/components/admin/corporate/Card';
+import Table from '@/components/admin/corporate/Table';
+import Badge from '@/components/admin/corporate/Badge';
 
 function normalizeStatus(raw?: string | string[]) {
   const value = String(Array.isArray(raw) ? raw[0] : raw || 'ALL').toUpperCase();
@@ -20,7 +22,7 @@ function dateOnly(value?: string | null) {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
-    timeZone: 'Asia/Kolkata'
+    timeZone: 'Asia/Kolkata',
   }).format(date);
 }
 
@@ -32,7 +34,7 @@ async function handleDeactivateService(formData: FormData) {
 
 export default async function CorporateServiceDetailPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ id: string; serviceId: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -58,14 +60,52 @@ export default async function CorporateServiceDetailPage({
     serviceId: serviceIdNum,
     status: status as any,
     from,
-    to
+    to,
   });
 
   if (!report?.service) return notFound();
 
   const service = report.service as any;
   const serviceName = service.package?.packageName || `Coupon: ${service.coupon?.code || 'N/A'}`;
-  const csvHref = `/api/admin/corporates/${corporateId}/services/${serviceIdNum}/employees-csv?status=${encodeURIComponent(status)}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+  const csvHref = `/api/admin/corporates/${corporateId}/services/${serviceIdNum}/employees-csv?status=${encodeURIComponent(
+    status
+  )}&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+
+  const rows = report.rows.map((row, idx) => [
+    idx + 1,
+    <div key={row.employeeId}>
+      <div className="admin-table-row-primary">{row.name}</div>
+      <div className="admin-table-row-secondary">{row.employeeCode || '-'}</div>
+    </div>,
+    <div key={row.employeeId}>
+      <div className="admin-table-row-primary">{row.phone || '-'}</div>
+      <div className="admin-table-row-secondary">{row.email || '-'}</div>
+    </div>,
+    <Badge
+      key={row.employeeId}
+      variant={
+        row.status === 'AVAILED'
+          ? 'success'
+          : row.status === 'IN_PROCESS'
+          ? 'warning'
+          : 'default'
+      }
+    >
+      {row.status === 'IN_PROCESS'
+        ? 'In Process'
+        : row.status === 'AVAILED'
+        ? 'Availed'
+        : 'Pending'}
+    </Badge>,
+    row.orderId ? (
+      <Link key={row.orderId} href={`/admin/orders/${row.orderId}`} className="text-blue-600 hover:underline">
+        #{row.orderNumber || row.orderId}
+      </Link>
+    ) : (
+      '-'
+    ),
+    row.status === 'AVAILED' ? formatISTDateTime(row.completedAt) : '-',
+  ]);
 
   return (
     <div className="admin-space-y">
@@ -76,143 +116,106 @@ export default async function CorporateServiceDetailPage({
             Corporate: {service.corporate?.companyName} | Service ID: #{service.id}
           </p>
         </div>
-        <div className="admin-space-x">
-          <Link href={`/admin/corporates/${corporateId}`} className="admin-btn-secondary">
+        <div className="space-x-2">
+          <Button href={`/admin/corporates/${corporateId}`} variant="secondary" size="sm">
             Back
-          </Link>
-          <a href={csvHref} className="admin-btn-secondary">Download CSV</a>
+          </Button>
+          <Button href={csvHref} variant="secondary" size="sm">
+            Download CSV
+          </Button>
         </div>
       </div>
 
       <div className="admin-stat-grid">
-        <div className="admin-stat-card">
+        <Card>
           <div className="admin-stat-label">Service Status</div>
           <div className="admin-stat-value">{service.isActive ? 'Active' : 'Inactive'}</div>
-        </div>
-        <div className="admin-stat-card">
+        </Card>
+        <Card>
           <div className="admin-stat-label">Validity</div>
-          <div className="admin-stat-value text-sm">{dateOnly(service.validFrom)} - {dateOnly(service.validTill)}</div>
-        </div>
-        <div className="admin-stat-card">
-          <div className="admin-stat-label">Usage (Availed / In Process / Pending)</div>
-          <div className="admin-stat-value text-sm">{report.counts.availed} / {report.counts.inProcess} / {report.counts.pending}</div>
-        </div>
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-body">
-          <form className="flex flex-col md:flex-row gap-3 items-end">
-            <div>
-              <label className="admin-form-label">Status</label>
-              <select name="status" defaultValue={status} className="admin-form-select">
-                <option value="ALL">All</option>
-                <option value="PENDING">Pending</option>
-                <option value="IN_PROCESS">In Process</option>
-                <option value="AVAILED">Availed</option>
-              </select>
-            </div>
-            <div>
-              <label className="admin-form-label">From</label>
-              <input type="date" name="from" defaultValue={from} className="admin-form-input" />
-            </div>
-            <div>
-              <label className="admin-form-label">To</label>
-              <input type="date" name="to" defaultValue={to} className="admin-form-input" />
-            </div>
-            <button type="submit" className="admin-btn-primary">Apply Filters</button>
-            <Link href={`/admin/corporates/${corporateId}/services/${serviceIdNum}`} className="admin-btn-secondary">
-              Reset
-            </Link>
-          </form>
-        </div>
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-body p-0">
-          <div className="admin-table-container">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Sr. No.</th>
-                  <th>Name</th>
-                  <th>Contact Details</th>
-                  <th>Status</th>
-                  <th>Order</th>
-                  <th>Availed Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {report.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="text-center py-8 text-slate-400">
-                      No employees found for selected filters.
-                    </td>
-                  </tr>
-                ) : (
-                  report.rows.map((row, idx) => (
-                    <tr key={row.employeeId}>
-                      <td>{idx + 1}</td>
-                      <td>
-                        <div className="admin-table-row-primary">{row.name}</div>
-                        <div className="admin-table-row-secondary">{row.employeeCode || '-'}</div>
-                      </td>
-                      <td>
-                        <div className="admin-table-row-primary">{row.phone || '-'}</div>
-                        <div className="admin-table-row-secondary">{row.email || '-'}</div>
-                      </td>
-                      <td>
-                        <span className={`admin-badge ${
-                          row.status === 'AVAILED'
-                            ? 'admin-badge-success'
-                            : row.status === 'IN_PROCESS'
-                              ? 'admin-badge-warning'
-                              : 'admin-badge-default'
-                        }`}>
-                          {row.status === 'IN_PROCESS' ? 'In Process' : row.status === 'AVAILED' ? 'Availed' : 'Pending'}
-                        </span>
-                      </td>
-                      <td>
-                        {row.orderId ? (
-                          <Link href={`/admin/orders/${row.orderId}`} className="text-blue-600 hover:underline">
-                            #{row.orderNumber || row.orderId}
-                          </Link>
-                        ) : '-'}
-                      </td>
-                      <td>
-                        {row.status === 'AVAILED'
-                          ? formatISTDateTime(row.completedAt)
-                          : '-'}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+          <div className="admin-stat-value text-sm">
+            {dateOnly(service.validFrom)} - {dateOnly(service.validTill)}
           </div>
-        </div>
+        </Card>
+        <Card>
+          <div className="admin-stat-label">Usage (Availed / In Process / Pending)</div>
+          <div className="admin-stat-value text-sm">
+            {report.counts.availed} / {report.counts.inProcess} / {report.counts.pending}
+          </div>
+        </Card>
       </div>
+
+      <Card>
+        <form className="flex flex-col md:flex-row gap-3 items-end">
+          <div>
+            <label className="admin-form-label">Status</label>
+            <select name="status" defaultValue={status} className="admin-form-select">
+              <option value="ALL">All</option>
+              <option value="PENDING">Pending</option>
+              <option value="IN_PROCESS">In Process</option>
+              <option value="AVAILED">Availed</option>
+            </select>
+          </div>
+          <div>
+            <label className="admin-form-label">From</label>
+            <input type="date" name="from" defaultValue={from} className="admin-form-input" />
+          </div>
+          <div>
+            <label className="admin-form-label">To</label>
+            <input type="date" name="to" defaultValue={to} className="admin-form-input" />
+          </div>
+          <Button type="submit" variant="primary" size="sm">
+            Apply Filters
+          </Button>
+          <Button
+            href={`/admin/corporates/${corporateId}/services/${serviceIdNum}`}
+            variant="secondary"
+            size="sm"
+          >
+            Reset
+          </Button>
+        </form>
+      </Card>
+
+      <Card>
+        {report.rows.length === 0 ? (
+          <div className="p-6 text-center text-muted">
+            No employees found for selected filters.
+          </div>
+        ) : (
+          <Table
+            headers={[
+              'Sr. No.',
+              'Name',
+              'Contact Details',
+              'Status',
+              'Order',
+              'Availed Date',
+            ]}
+            rows={rows}
+          />
+        )}
+      </Card>
 
       {service.isActive && (
-        <div className="admin-card border-rose-100">
-          <div className="admin-card-body flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <Card className="border-destructive-light">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
-              <p className="font-bold text-rose-700">Deactivate Service</p>
-              <p className="text-sm text-slate-500">
+              <p className="font-bold text-destructive">Deactivate Service</p>
+              <p className="text-sm text-muted">
                 This will deactivate this service for future bookings and keep history intact.
               </p>
             </div>
             <form action={handleDeactivateService}>
               <input type="hidden" name="serviceId" value={service.id} />
-              <button
-                type="submit"
-                className="admin-btn-secondary border border-rose-200 text-rose-700 hover:bg-rose-50"
-              >
+              <Button type="submit" variant="destructive" size="sm">
                 Deactivate Service
-              </button>
+              </Button>
             </form>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
 }
+

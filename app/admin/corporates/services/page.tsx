@@ -4,7 +4,16 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Search, Trash2 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
-import { deleteCorporateServiceAction, getCorporateServices } from '@/app/actions/adminCorporateActions';
+import {
+  deleteCorporateServiceAction,
+  getCorporateServices,
+} from '@/app/actions/adminCorporateActions';
+import Button from '@/components/admin/corporate/Button';
+import Card from '@/components/admin/corporate/Card';
+import Table from '@/components/admin/corporate/Table';
+import Badge from '@/components/admin/corporate/Badge';
+import Input from '@/components/admin/corporate/Input';
+import LoadingSpinner from '@/components/admin/corporate/LoadingSpinner';
 
 type StatusFilter = 'all' | 'active' | 'archived';
 
@@ -39,99 +48,90 @@ export default function CorporateServicesPage() {
     }
   };
 
+  const rows = items.map((s) => [
+    <div key={`corp-${s.id}`}>
+      <Link href={`/admin/corporates/${s.corporate.id}`} className="admin-table-row-primary hover:underline">
+        {s.corporate.companyName}
+      </Link>
+      {!s.corporate.isActive && (
+        <div className="admin-table-row-secondary text-xs">Archived</div>
+      )}
+    </div>,
+    <div key={`service-${s.id}`}>
+      <div className="admin-table-row-primary">
+        {s.package?.packageName || `Coupon: ${s.coupon?.code}`}
+      </div>
+      <div className="admin-table-row-secondary text-xs">
+        {s.package ? 'Package' : 'Coupon'}
+      </div>
+    </div>,
+    <span key={`validity-${s.id}`} className="admin-table-row-secondary">
+      {new Date(s.validFrom).toLocaleDateString()} - {new Date(s.validTill).toLocaleDateString()}
+    </span>,
+    <Badge key={`status-${s.id}`} variant={s.isActive ? 'success' : 'default'}>
+      {s.isActive ? 'Active' : 'Archived'}
+    </Badge>,
+    <div key={`action-${s.id}`} className="text-right">
+      <Button variant="destructive" size="sm" onClick={() => handleRemove(s.id)}>
+        <Trash2 size={14} /> Remove
+      </Button>
+    </div>,
+  ]);
+
   return (
     <div className="admin-space-y">
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-sky-50 p-5">
+      <div className="admin-page-header flex items-center justify-between">
         <div>
           <h1 className="admin-page-title">Corporate Services</h1>
-          <p className="text-sm text-slate-600">Manage service assignments and quickly jump to corporate detail workspaces.</p>
+          <p className="admin-page-subtitle">
+            Manage service assignments and quickly jump to corporate detail workspaces.
+          </p>
         </div>
-        <Link href="/admin/corporates" className="admin-btn-secondary text-xs">Back</Link>
+        <Button href="/admin/corporates" variant="secondary" size="sm">
+          Back
+        </Button>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col md:flex-row gap-4 md:items-center justify-between">
-        <div className="flex gap-2">
-          {(['all', 'active', 'archived'] as StatusFilter[]).map(s => (
-            <button
-              key={s}
-              onClick={() => setStatus(s)}
-              className={`px-3 py-2 rounded-lg text-xs font-bold uppercase ${
-                status === s ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-600'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
+      <div className="admin-card p-4">
+        <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+          <div className="flex gap-2">
+            {(['all', 'active', 'archived'] as StatusFilter[]).map((s) => (
+              <Button
+                key={s}
+                variant={status === s ? 'primary' : 'secondary'}
+                size="sm"
+                onClick={() => setStatus(s)}
+              >
+                {s}
+              </Button>
+            ))}
+          </div>
 
-        <div className="relative w-full md:w-80">
-          <Search size={16} className="absolute left-3 top-3 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search services..."
-            className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 text-sm"
-          />
+          <div className="relative w-full md:w-80">
+            <Search size={16} className="absolute left-3 top-3 text-muted" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search services..."
+              className="pl-9"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="admin-table-container">
-        <div className="admin-card-header font-bold">Service Assignments</div>
+      <Card header="Service Assignments">
         {loading ? (
-          <div className="admin-loading">Loading services...</div>
+          <LoadingSpinner text="Loading services..." />
         ) : items.length === 0 ? (
-          <div className="p-6 text-slate-500 text-sm">No services found.</div>
+          <div className="p-6 text-muted text-sm">No services found.</div>
         ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Corporate</th>
-                <th>Service</th>
-                <th>Validity</th>
-                <th>Status</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((s) => (
-                <tr key={s.id}>
-                  <td className="admin-table-row-primary">
-                    <Link href={`/admin/corporates/${s.corporate.id}`} className="hover:underline">
-                      {s.corporate.companyName}
-                    </Link>
-                    {!s.corporate.isActive && (
-                      <div className="text-[10px] text-slate-400 uppercase">Archived</div>
-                    )}
-                  </td>
-                  <td>
-                    <div className="admin-table-row-primary">
-                      {s.package?.packageName || `Coupon: ${s.coupon?.code}`}
-                    </div>
-                    <div className="admin-table-row-secondary text-xs">
-                      {s.package ? 'Package' : 'Coupon'}
-                    </div>
-                  </td>
-                  <td className="admin-table-row-secondary">
-                    {new Date(s.validFrom).toLocaleDateString()} - {new Date(s.validTill).toLocaleDateString()}
-                  </td>
-                  <td>
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase ${
-                      s.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {s.isActive ? 'Active' : 'Archived'}
-                    </span>
-                  </td>
-                  <td className="text-right">
-                    <button onClick={() => handleRemove(s.id)} className="text-xs text-rose-600 font-bold">
-                      <Trash2 size={14} className="inline-block mr-1" /> Remove
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            headers={['Corporate', 'Service', 'Validity', 'Status', 'Action']}
+            rows={rows}
+          />
         )}
-      </div>
+      </Card>
     </div>
   );
 }
+

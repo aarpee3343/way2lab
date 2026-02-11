@@ -8,13 +8,23 @@ import {
   initiateRefundAction,
   recordManualPaymentAction,
 } from '@/app/actions/adminFinanceActions';
+import Button from '@/components/admin/corporate/Button';
+import Card from '@/components/admin/corporate/Card';
+import Input from '@/components/admin/corporate/Input';
+import Textarea from '@/components/admin/corporate/Textarea';
+import Select from '@/components/admin/corporate/Select';
+import Table from '@/components/admin/corporate/Table';
+import StatCard from '@/components/admin/corporate/StatCard';
+import LoadingSpinner from '@/components/admin/corporate/LoadingSpinner';
 
 type CorpFinanceData = Awaited<ReturnType<typeof getCorporateFinanceOverviewAction>>;
 
 function formatINR(value: number) {
-  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(
-    Number(value || 0)
-  );
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 2,
+  }).format(Number(value || 0));
 }
 
 export default function CorporateFinancePage({ params }: { params: Promise<{ id: string }> }) {
@@ -84,7 +94,12 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
         return;
       }
       toast.success('Payment recorded');
-      setPaymentForm((prev) => ({ ...prev, amount: '', transactionId: '', notes: '' }));
+      setPaymentForm((prev) => ({
+        ...prev,
+        amount: '',
+        transactionId: '',
+        notes: '',
+      }));
       await load();
     } finally {
       setSavingPayment(false);
@@ -114,58 +129,89 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
         return;
       }
       toast.success('Refund processed');
-      setRefundForm((prev) => ({ ...prev, amount: '', reason: '', transactionId: '', notes: '' }));
+      setRefundForm((prev) => ({
+        ...prev,
+        amount: '',
+        reason: '',
+        transactionId: '',
+        notes: '',
+      }));
       await load();
     } finally {
       setSavingRefund(false);
     }
   };
 
-  if (loading || !data) return <div className="p-10 text-center text-slate-400">Loading finance data...</div>;
+  if (loading || !data) return <LoadingSpinner text="Loading finance data..." />;
+
+  const ordersRows = data.orders.map((o) => [
+    `#${o.orderNumber || o.id}`,
+    o.patientName || '-',
+    (o as any).packageName || '-',
+    o.status,
+    o.paymentStatus || 'Pending',
+    formatINR(o.finalAmount),
+    (o as any).completedAt ? new Date((o as any).completedAt).toLocaleString('en-IN') : '-',
+  ]);
 
   return (
     <div className="admin-space-y">
-      <div className="admin-page-header">
-        <h1 className="admin-page-title">{data.corporate.companyName} Finance</h1>
-        <p className="admin-page-subtitle">Billing, collections, and refunds for this corporate account.</p>
-        <div className="flex gap-2 mt-2">
-          <a
-            className="admin-btn-secondary"
-            href={`/admin/corporates/${corporateId}/finance/billed-employees?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
-          >
-            Billed Employees
-          </a>
-          <a
-            className="admin-btn-secondary"
-            href={`/api/admin/corporates/${corporateId}/finance/invoice?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
-          >
-            Download Invoice (PDF)
-          </a>
-          <a
-            className="admin-btn-secondary"
-            href={`/api/admin/corporates/${corporateId}/finance/statement?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`}
-          >
-            Download Statement (CSV)
-          </a>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="admin-page-title">{data.corporate.companyName} Finance</h1>
+          <p className="admin-page-subtitle">
+            Billing, collections, and refunds for this corporate account.
+          </p>
+          <div className="flex gap-2 mt-2">
+            <Button
+              href={`/admin/corporates/${corporateId}/finance/billed-employees?from=${encodeURIComponent(
+                from
+              )}&to=${encodeURIComponent(to)}`}
+              variant="secondary"
+              size="sm"
+            >
+              Billed Employees
+            </Button>
+            <Button
+              href={`/api/admin/corporates/${corporateId}/finance/invoice?from=${encodeURIComponent(
+                from
+              )}&to=${encodeURIComponent(to)}`}
+              variant="secondary"
+              size="sm"
+            >
+              Download Invoice (PDF)
+            </Button>
+            <Button
+              href={`/api/admin/corporates/${corporateId}/finance/statement?from=${encodeURIComponent(
+                from
+              )}&to=${encodeURIComponent(to)}`}
+              variant="secondary"
+              size="sm"
+            >
+              Download Statement (CSV)
+            </Button>
+          </div>
         </div>
+        <Button href={`/admin/corporates/${corporateId}`} variant="secondary" size="sm">
+          Back
+        </Button>
       </div>
 
-      <div className="admin-card p-4">
+      <Card className="p-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div>
-            <label className="admin-form-label">From</label>
-            <input type="date" className="admin-form-input" value={from} onChange={(e) => setFrom(e.target.value)} />
-          </div>
-          <div>
-            <label className="admin-form-label">To</label>
-            <input type="date" className="admin-form-input" value={to} onChange={(e) => setTo(e.target.value)} />
-          </div>
+          <Input
+            type="date"
+            label="From"
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+          />
+          <Input type="date" label="To" value={to} onChange={(e) => setTo(e.target.value)} />
           <div className="flex gap-2">
-            <button className="admin-btn-primary" onClick={() => load(from, to)}>
+            <Button variant="primary" onClick={() => load(from, to)}>
               <RefreshCw size={16} /> Apply
-            </button>
-            <button
-              className="admin-btn-secondary"
+            </Button>
+            <Button
+              variant="secondary"
               onClick={() => {
                 setFrom('');
                 setTo('');
@@ -173,161 +219,129 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
               }}
             >
               Reset
-            </button>
+            </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="admin-stat-grid">
-        <StatCard icon={Wallet} label="Billed" value={formatINR(data.summary.billed)} tone="text-slate-900" />
-        <StatCard icon={HandCoins} label="Collected" value={formatINR(data.summary.paid)} tone="text-emerald-700" />
-        <StatCard icon={RotateCcw} label="Refunded" value={formatINR(data.summary.refunded)} tone="text-amber-700" />
-        <StatCard icon={AlertCircle} label="Outstanding" value={formatINR(data.summary.outstanding)} tone="text-rose-700" />
+        <StatCard icon={<Wallet size={20} />} label="Billed" value={formatINR(data.summary.billed)} />
+        <StatCard
+          icon={<HandCoins size={20} />}
+          label="Collected"
+          value={formatINR(data.summary.paid)}
+          iconBgWhite
+        />
+        <StatCard
+          icon={<RotateCcw size={20} />}
+          label="Refunded"
+          value={formatINR(data.summary.refunded)}
+          iconBgWhite
+        />
+        <StatCard
+          icon={<AlertCircle size={20} />}
+          label="Outstanding"
+          value={formatINR(data.summary.outstanding)}
+          iconBgWhite
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="admin-card p-5">
-          <h2 className="admin-form-title mb-4">Record Corporate Payment</h2>
+        <Card header="Record Corporate Payment">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Order ID"
               value={paymentForm.orderId}
               onChange={(e) => setPaymentForm((p) => ({ ...p, orderId: e.target.value }))}
             />
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Amount"
               value={paymentForm.amount}
               onChange={(e) => setPaymentForm((p) => ({ ...p, amount: e.target.value }))}
             />
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Method"
               value={paymentForm.method}
               onChange={(e) => setPaymentForm((p) => ({ ...p, method: e.target.value }))}
             />
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Transaction ID"
               value={paymentForm.transactionId}
               onChange={(e) => setPaymentForm((p) => ({ ...p, transactionId: e.target.value }))}
             />
-            <textarea
-              className="admin-form-textarea md:col-span-2"
+            <Textarea
               rows={3}
               placeholder="Notes"
+              className="md:col-span-2"
               value={paymentForm.notes}
               onChange={(e) => setPaymentForm((p) => ({ ...p, notes: e.target.value }))}
             />
           </div>
-          <button className="admin-btn-primary mt-3" onClick={onRecordPayment} disabled={savingPayment}>
+          <Button
+            variant="primary"
+            className="mt-3"
+            onClick={onRecordPayment}
+            disabled={savingPayment}
+          >
             {savingPayment ? 'Saving...' : 'Record Payment'}
-          </button>
-        </div>
+          </Button>
+        </Card>
 
-        <div className="admin-card p-5">
-          <h2 className="admin-form-title mb-4">Process Refund</h2>
+        <Card header="Process Refund">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Order ID"
               value={refundForm.orderId}
               onChange={(e) => setRefundForm((p) => ({ ...p, orderId: e.target.value }))}
             />
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Amount"
               value={refundForm.amount}
               onChange={(e) => setRefundForm((p) => ({ ...p, amount: e.target.value }))}
             />
-            <input
-              className="admin-form-input md:col-span-2"
+            <Input
               placeholder="Reason"
+              className="md:col-span-2"
               value={refundForm.reason}
               onChange={(e) => setRefundForm((p) => ({ ...p, reason: e.target.value }))}
             />
-            <input
-              className="admin-form-input"
+            <Input
               placeholder="Refund Transaction ID"
               value={refundForm.transactionId}
               onChange={(e) => setRefundForm((p) => ({ ...p, transactionId: e.target.value }))}
             />
-            <textarea
-              className="admin-form-textarea"
+            <Textarea
               rows={3}
               placeholder="Notes"
               value={refundForm.notes}
               onChange={(e) => setRefundForm((p) => ({ ...p, notes: e.target.value }))}
             />
           </div>
-          <button className="admin-btn-primary mt-3" onClick={onRefund} disabled={savingRefund}>
+          <Button variant="primary" className="mt-3" onClick={onRefund} disabled={savingRefund}>
             {savingRefund ? 'Processing...' : 'Process Refund'}
-          </button>
-        </div>
+          </Button>
+        </Card>
       </div>
 
-      <div className="admin-card p-5">
-        <h2 className="admin-form-title mb-3">Corporate Billable Orders</h2>
-        <div className="admin-table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Order</th>
-                <th>Employee</th>
-                <th>Package</th>
-                <th>Status</th>
-                <th>Payment</th>
-                <th>Bill Amount</th>
-                <th>Completed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.orders.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-400">No orders in selected range</td>
-                </tr>
-              ) : (
-                data.orders.map((o) => (
-                  <tr key={o.id}>
-                    <td>#{o.orderNumber || o.id}</td>
-                    <td>{o.patientName || '-'}</td>
-                    <td>{(o as any).packageName || '-'}</td>
-                    <td>{o.status}</td>
-                    <td>{o.paymentStatus || 'Pending'}</td>
-                    <td>{formatINR(o.finalAmount)}</td>
-                    <td>{(o as any).completedAt ? new Date((o as any).completedAt).toLocaleString('en-IN') : '-'}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <Card header="Corporate Billable Orders">
+        {data.orders.length === 0 ? (
+          <div className="p-6 text-center text-muted">No orders in selected range</div>
+        ) : (
+          <Table
+            headers={[
+              'Order',
+              'Employee',
+              'Package',
+              'Status',
+              'Payment',
+              'Bill Amount',
+              'Completed',
+            ]}
+            rows={ordersRows}
+          />
+        )}
+      </Card>
     </div>
   );
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: any;
-  label: string;
-  value: string;
-  tone: string;
-}) {
-  return (
-    <div className="admin-stat-card">
-      <div className="admin-stat-icon-container bg-slate-900">
-        <Icon size={20} />
-      </div>
-      <div>
-        <p className="admin-stat-label">{label}</p>
-        <h3 className={`admin-stat-value ${tone}`}>{value}</h3>
-      </div>
-    </div>
-  );
-}

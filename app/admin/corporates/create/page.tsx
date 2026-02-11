@@ -1,10 +1,12 @@
-// app/admin/corporates/create/page.tsx
 'use client';
 import { useState } from 'react';
-import { createCorporateAction } from '@/app/actions/adminCorporateActions';
 import { useRouter } from 'next/navigation';
+import { createCorporateAction } from '@/app/actions/adminCorporateActions';
 import { toast } from '@/lib/safe-toast';
 import { Save, Loader2 } from 'lucide-react';
+import Button from '@/components/admin/corporate/Button';
+import Card from '@/components/admin/corporate/Card';
+import Input from '@/components/admin/corporate/Input';
 
 export default function CreateCorporate() {
   const router = useRouter();
@@ -15,9 +17,8 @@ export default function CreateCorporate() {
     setLoading(true);
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData.entries());
-    
     const res = await createCorporateAction(data);
-    if(res.success) {
+    if (res.success) {
       toast.success("Corporate Created!");
       router.push(`/admin/corporates/${res.corporateId}`);
     } else {
@@ -27,74 +28,36 @@ export default function CreateCorporate() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto admin-space-y">
       <h1 className="admin-page-title mb-6">Onboard New Corporate</h1>
-      
-      <form onSubmit={handleSubmit} className="admin-form-section space-y-6">
-        {/* Basic Info */}
-        <div className="admin-form-grid">
-          <div className="col-span-2">
-            <label className="admin-form-label">Corporate Name</label>
-            <input name="companyName" required className="admin-form-input text-lg font-bold" placeholder="Acme Industries Ltd." />
-          </div>
-          <div>
-            <label className="admin-form-label">Contact Person</label>
-            <input name="contactPerson" required className="admin-form-input" placeholder="HR Manager Name" />
-          </div>
-          <div>
-            <label className="admin-form-label">Phone Number</label>
-            <input name="phone" required className="admin-form-input" placeholder="+91..." />
-          </div>
-          <div>
-            <label className="admin-form-label">Official Email (Login ID)</label>
-            <input name="email" type="email" required className="admin-form-input" placeholder="admin@company.com" />
-          </div>
-          <div>
-            <label className="admin-form-label">Password</label>
-            <input name="password" type="password" required className="admin-form-input" placeholder="••••••••" />
-          </div>
-        </div>
 
-        <hr />
+      <Card>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input label="Corporate Name" name="companyName" required className="col-span-2 text-lg font-bold" placeholder="Acme Industries Ltd." />
+          <Input label="Contact Person" name="contactPerson" required placeholder="HR Manager Name" />
+          <Input label="Phone Number" name="phone" required placeholder="+91..." />
+          <Input label="Official Email (Login ID)" name="email" type="email" required placeholder="admin@company.com" />
+          <Input label="Password" name="password" type="password" required placeholder="••••••••" />
 
-        {/* Address & Legal */}
-        <div className="admin-form-grid">
-          <div className="col-span-3">
-            <label className="admin-form-label">Address</label>
-            <input name="address" className="admin-form-input" placeholder="Street / Building" />
-          </div>
-          <div>
-            <label className="admin-form-label">City</label>
-            <input name="city" className="admin-form-input" />
-          </div>
-          <div>
-            <label className="admin-form-label">State</label>
-            <input name="state" className="admin-form-input" />
-          </div>
-          <div>
-            <label className="admin-form-label">Pincode</label>
-            <input name="pincode" className="admin-form-input" />
-          </div>
-          <div>
-            <label className="admin-form-label">PAN Number</label>
-            <input name="panNumber" className="admin-form-input uppercase" />
-          </div>
-          <div>
-            <label className="admin-form-label">GSTIN</label>
-            <input name="gstin" className="admin-form-input uppercase" />
-          </div>
-          <div>
-            <label className="admin-form-label">Est. Employee Count</label>
-            <input name="employeeCount" type="number" className="admin-form-input" />
-          </div>
-        </div>
+          <hr className="col-span-2 my-2" />
 
-        <div className="pt-4">
-          <button disabled={loading} className="admin-btn-primary w-full flex justify-center items-center gap-2">
-            {loading ? <Loader2 className="animate-spin"/> : <Save size={18} />} Create Corporate
-          </button>
-        </div>
-      </form>
+          <Input label="Address" name="address" className="col-span-2" placeholder="Street / Building" />
+          <Input label="City" name="city" />
+          <Input label="State" name="state" />
+          <Input label="Pincode" name="pincode" />
+          <Input label="PAN Number" name="panNumber" className="uppercase" />
+          <Input label="GSTIN" name="gstin" className="uppercase" />
+          <Input label="Est. Employee Count" name="employeeCount" type="number" />
+
+          <div className="col-span-2 pt-4">
+            <Button type="submit" variant="primary" className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+              Create Corporate
+            </Button>
+          </div>
+        </form>
+      </Card>
     </div>
   );
 }
+

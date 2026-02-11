@@ -3,6 +3,9 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin-auth';
 import { getCorporateBillableOrders } from '@/lib/corporate-finance';
 import prisma from '@/lib/db';
+import Button from '@/components/admin/corporate/Button';
+import Card from '@/components/admin/corporate/Card';
+import Table from '@/components/admin/corporate/Table';
 
 function toRange(from?: string, to?: string) {
   const now = new Date();
@@ -14,7 +17,7 @@ function toRange(from?: string, to?: string) {
 
 export default async function CorporateBilledEmployeesPage({
   params,
-  searchParams
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -35,12 +38,27 @@ export default async function CorporateBilledEmployeesPage({
   const [corporate, rows] = await Promise.all([
     prisma.corporate.findUnique({
       where: { id: corporateId },
-      select: { id: true, companyName: true }
+      select: { id: true, companyName: true },
     }),
-    getCorporateBillableOrders({ corporateId, start, end })
+    getCorporateBillableOrders({ corporateId, start, end }),
   ]);
 
   if (!corporate) redirect('/admin/corporates');
+
+  const tableRows = rows.map((row, idx) => [
+    idx + 1,
+    row.employeeName,
+    <div key={idx}>
+      <div>{row.employeeEmail || '-'}</div>
+      <div className="text-xs text-muted">{row.employeePhone || '-'}</div>
+    </div>,
+    row.packageName,
+    <Link key={`order-${row.orderId}`} href={`/admin/orders/${row.orderId}`} className="text-blue-600 hover:underline">
+      #{row.orderNumber}
+    </Link>,
+    new Date(row.completedAt).toLocaleString('en-IN'),
+    `₹${Number(row.unitPrice || 0).toFixed(2)}`,
+  ]);
 
   return (
     <div className="admin-space-y">
@@ -49,77 +67,53 @@ export default async function CorporateBilledEmployeesPage({
           <h1 className="admin-page-title">Billed Employees</h1>
           <p className="admin-page-subtitle">{corporate.companyName}</p>
         </div>
-        <Link href={`/admin/corporates/${corporateId}/finance`} className="admin-btn-secondary">
+        <Button href={`/admin/corporates/${corporateId}/finance`} variant="secondary" size="sm">
           Back to Finance
-        </Link>
+        </Button>
       </div>
 
-      <div className="admin-card">
-        <div className="admin-card-body">
-          <form className="flex flex-wrap gap-3 items-end">
-            <div>
-              <label className="admin-form-label">From</label>
-              <input type="date" name="from" defaultValue={from} className="admin-form-input" />
-            </div>
-            <div>
-              <label className="admin-form-label">To</label>
-              <input type="date" name="to" defaultValue={to} className="admin-form-input" />
-            </div>
-            <button type="submit" className="admin-btn-primary">Apply</button>
-            <Link href={`/admin/corporates/${corporateId}/finance/billed-employees`} className="admin-btn-secondary">
-              Reset
-            </Link>
-          </form>
-        </div>
-      </div>
-
-      <div className="admin-card">
-        <div className="admin-card-body p-0">
-          <div className="admin-table-container">
-            <table className="admin-table">
-              <thead>
-                <tr>
-                  <th>Sr. No.</th>
-                  <th>Employee Name</th>
-                  <th>Email / Phone</th>
-                  <th>Package</th>
-                  <th>Order</th>
-                  <th>Service Completed Date</th>
-                  <th>Unit Price</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center py-8 text-slate-400">
-                      No billed employees in selected range.
-                    </td>
-                  </tr>
-                ) : (
-                  rows.map((row, idx) => (
-                    <tr key={`${row.orderId}-${idx}`}>
-                      <td>{idx + 1}</td>
-                      <td>{row.employeeName}</td>
-                      <td>
-                        <div>{row.employeeEmail || '-'}</div>
-                        <div className="text-xs text-slate-500">{row.employeePhone || '-'}</div>
-                      </td>
-                      <td>{row.packageName}</td>
-                      <td>
-                        <Link href={`/admin/orders/${row.orderId}`} className="text-blue-600 hover:underline">
-                          #{row.orderNumber}
-                        </Link>
-                      </td>
-                      <td>{new Date(row.completedAt).toLocaleString('en-IN')}</td>
-                      <td>₹{Number(row.unitPrice || 0).toFixed(2)}</td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      <Card>
+        <form className="flex flex-wrap gap-3 items-end">
+          <div>
+            <label className="admin-form-label">From</label>
+            <input type="date" name="from" defaultValue={from} className="admin-form-input" />
           </div>
-        </div>
-      </div>
+          <div>
+            <label className="admin-form-label">To</label>
+            <input type="date" name="to" defaultValue={to} className="admin-form-input" />
+          </div>
+          <Button type="submit" variant="primary" size="sm">
+            Apply
+          </Button>
+          <Button
+            href={`/admin/corporates/${corporateId}/finance/billed-employees`}
+            variant="secondary"
+            size="sm"
+          >
+            Reset
+          </Button>
+        </form>
+      </Card>
+
+      <Card>
+        {rows.length === 0 ? (
+          <div className="p-6 text-center text-muted">No billed employees in selected range.</div>
+        ) : (
+          <Table
+            headers={[
+              'Sr. No.',
+              'Employee Name',
+              'Email / Phone',
+              'Package',
+              'Order',
+              'Service Completed Date',
+              'Unit Price',
+            ]}
+            rows={tableRows}
+          />
+        )}
+      </Card>
     </div>
   );
 }
+
