@@ -48,7 +48,7 @@ export const ORG_SCHEMA_CONFIG = {
   name: 'WayToLab',
   legalName: 'Waytolab Healthcare',
   description:
-    'WayToLab is a digital diagnostic test booking and lab aggregation platform that connects users with trusted laboratories, diagnostic centers and hospitals enabling easy test discovery, transparent pricing, and convenient sample collection.',
+    'WayToLab is a diagnostic test booking platform serving Gurugram, Gurgaon, and Delhi NCR with trusted labs, transparent pricing, home sample collection, and digital reports.',
   logoUrl: absoluteUrl('/logo.png'),
   imageUrl: absoluteUrl('/logo.png'),
   email: 'care@waytolab.com',
@@ -71,7 +71,7 @@ export const ORG_SCHEMA_CONFIG = {
       contactType: 'customer support',
       telephone: '+919311213388',
       email: 'care@waytolab.com',
-      areaServed: 'IN',
+      areaServed: ['Gurugram', 'Gurgaon', 'Delhi', 'Delhi NCR', 'IN'],
       availableLanguage: ['en', 'hi']
     }
   ] satisfies ContactPointInput[]
@@ -152,6 +152,7 @@ export function buildOrganizationSchema() {
     image: ORG_SCHEMA_CONFIG.imageUrl,
     email: ORG_SCHEMA_CONFIG.email,
     telephone: ORG_SCHEMA_CONFIG.phone,
+    areaServed: ['Gurugram', 'Gurgaon', 'Delhi', 'Delhi NCR', 'IN'],
     sameAs: ORG_SCHEMA_CONFIG.sameAs,
     address: buildPostalAddress(ORG_SCHEMA_CONFIG.address),
     contactPoint: ORG_SCHEMA_CONFIG.contactPoints.map((cp) =>
@@ -173,7 +174,9 @@ export function buildWebsiteSchema() {
     '@type': 'WebSite',
     '@id': absoluteUrl('/#website'),
     name: ORG_SCHEMA_CONFIG.name,
+    description: ORG_SCHEMA_CONFIG.description,
     url: absoluteUrl('/'),
+    inLanguage: 'en-IN',
     publisher: { '@id': ORG_SCHEMA_CONFIG.id },
     potentialAction: {
       '@type': 'SearchAction',

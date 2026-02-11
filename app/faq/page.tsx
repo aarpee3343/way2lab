@@ -4,14 +4,14 @@ import { buildBreadcrumbSchema, buildFaqSchema } from '@/lib/schema';
 import FaqAccordion from '@/components/faq/FaqAccordion';
 
 export const metadata: Metadata = {
-  title: 'FAQ | Diagnostic Tests, Labs, Booking & Reports | WayToLab',
+  title: 'FAQ: Diagnostic Booking in Gurugram and Delhi | WayToLab',
   description:
-    'Answers to common questions about booking tests, lab selection, reports, pricing, home collection, rescheduling, payments, and data privacy on WayToLab.',
+    'Answers to common questions on booking blood tests and checkups in Gurugram and Delhi NCR, including lab selection, pricing, reports, home collection, and payments.',
   alternates: { canonical: absoluteUrl('/faq') },
   openGraph: {
-    title: 'WayToLab FAQ',
+    title: 'FAQ: Diagnostic Booking in Gurugram and Delhi | WayToLab',
     description:
-      'Get answers to frequently asked questions for diagnostic test booking, labs, reports and payments.',
+      'Get answers about diagnostic test booking, labs, reports, pricing, and home collection in Gurugram and Delhi NCR.',
     url: absoluteUrl('/faq'),
     type: 'website'
   }

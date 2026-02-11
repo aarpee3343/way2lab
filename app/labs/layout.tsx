@@ -2,13 +2,14 @@ import type { Metadata } from 'next';
 import { absoluteUrl } from '@/lib/seo';
 
 export const metadata: Metadata = {
-  title: 'Diagnostic Labs | NABL Certified Labs Near You | WayToLab',
+  title: 'NABL Certified Diagnostic Labs in Gurugram and Delhi | WayToLab',
   description:
-    'Find NABL certified diagnostic labs, compare ratings, timings and home collection availability. Book tests from trusted labs.',
+    'Find and compare NABL certified diagnostic labs in Gurugram, Gurgaon, and Delhi NCR with ratings, timings, and home collection availability.',
   alternates: { canonical: absoluteUrl('/labs') },
   openGraph: {
-    title: 'Diagnostic Labs | WayToLab',
-    description: 'Find NABL certified diagnostic labs with transparent details and home collection options.',
+    title: 'NABL Certified Diagnostic Labs in Gurugram and Delhi | WayToLab',
+    description:
+      'Compare diagnostic labs in Gurugram and Delhi NCR with transparent details and home collection options.',
     url: absoluteUrl('/labs'),
     type: 'website'
   }
@@ -17,4 +18,3 @@ export const metadata: Metadata = {
 export default function LabsLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
-

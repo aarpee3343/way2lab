@@ -10,7 +10,7 @@ import {
   Menu, X, ShoppingCart, User, LogOut, 
   LayoutDashboard, ClipboardList, FileText, Settings,
   Home, Search, Package, Info, Phone, ArrowRight, ChevronDown, 
-  Heart, ShieldCheck, Stethoscope, MapPin, Users, Briefcase
+  Heart, ShieldCheck, Stethoscope, MapPin, Users, Briefcase, TestTube 
 } from 'lucide-react';
 
 export default function Header() {
@@ -87,7 +87,7 @@ export default function Header() {
 
   const publicLinks = [
     { name: 'Home', href: '/', icon: Home },
-    { name: 'Tests', href: '/search', icon: Search },
+    { name: 'Tests', href: '/tests', icon: TestTube  },
     { name: 'Packages', href: '/packages', icon: Package },
     { name: 'Labs Network', href: '/labs', icon: Stethoscope },
     { name: 'FAQ', href: '/faq', icon: Info },

@@ -5,7 +5,8 @@ import { notFound, redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/admin-auth';
 import {
   updateOrderStatusAction,
-  assignTechnicianAction
+  assignTechnicianAction,
+  updateOrderScheduleAction
 } from '@/app/actions/adminOrderManagement';
 
 import { OrderStatus } from '@prisma/client';
@@ -61,6 +62,11 @@ async function handleUpdateStatus(formData: FormData) {
 async function handleAssignTechnician(formData: FormData) {
   'use server';
   await assignTechnicianAction(formData);
+}
+
+async function handleUpdateSchedule(formData: FormData) {
+  'use server';
+  await updateOrderScheduleAction(formData);
 }
 
 /* ================= PAGE ================= */
@@ -128,6 +134,9 @@ export default async function OrderDetailsPage({
   const preferredDate = order.preferredDate
     ? new Date(order.preferredDate)
     : null;
+  const preferredDateInput = preferredDate
+    ? preferredDate.toISOString().split('T')[0]
+    : '';
   const isUpcoming = preferredDate && preferredDate >= new Date();
 
   const patientAge = order.patientDob
@@ -470,6 +479,70 @@ export default async function OrderDetailsPage({
                 No appointment scheduled
               </p>
             )}
+
+            <form action={handleUpdateSchedule} className="mt-4 space-y-3 border-t pt-4">
+              <input type="hidden" name="orderId" value={order.id} />
+
+              <div>
+                <label className="admin-form-label">Preferred Date</label>
+                <input
+                  type="date"
+                  name="preferredDate"
+                  defaultValue={preferredDateInput}
+                  required
+                  disabled={isTerminal}
+                  className="admin-form-input"
+                />
+              </div>
+
+              <div>
+                <label className="admin-form-label">Time Slot</label>
+                <input
+                  type="text"
+                  name="preferredTimeSlot"
+                  defaultValue={order.preferredTimeSlot || ''}
+                  placeholder="e.g. 09:00 AM - 10:00 AM"
+                  required
+                  disabled={isTerminal}
+                  className="admin-form-input"
+                />
+              </div>
+
+              <div>
+                <label className="admin-form-label">Collection Type</label>
+                <select
+                  name="collectionType"
+                  defaultValue={order.collectionType || 'home_collection'}
+                  required
+                  disabled={isTerminal}
+                  className="admin-form-select"
+                >
+                  <option value="home_collection">Home Collection</option>
+                  <option value="lab_visit">Lab Visit</option>
+                  <option value="onsite">Onsite</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="admin-form-label">Remark</label>
+                <textarea
+                  name="remark"
+                  rows={3}
+                  required
+                  minLength={3}
+                  disabled={isTerminal}
+                  placeholder="Reason for schedule change"
+                  className="admin-form-input resize-none"
+                />
+              </div>
+
+              <button
+                disabled={isTerminal}
+                className={`admin-btn-primary w-full ${isTerminal ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                Update Schedule
+              </button>
+            </form>
           </Card>
 
           {/* LAB */}

@@ -5,6 +5,7 @@ import NextTopLoader from "nextjs-toploader";
 
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import StickyBookingFooter from "@/components/layout/StickyBookingFooter";
 import { UiProvider } from "./providers";
 
 export default function LayoutClient({
@@ -18,8 +19,22 @@ export default function LayoutClient({
     pathname.startsWith("/corp") || pathname.startsWith("/employees");
   const isAdminRoute = pathname.startsWith("/admin");
   const isDashboardRoute = pathname.startsWith("/dashboard");
+  const isBookNowRoute = pathname === "/book-now";
+  const isStickyExcluded =
+    pathname === "/cart" ||
+    pathname.startsWith("/search") ||
+    pathname.startsWith("/checkout") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/corp") ||
+    pathname.startsWith("/employees") ||
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/register") ||
+    pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/account") ||
+    pathname.startsWith("/order-success");
 
-  const hidePublicLayout = isCorpRoute || isAdminRoute;
+  const hidePublicLayout = isCorpRoute || isAdminRoute || isBookNowRoute;
   const toasterPosition = isDashboardRoute ? "bottom-right" : "top-center";
 
   return (
@@ -41,13 +56,16 @@ export default function LayoutClient({
 
         <main
           className={
-            !hidePublicLayout ? "min-h-screen pt-20" : "min-h-screen"
+            !hidePublicLayout
+              ? `min-h-screen pt-20 ${!isStickyExcluded ? "pb-24" : ""}`
+              : "min-h-screen"
           }
         >
           {children}
         </main>
 
         {!hidePublicLayout && <Footer />}
+        {!hidePublicLayout && !isStickyExcluded && <StickyBookingFooter />}
       </UiProvider>
 
       {/* Background pattern stays global */}

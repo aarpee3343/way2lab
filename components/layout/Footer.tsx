@@ -6,9 +6,8 @@ import { useState, type FormEvent } from 'react';
 import Image from 'next/image';
 import { 
   Facebook, Twitter, Linkedin, Instagram, ArrowUpRight, 
-  MessageCircle, Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award, Building2
+  Mail, MapPin, Phone, ShieldCheck, Heart, Stethoscope, Award, Building2
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { subscribeNewsletterAction } from '@/app/actions/newsletterActions';
 import { toast } from '@/lib/safe-toast';
 
@@ -22,8 +21,9 @@ export default function Footer() {
   const isDashboard = pathname?.startsWith('/dashboard');
   const isAdmin = pathname?.startsWith('/admin');
   const isBookingFlow = pathname === '/cart' || pathname?.startsWith('/checkout');
+  const isSearchPage = pathname?.startsWith('/search');
 
-  if (isDashboard || isAdmin || isBookingFlow) return null;
+  if (isDashboard || isAdmin || isBookingFlow || isSearchPage) return null;
 
   const handleSubscribe = async (e: FormEvent) => {
     e.preventDefault();
@@ -282,27 +282,6 @@ export default function Footer() {
           WayToLab
         </div>
       </div>
-
-      {/* Floating Healthcare WhatsApp Button */}
-      <motion.a 
-        href="https://wa.me/919311213388"
-        target="_blank"
-        initial={{ y: 100 }} 
-        animate={{ y: 0 }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white pl-4 pr-6 py-3.5 rounded-full shadow-2xl shadow-emerald-900/30 backdrop-blur-md border border-emerald-400/30"
-      >
-        <div className="bg-white/20 p-2 rounded-full">
-          <MessageCircle size={20} fill="currentColor" />
-        </div>
-        <div>
-          <p className="text-[10px] font-medium opacity-90 leading-none">Medical Support</p>
-          <p className="font-bold text-sm leading-none">Chat with Expert</p>
-        </div>
-        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-400 rounded-full animate-ping" />
-      </motion.a>
-
     </footer>
   );
 }

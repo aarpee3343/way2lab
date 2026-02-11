@@ -29,7 +29,7 @@ export const absoluteUrl = (path: string) => {
 export const truncate = (value: string, max = 160) => {
   if (!value) return '';
   if (value.length <= max) return value;
-  return `${value.slice(0, Math.max(0, max - 1)).trim()}…`;
+  return `${value.slice(0, Math.max(0, max - 1)).trim()}...`;
 };
 
 export const toSlug = (value?: string | null) =>
@@ -38,3 +38,4 @@ export const toSlug = (value?: string | null) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
+

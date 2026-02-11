@@ -8,6 +8,7 @@ import { uploadEncryptedFile } from '@/lib/gcs';
 import { AdminRole, OrderStatus } from '@prisma/client';
 import { processAndSaveSummary } from '@/lib/aiService';
 import { sendSMS } from '@/lib/sms';
+import { revalidatePath } from 'next/cache';
 
 const ORDER_ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN'];
 
@@ -287,6 +288,95 @@ export async function assignTechnicianAction(formData: FormData) {
   } catch (err) {
     console.error('assignTechnicianAction failed:', err);
     return { success: false, error: 'Technician assignment failed' };
+  }
+}
+
+/* =============================================================================
+   3b. UPDATE ORDER SCHEDULE
+============================================================================= */
+
+export async function updateOrderScheduleAction(formData: FormData) {
+  try {
+    await requireAdmin({ roles: ORDER_ADMIN_ROLES });
+
+    const orderId = Number(formData.get('orderId'));
+    const preferredDateRaw = String(formData.get('preferredDate') || '').trim();
+    const preferredTimeSlot = String(formData.get('preferredTimeSlot') || '').trim();
+    const collectionType = String(formData.get('collectionType') || '').trim();
+    const remark = String(formData.get('remark') || '').trim();
+
+    if (!orderId) {
+      return { success: false, error: 'Invalid order' };
+    }
+    if (!preferredDateRaw || !preferredTimeSlot || !collectionType) {
+      return { success: false, error: 'Schedule details are required' };
+    }
+    if (!remark || remark.length < 3) {
+      return { success: false, error: 'Remark is required (min 3 characters)' };
+    }
+
+    const preferredDate = new Date(`${preferredDateRaw}T00:00:00`);
+    if (Number.isNaN(preferredDate.getTime())) {
+      return { success: false, error: 'Invalid schedule date' };
+    }
+
+    const existing = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        status: true,
+        preferredDate: true,
+        preferredTimeSlot: true,
+        collectionType: true
+      }
+    });
+
+    if (!existing) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    const terminalStatuses: OrderStatus[] = [
+      OrderStatus.COMPLETED,
+      OrderStatus.REJECTED,
+      OrderStatus.CANCELLED
+    ];
+    if (terminalStatuses.includes(existing.status)) {
+      return { success: false, error: 'Cannot edit schedule for terminal orders' };
+    }
+
+    const oldSchedule = [
+      existing.preferredDate ? new Date(existing.preferredDate).toISOString().split('T')[0] : 'N/A',
+      existing.preferredTimeSlot || 'N/A',
+      existing.collectionType || 'N/A'
+    ].join(' | ');
+
+    const newSchedule = [preferredDateRaw, preferredTimeSlot, collectionType].join(' | ');
+
+    await prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          preferredDate,
+          preferredTimeSlot,
+          collectionType
+        }
+      });
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'SCHEDULE_UPDATED',
+          oldValue: oldSchedule,
+          newValue: `${newSchedule} | Remark: ${remark}`,
+          performedBy: 'ADMIN'
+        }
+      });
+    });
+
+    revalidatePath(`/admin/orders/${orderId}`);
+    return { success: true };
+  } catch (err) {
+    console.error('updateOrderScheduleAction failed:', err);
+    return { success: false, error: 'Schedule update failed' };
   }
 }
 

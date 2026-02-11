@@ -13,22 +13,30 @@ const websiteSchema = buildWebsiteSchema();
 
 export const metadata: Metadata = {
   metadataBase: new URL(getBaseUrl()),
-  title: "WayToLab - Advanced Diagnostic Healthcare",
+  title: "Diagnostic Tests & Health Packages in Gurugram and Delhi | WayToLab",
   description:
-    "Book diagnostic tests from certified labs with home collection, AI-powered reports, and expert consultation",
+    "Book blood tests, full body checkups, and health packages online in Gurugram and Delhi NCR with home sample collection, certified labs, and digital reports.",
   keywords: [
-    "diagnostic tests",
-    "health checkup",
-    "lab tests",
-    "medical tests",
-    "healthcare",
+    "diagnostic tests gurugram",
+    "diagnostic tests gurgaon",
+    "diagnostic tests delhi",
+    "blood test in gurugram",
+    "blood test in delhi",
+    "home collection blood test gurgaon",
+    "health checkup packages gurugram",
+    "full body checkup delhi ncr",
+    "lab tests gurugram",
+    "lab tests delhi",
+    "nabl certified labs",
+    "online diagnostic booking",
   ],
   authors: [{ name: "WayToLab" }],
   openGraph: {
     type: "website",
     locale: "en_IN",
-    title: "WayToLab - Advanced Diagnostic Healthcare",
-    description: "Book diagnostic tests from certified labs",
+    title: "Diagnostic Tests & Health Packages in Gurugram and Delhi | WayToLab",
+    description:
+      "Book blood tests and health packages in Gurugram and Delhi NCR with home collection, certified labs, and fast digital reports.",
     siteName: "WayToLab",
     url: absoluteUrl("/"),
     images: [
@@ -42,8 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "WayToLab - Advanced Diagnostic Healthcare",
-    description: "Book diagnostic tests from certified labs with home collection.",
+    title: "Diagnostic Tests & Health Packages in Gurugram and Delhi | WayToLab",
+    description:
+      "Book blood tests and checkup packages in Gurugram and Delhi NCR with home sample collection and certified labs.",
     images: [absoluteUrl("/logo.png")]
   },
   alternates: {
