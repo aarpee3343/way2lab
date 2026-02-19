@@ -154,13 +154,13 @@ export default async function OrdersPage({
       <div className="admin-card">
         <div className="admin-card-body">
           <form className="flex flex-col lg:flex-row gap-3">
-            <div className="admin-search-container flex-1">
+            <div className="admin-search-container flex-1 !max-w-none lg:max-w-[32rem]">
               <Search className="admin-search-icon" size={18} />
               <input
                 name="search"
                 placeholder="Search Order ID, Patient, Phone..."
                 defaultValue={search}
-                className="admin-search-input"
+                className="admin-search-input bg-white placeholder:text-slate-500"
               />
             </div>
 

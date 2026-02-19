@@ -11,6 +11,7 @@ import {
 
 import { OrderStatus } from '@prisma/client';
 import UploadReportForm from '../_components/UploadReportForm';
+import DeleteReportButton from '../_components/DeleteReportButton';
 import { formatISTDateTime } from '@/lib/date-time';
 
 import {
@@ -324,9 +325,12 @@ export default async function OrderDetailsPage({
                       {rep.reportType}
                     </span>
                   </div>
-                  <a href={`/api/reports/${rep.id}`} target="_blank">
-                    <Download size={16} />
-                  </a>
+                  <div className="flex items-center gap-2">
+                    <a href={`/api/reports/${rep.id}`} target="_blank">
+                      <Download size={16} />
+                    </a>
+                    <DeleteReportButton orderId={order.id} reportId={rep.id} />
+                  </div>
                 </div>
               ))
             ) : (

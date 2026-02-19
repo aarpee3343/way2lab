@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 import { prisma } from '@/lib/db';
 import { encryptBuffer } from '@/lib/crypto';
-import { uploadEncryptedFile } from '@/lib/gcs';
+import { deleteEncryptedFile, uploadEncryptedFile } from '@/lib/gcs';
 import { AdminRole, OrderStatus } from '@prisma/client';
 import { processAndSaveSummary } from '@/lib/aiService';
 import { sendSMS } from '@/lib/sms';
@@ -482,5 +482,94 @@ export async function uploadReportAction(
   } catch (err) {
     console.error('Upload error:', err);
     return { success: false, error: 'Upload failed' };
+  }
+}
+
+export async function deleteReportAction(
+  _prevState: any,
+  formData: FormData
+) {
+  try {
+    await requireAdmin({ roles: ORDER_ADMIN_ROLES });
+
+    const reportId = Number(formData.get('reportId'));
+    const orderId = Number(formData.get('orderId'));
+    const remark = String(formData.get('remark') || '').trim();
+
+    if (!reportId || !orderId) {
+      return { success: false, error: 'Invalid report payload' };
+    }
+    if (remark.length < 3) {
+      return { success: false, error: 'Remark is required (min 3 characters)' };
+    }
+
+    const report = await prisma.orderReport.findFirst({
+      where: { id: reportId, orderId },
+      select: {
+        id: true,
+        reportType: true,
+        storagePath: true
+      }
+    });
+
+    if (!report) {
+      return { success: false, error: 'Report not found' };
+    }
+
+    const reportType = report.reportType || 'UNKNOWN';
+    const storagePath = report.storagePath || null;
+
+    await prisma.$transaction(async tx => {
+      await tx.orderReport.delete({
+        where: { id: reportId }
+      });
+
+      const remaining = await tx.orderReport.findMany({
+        where: { orderId },
+        select: { reportType: true }
+      });
+
+      const hasCompleted = remaining.some(r => r.reportType === 'COMPLETED');
+      const hasPartial = remaining.some(r => r.reportType === 'PARTIAL');
+
+      if (reportType === 'COMPLETED') {
+        await tx.orderReportSummary.deleteMany({ where: { orderId } });
+      }
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: {
+          status: hasCompleted
+            ? OrderStatus.COMPLETED
+            : hasPartial
+              ? OrderStatus.PARTIAL_COMPLETED
+              : OrderStatus.PROCESSING
+        }
+      });
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'REPORT_DELETED',
+          oldValue: `${reportType} | Report:${reportId}`,
+          newValue: `Deleted by ADMIN | Remark: ${remark}`,
+          performedBy: 'ADMIN'
+        }
+      });
+    });
+
+    if (storagePath) {
+      try {
+        await deleteEncryptedFile(storagePath);
+      } catch (storageError) {
+        console.error('Failed to delete report file from storage:', storageError);
+      }
+    }
+
+    revalidatePath(`/admin/orders/${orderId}`);
+    return { success: true };
+  } catch (err) {
+    console.error('deleteReportAction failed:', err);
+    return { success: false, error: 'Delete report failed' };
   }
 }

@@ -29,3 +29,7 @@ export async function downloadEncryptedFile(path: string) {
   const [data] = await bucket.file(path).download();
   return data;
 }
+
+export async function deleteEncryptedFile(path: string) {
+  await bucket.file(path).delete({ ignoreNotFound: true });
+}
