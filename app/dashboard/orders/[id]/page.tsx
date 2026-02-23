@@ -57,6 +57,8 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sharing, setSharing] = useState(false);
+  const [selectedReportIds, setSelectedReportIds] = useState<number[]>([]);
+  const [downloadingMerged, setDownloadingMerged] = useState(false);
   
   // Reschedule State
   const [open, setOpen] = useState(false);
@@ -83,6 +85,10 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
   useEffect(() => {
     fetchOrder();
   }, [fetchOrder]);
+
+  useEffect(() => {
+    setSelectedReportIds([]);
+  }, [order?.id, order?.reports?.length]);
 
   // ... (Keep your existing Handlers: onRescheduleClick, handleConfirmReschedule, handleCancel) ...
   const onRescheduleClick = () => {
@@ -130,6 +136,60 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
       toast.error(e?.response?.data?.message || 'Failed to update sharing');
     } finally {
       setSharing(false);
+    }
+  };
+
+  const toggleReportSelection = (reportId: number) => {
+    setSelectedReportIds(prev =>
+      prev.includes(reportId)
+        ? prev.filter(id => id !== reportId)
+        : [...prev, reportId]
+    );
+  };
+
+  const toggleAllReports = () => {
+    const reports = order?.reports || [];
+    if (!reports.length) return;
+    setSelectedReportIds(prev =>
+      prev.length === reports.length ? [] : reports.map((report: any) => report.id)
+    );
+  };
+
+  const handleDownloadSelected = async () => {
+    if (!order?.id || selectedReportIds.length === 0) {
+      toast.warning('Select at least one report to download');
+      return;
+    }
+
+    setDownloadingMerged(true);
+    try {
+      const response = await axios.post(
+        '/api/reports/merge',
+        { orderId: order.id, reportIds: selectedReportIds },
+        { withCredentials: true, responseType: 'blob' }
+      );
+
+      const headerName = String(response.headers?.['content-disposition'] || '');
+      const matchedFile = headerName.match(/filename=\"?([^\";]+)\"?/i);
+      const fileName =
+        matchedFile?.[1] || `order-${order.orderNumber || order.id}-reports.pdf`;
+
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: 'application/pdf' })
+      );
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Merged report downloaded');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message || 'Failed to download selected reports');
+    } finally {
+      setDownloadingMerged(false);
     }
   };
 
@@ -265,12 +325,53 @@ export default function OrderDetailsPage({ params }: { params: Promise<{ id: str
         {!order.package?.isPreEmployment ? (
           <Card title="Download Reports" icon={<FileText />}>
             {order.reports?.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={toggleAllReports}
+                    className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                  >
+                    {selectedReportIds.length === order.reports.length ? 'Clear Selection' : 'Select All'}
+                  </button>
+                  <button
+                    onClick={handleDownloadSelected}
+                    disabled={selectedReportIds.length === 0 || downloadingMerged}
+                    className="h-9 px-3 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {downloadingMerged ? 'Preparing PDF...' : 'Download Selected as One PDF'}
+                  </button>
+                </div>
+
                 {order.reports.map((r: any) => (
-                  <a key={r.id} href={`/api/reports/${r.id}`} target="_blank" className="flex items-center justify-between p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors group">
-                    <span className="text-sm font-medium text-blue-700">{r.reportType || 'Lab Report'}</span>
-                    <FileDown size={18} className="text-blue-500 group-hover:scale-110 transition-transform" />
-                  </a>
+                  <div
+                    key={r.id}
+                    className="flex items-center justify-between gap-3 p-3 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <input
+                        type="checkbox"
+                        checked={selectedReportIds.includes(r.id)}
+                        onChange={() => toggleReportSelection(r.id)}
+                        className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-blue-800 truncate">
+                          {r.fileName || `${r.reportType || 'Lab Report'}-${r.id}.pdf`}
+                        </p>
+                        <p className="text-[11px] text-blue-600">
+                          {r.reportType || 'Lab Report'} - {new Date(r.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <a
+                      href={`/api/reports/${r.id}`}
+                      download={r.fileName || `report-${r.id}.pdf`}
+                      className="inline-flex h-9 items-center gap-1 rounded-lg border border-blue-200 bg-white px-3 text-xs font-semibold text-blue-700 hover:bg-blue-50 shrink-0"
+                    >
+                      <FileDown size={16} />
+                      Download
+                    </a>
+                  </div>
                 ))}
               </div>
             ) : (

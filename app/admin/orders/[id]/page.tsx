@@ -95,7 +95,7 @@ export default async function OrderDetailsPage({
       lab: true,
       items: true,
       address: true,
-      reports: true,
+      reports: { orderBy: { createdAt: 'desc' } },
       payments: { orderBy: { createdAt: 'desc' } },
       activities: { orderBy: { createdAt: 'desc' } }
     }
@@ -153,6 +153,32 @@ export default async function OrderDetailsPage({
     OrderStatus.CANCELLED
   ];
   const isTerminal = terminalStatuses.includes(order.status);
+  const orderItemIdSet = new Set(order.items.map(item => item.id));
+
+  const completedReports = order.reports.filter(rep => rep.reportType === 'COMPLETED');
+  const latestCompletedReport = completedReports[0] || null;
+
+  const partialCoverageByItem = new Map<
+    number,
+    { uploadedAt: Date; fileName: string | null }
+  >();
+
+  for (const report of order.reports) {
+    if (report.reportType !== 'PARTIAL') continue;
+    const coveredIds = (report.coveredOrderItemIds || []).filter(itemId =>
+      orderItemIdSet.has(itemId)
+    );
+
+    for (const itemId of coveredIds) {
+      const prev = partialCoverageByItem.get(itemId);
+      if (!prev || new Date(report.createdAt).getTime() > prev.uploadedAt.getTime()) {
+        partialCoverageByItem.set(itemId, {
+          uploadedAt: new Date(report.createdAt),
+          fileName: report.fileName || null
+        });
+      }
+    }
+  }
 
   return (
     <div className="max-w-7xl mx-auto pb-20 bg-slate-50 min-h-screen p-6">
@@ -313,17 +339,19 @@ export default async function OrderDetailsPage({
               order.reports.map(rep => (
                 <div
                   key={rep.id}
-                  className="flex justify-between items-center p-3 bg-slate-50 border rounded-xl mb-3"
+                  className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-3 bg-slate-50 border rounded-xl mb-3"
                 >
-                  <div>
-                    <p className="admin-table-row-primary">
-                      {rep.reportType === 'COMPLETED'
-                        ? 'Final Diagnostic Report'
-                        : `Partial Report • ${new Date(rep.createdAt).toLocaleDateString()}`}
-                    </p>
-                    <span className="admin-badge-default text-[10px] uppercase px-1.5 rounded">
+                  <div className="space-y-1">
+                    <p className="admin-table-row-primary">{rep.fileName || `report-${rep.id}.pdf`}</p>
+                    <p className="text-xs text-slate-500">Uploaded: {formatISTDateTime(rep.createdAt)}</p>
+                    <span className="admin-badge-default inline-flex text-[10px] uppercase px-1.5 rounded">
                       {rep.reportType}
                     </span>
+                    {rep.reportType === 'PARTIAL' && (
+                      <p className="text-xs text-indigo-700">
+                        Covered items: {(rep.coveredOrderItemIds || []).filter(itemId => orderItemIdSet.has(itemId)).length}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <a href={`/api/reports/${rep.id}`} target="_blank">
@@ -336,9 +364,66 @@ export default async function OrderDetailsPage({
             ) : (
               <p className="text-sm text-slate-400">No reports uploaded yet.</p>
             )}
-            <UploadReportForm orderId={order.id} />
-          </Card>
 
+            {order.items.length > 0 && (
+              <div className="mb-4 rounded-xl border border-slate-200 bg-white">
+                <div className="px-3 py-2 border-b border-slate-100">
+                  <p className="text-xs font-bold uppercase tracking-wide text-slate-500">
+                    Item-Level Report Status
+                  </p>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {order.items.map(item => {
+                    const partialEntry = partialCoverageByItem.get(item.id);
+                    const status = latestCompletedReport
+                      ? 'COMPLETED'
+                      : partialEntry
+                        ? 'PARTIAL'
+                        : 'PENDING';
+                    const sourceFile = latestCompletedReport?.fileName || partialEntry?.fileName || null;
+                    const uploadedAt = latestCompletedReport?.createdAt || partialEntry?.uploadedAt || null;
+
+                    return (
+                      <div key={item.id} className="flex flex-col gap-1 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">{item.itemName || 'Unnamed Item'}</p>
+                          <p className="text-[11px] uppercase font-semibold text-slate-400">{item.itemType}</p>
+                        </div>
+                        <div className="text-right">
+                          <span
+                            className={`inline-flex rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                              status === 'COMPLETED'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : status === 'PARTIAL'
+                                  ? 'bg-indigo-100 text-indigo-700'
+                                  : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {status}
+                          </span>
+                          {uploadedAt && (
+                            <p className="text-[11px] text-slate-500 mt-1">{formatISTDateTime(uploadedAt)}</p>
+                          )}
+                          {sourceFile && (
+                            <p className="text-[11px] text-slate-500 truncate max-w-[220px]">{sourceFile}</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <UploadReportForm
+              orderId={order.id}
+              orderItems={order.items.map(item => ({
+                id: item.id,
+                itemName: item.itemName,
+                itemType: item.itemType
+              }))}
+            />
+          </Card>
           {/* STATUS */}
           <Card title="Update Status" icon={Edit}>
             <form
@@ -627,3 +712,5 @@ function Row({ label, value, strong = false, danger = false }: any) {
     </div>
   );
 }
+
+

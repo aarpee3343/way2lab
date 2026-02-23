@@ -41,7 +41,15 @@ export async function GET(
       },
 
       // 4. Reports & Summary
-      reports: true,
+      reports: {
+        select: {
+          id: true,
+          reportType: true,
+          createdAt: true,
+          fileName: true
+        },
+        orderBy: { createdAt: 'desc' as const }
+      },
       reportSummary: true,
 
       // 4.5 Package (for report sharing rules)
@@ -53,7 +61,7 @@ export async function GET(
       address: true,
       customer: true,
       coupon: true,
-    };
+    } as const;
 
     // --- Lookup Logic (Same as before) ---
     let order = await prisma.order.findUnique({

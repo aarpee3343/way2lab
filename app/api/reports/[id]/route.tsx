@@ -76,6 +76,9 @@ export async function GET(
         report.iv,
         report.authTag
       );
+      const safeFileName = (report.fileName || `Report-${reportId}.pdf`)
+        .replace(/[/\\?%*:|"<>]/g, '-')
+        .trim() || `Report-${reportId}.pdf`;
 
       /* ---------------- LOGGING ---------------- */
       // Log asynchronously so it doesn't block the download
@@ -90,7 +93,7 @@ export async function GET(
       return new NextResponse(new Uint8Array(decrypted), {
         headers: {
           'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="Report-${reportId}.pdf"`,
+          'Content-Disposition': `inline; filename="${safeFileName}"`,
         }
       });
 

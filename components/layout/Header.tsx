@@ -270,12 +270,12 @@ export default function Header() {
             <motion.div 
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsMobileOpen(false)}
-              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 md:hidden"
+              className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[180] md:hidden"
             />
             <motion.div 
               initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="fixed inset-y-0 right-0 w-[85%] max-w-sm bg-white shadow-2xl z-[60] flex flex-col md:hidden"
+              className="fixed inset-y-0 right-0 w-[85%] max-w-sm bg-white shadow-2xl z-[200] flex flex-col md:hidden"
             >
               <div className="p-6 border-b border-teal-100 bg-gradient-to-r from-teal-50 to-white flex justify-between items-center">
                  <div className="flex items-center gap-3">
@@ -299,6 +299,34 @@ export default function Header() {
                  </button>
               </div>
 
+              <div className="p-4 border-b border-teal-100 bg-teal-50/40">
+                {user ? (
+                  <div className="space-y-2">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMobileOpen(false)}
+                      className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-lg"
+                    >
+                      <LayoutDashboard size={18} /> Health Dashboard
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center justify-center gap-3 bg-white border border-rose-200 text-rose-600 px-4 py-3 rounded-xl font-bold text-sm"
+                    >
+                      <LogOut size={18} /> Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setIsMobileOpen(false)}
+                    className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3 rounded-xl font-bold text-sm shadow-lg"
+                  >
+                    Sign In / Register <ArrowRight size={16} />
+                  </Link>
+                )}
+              </div>
+
               <div className="flex-1 overflow-y-auto p-4 space-y-1">
                 {currentLinks.map((link) => (
                   <Link 
@@ -311,23 +339,6 @@ export default function Header() {
                     {link.name}
                   </Link>
                 ))}
-              </div>
-
-              <div className="p-6 border-t border-teal-100 bg-teal-50/30 space-y-3">
-                {user ? (
-                  <>
-                    <Link href="/dashboard" className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-3.5 rounded-xl font-bold text-sm shadow-lg">
-                      <LayoutDashboard size={18} /> Health Dashboard
-                    </Link>
-                    <button onClick={handleLogout} className="flex w-full items-center justify-center gap-3 bg-white border border-rose-200 text-rose-600 px-4 py-3.5 rounded-xl font-bold text-sm">
-                      <LogOut size={18} /> Sign Out
-                    </button>
-                  </>
-                ) : (
-                  <Link href="/login" className="flex w-full items-center justify-center gap-3 bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-4 rounded-xl font-bold text-sm shadow-lg">
-                    Sign In / Register <ArrowRight size={16} />
-                  </Link>
-                )}
               </div>
             </motion.div>
           </>

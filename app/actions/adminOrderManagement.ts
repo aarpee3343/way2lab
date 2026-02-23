@@ -12,6 +12,67 @@ import { revalidatePath } from 'next/cache';
 
 const ORDER_ADMIN_ROLES: AdminRole[] = ['SUPER_ADMIN', 'ADMIN'];
 
+const sanitizeReportFileName = (name: string) => {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return `report-${Date.now()}.pdf`;
+
+  const safe = trimmed
+    .replace(/[/\\?%*:|"<>]/g, '-')
+    .replace(/\s+/g, ' ')
+    .slice(0, 140);
+
+  return safe.toLowerCase().endsWith('.pdf') ? safe : `${safe}.pdf`;
+};
+
+const parseCoveredOrderItemIds = (formData: FormData) => {
+  const values = formData.getAll('partialOrderItemIds');
+  const parsed = values
+    .map(value => Number(String(value)))
+    .filter(value => Number.isInteger(value) && value > 0);
+
+  return Array.from(new Set(parsed));
+};
+
+const getCoverageFromPartialReports = (
+  reports: Array<{ coveredOrderItemIds: number[] | null }>,
+  validOrderItemIds: number[]
+) => {
+  const validSet = new Set(validOrderItemIds);
+  const covered = new Set<number>();
+
+  for (const report of reports) {
+    for (const itemId of report.coveredOrderItemIds || []) {
+      if (validSet.has(itemId)) {
+        covered.add(itemId);
+      }
+    }
+  }
+
+  return covered;
+};
+
+async function optimizePdfBuffer(buffer: Buffer) {
+  try {
+    const { PDFDocument } = await import('pdf-lib');
+    const document = await PDFDocument.load(buffer, { ignoreEncryption: true });
+    const optimized = Buffer.from(
+      await document.save({
+        useObjectStreams: true,
+        addDefaultPage: false
+      })
+    );
+
+    if (optimized.length > 0 && optimized.length < buffer.length) {
+      return optimized;
+    }
+
+    return buffer;
+  } catch (error) {
+    console.error('PDF optimization skipped:', error);
+    return buffer;
+  }
+}
+
 
 
 /* =============================================================================
@@ -381,106 +442,217 @@ export async function updateOrderScheduleAction(formData: FormData) {
 }
 
 /* =============================================================================
-   4️⃣ UPLOAD REPORT (NON-BLOCKING AI)
+   4. UPLOAD REPORT (NON-BLOCKING AI)
 ============================================================================= */
 
 export async function uploadReportAction(
   _prevState: any,
   formData: FormData
 ) {
+  let createdStoragePath: string | null = null;
+
   try {
     await requireAdmin({ roles: ORDER_ADMIN_ROLES });
     const file = formData.get('file');
     const orderId = Number(formData.get('orderId'));
     const typeRaw = formData.get('type');
+    const type = typeRaw === 'PARTIAL' || typeRaw === 'COMPLETED' ? typeRaw : null;
 
-    const type =
-      typeRaw === 'PARTIAL' || typeRaw === 'COMPLETED'
-        ? typeRaw
-        : null;
-
-    // Validation
     if (!(file instanceof File) || Number.isNaN(orderId) || !type) {
       return { success: false, error: 'Missing fields' };
     }
 
-    /* 1️⃣ Encrypt + upload */
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const { encrypted, iv, tag } = encryptBuffer(buffer);
+    const isPdfFile =
+      file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    if (!isPdfFile) {
+      return { success: false, error: 'Only PDF reports are allowed' };
+    }
 
-    const storagePath = `reports/order-${orderId}/${type.toLowerCase()}/${Date.now()}.enc`;
-    await uploadEncryptedFile(storagePath, encrypted);
+    const coveredOrderItemIds = type === 'PARTIAL' ? parseCoveredOrderItemIds(formData) : [];
 
-    /* 2️⃣ FAST DB transaction */
-    await prisma.$transaction(async tx => {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: {
+        id: true,
+        orderNumber: true,
+        patientPhone: true,
+        customer: { select: { phone: true } },
+        items: { select: { id: true } },
+        reports: {
+          select: {
+            id: true,
+            reportType: true,
+            storagePath: true
+          }
+        }
+      }
+    });
+
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+
+    const orderItemIds = order.items.map(item => item.id);
+
+    if (type === 'PARTIAL') {
+      if (!coveredOrderItemIds.length) {
+        return { success: false, error: 'Please select at least one test/package for partial upload' };
+      }
+
+      const validSet = new Set(orderItemIds);
+      const hasInvalid = coveredOrderItemIds.some(itemId => !validSet.has(itemId));
+      if (hasInvalid) {
+        return { success: false, error: 'Invalid test/package selection for partial upload' };
+      }
+
+      const hasCompletedReport = order.reports.some(rep => rep.reportType === 'COMPLETED');
+      if (hasCompletedReport) {
+        return {
+          success: false,
+          error: 'Completed report already exists. Delete it first before uploading partial reports.'
+        };
+      }
+    }
+
+    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    const optimizedBuffer = await optimizePdfBuffer(originalBuffer);
+    const { encrypted, iv, tag } = encryptBuffer(optimizedBuffer);
+    const safeFileName = sanitizeReportFileName(file.name);
+
+    createdStoragePath = `reports/order-${orderId}/${type.toLowerCase()}/${Date.now()}-${safeFileName}.enc`;
+    await uploadEncryptedFile(createdStoragePath, encrypted);
+
+    const uploadResult = await prisma.$transaction(async tx => {
+      const existingReports = await tx.orderReport.findMany({
+        where: { orderId },
+        select: {
+          id: true,
+          reportType: true,
+          storagePath: true,
+          coveredOrderItemIds: true
+        }
+      });
+
+      let nextStatus: OrderStatus = OrderStatus.PROCESSING;
+      let removedReportPaths: string[] = [];
+      let removedCount = 0;
+      const reportCoveredItems = type === 'PARTIAL' ? coveredOrderItemIds : orderItemIds;
+
       if (type === 'COMPLETED') {
-        await tx.orderReport.deleteMany({
-          where: { orderId, reportType: 'PARTIAL' }
-        });
+        const obsoleteReports = existingReports.filter(
+          report => report.reportType === 'PARTIAL' || report.reportType === 'COMPLETED'
+        );
 
-        await tx.order.update({
-          where: { id: orderId },
-          data: { status: 'COMPLETED' }
-        });
+        removedCount = obsoleteReports.length;
+        removedReportPaths = obsoleteReports
+          .map(report => report.storagePath)
+          .filter((path): path is string => Boolean(path));
+
+        if (obsoleteReports.length) {
+          await tx.orderReport.deleteMany({
+            where: { id: { in: obsoleteReports.map(report => report.id) } }
+          });
+        }
+
+        await tx.orderReportSummary.deleteMany({ where: { orderId } });
+        nextStatus = OrderStatus.COMPLETED;
       }
 
       await tx.orderReport.create({
         data: {
           orderId,
-          storagePath,
+          storagePath: createdStoragePath,
           reportType: type,
           encrypted: true,
           iv,
           authTag: tag,
-          uploadedBy: 'ADMIN'
+          uploadedBy: 'ADMIN',
+          fileName: safeFileName,
+          fileSizeBytes: originalBuffer.length,
+          optimizedSizeBytes: optimizedBuffer.length,
+          coveredOrderItemIds: reportCoveredItems
         }
+      });
+
+      if (type === 'PARTIAL') {
+        const partialReports = await tx.orderReport.findMany({
+          where: {
+            orderId,
+            reportType: 'PARTIAL'
+          },
+          select: {
+            coveredOrderItemIds: true
+          }
+        });
+
+        const coveredItems = getCoverageFromPartialReports(partialReports, orderItemIds);
+        const allItemsCovered = orderItemIds.length > 0 && coveredItems.size >= orderItemIds.length;
+        nextStatus = allItemsCovered ? OrderStatus.COMPLETED : OrderStatus.PARTIAL_COMPLETED;
+      }
+
+      await tx.order.update({
+        where: { id: orderId },
+        data: { status: nextStatus }
       });
 
       await tx.orderActivity.create({
         data: {
           orderId,
           action: 'REPORT_UPLOADED',
-          oldValue: type === 'COMPLETED' ? 'PARTIAL' : null,
-          newValue: type,
+          oldValue:
+            type === 'COMPLETED'
+              ? `Cleared reports: ${removedCount}`
+              : `Partial coverage count: ${coveredOrderItemIds.length}`,
+          newValue: `${type} | ${safeFileName}`,
           performedBy: 'ADMIN'
         }
       });
+
+      return {
+        nextStatus,
+        removedReportPaths
+      };
     });
 
-    /* 3️⃣ Trigger AI in background */
+    if (uploadResult.removedReportPaths.length) {
+      for (const storagePath of uploadResult.removedReportPaths) {
+        try {
+          await deleteEncryptedFile(storagePath);
+        } catch (deleteError) {
+          console.error('Failed to remove replaced report from storage:', deleteError);
+        }
+      }
+    }
+
     if (type === 'COMPLETED') {
-      void processAndSaveSummary(orderId, buffer);
+      void processAndSaveSummary(orderId, optimizedBuffer);
+    }
 
-      /* 4️⃣ Fetch phone & send SMS (non-blocking) */
+    if (uploadResult.nextStatus === OrderStatus.COMPLETED) {
       try {
-        const orderData = await prisma.order.findUnique({
-          where: { id: orderId },
-          select: {
-            orderNumber: true,
-            customer: { select: { phone: true } },
-            patientPhone: true
-          }
-        });
-
-        const mobile =
-          orderData?.customer?.phone || orderData?.patientPhone;
-
+        const mobile = order.customer?.phone || order.patientPhone;
         if (mobile) {
-          await sendSMS(
-            mobile,
-            'REPORT_UPLOADED',
-            [orderData?.orderNumber || String(orderId)]
-          );
+          await sendSMS(mobile, 'REPORT_UPLOADED', [order.orderNumber || String(orderId)]);
         }
       } catch (smsError) {
         console.error('SMS sending failed:', smsError);
       }
     }
 
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath(`/dashboard/orders/${orderId}`);
     return { success: true };
-
   } catch (err) {
     console.error('Upload error:', err);
+
+    if (createdStoragePath) {
+      try {
+        await deleteEncryptedFile(createdStoragePath);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup uploaded file after upload error:', cleanupError);
+      }
+    }
+
     return { success: false, error: 'Upload failed' };
   }
 }
@@ -508,7 +680,8 @@ export async function deleteReportAction(
       select: {
         id: true,
         reportType: true,
-        storagePath: true
+        storagePath: true,
+        fileName: true
       }
     });
 
@@ -526,24 +699,39 @@ export async function deleteReportAction(
 
       const remaining = await tx.orderReport.findMany({
         where: { orderId },
-        select: { reportType: true }
+        select: {
+          reportType: true,
+          coveredOrderItemIds: true
+        }
       });
 
+      const orderItems = await tx.orderItem.findMany({
+        where: { orderId },
+        select: { id: true }
+      });
+
+      const orderItemIds = orderItems.map(item => item.id);
       const hasCompleted = remaining.some(r => r.reportType === 'COMPLETED');
       const hasPartial = remaining.some(r => r.reportType === 'PARTIAL');
+      const partialReports = remaining.filter(r => r.reportType === 'PARTIAL');
+      const coveredItems = getCoverageFromPartialReports(partialReports, orderItemIds);
+      const allItemsCovered = orderItemIds.length > 0 && coveredItems.size >= orderItemIds.length;
 
       if (reportType === 'COMPLETED') {
         await tx.orderReportSummary.deleteMany({ where: { orderId } });
       }
 
+      let nextStatus: OrderStatus = OrderStatus.PROCESSING;
+      if (hasCompleted) {
+        nextStatus = OrderStatus.COMPLETED;
+      } else if (hasPartial) {
+        nextStatus = allItemsCovered ? OrderStatus.COMPLETED : OrderStatus.PARTIAL_COMPLETED;
+      }
+
       await tx.order.update({
         where: { id: orderId },
         data: {
-          status: hasCompleted
-            ? OrderStatus.COMPLETED
-            : hasPartial
-              ? OrderStatus.PARTIAL_COMPLETED
-              : OrderStatus.PROCESSING
+          status: nextStatus
         }
       });
 
@@ -551,7 +739,7 @@ export async function deleteReportAction(
         data: {
           orderId,
           action: 'REPORT_DELETED',
-          oldValue: `${reportType} | Report:${reportId}`,
+          oldValue: `${reportType} | ${report.fileName || `Report:${reportId}`}`,
           newValue: `Deleted by ADMIN | Remark: ${remark}`,
           performedBy: 'ADMIN'
         }
@@ -567,9 +755,11 @@ export async function deleteReportAction(
     }
 
     revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath(`/dashboard/orders/${orderId}`);
     return { success: true };
   } catch (err) {
     console.error('deleteReportAction failed:', err);
     return { success: false, error: 'Delete report failed' };
   }
 }
+
