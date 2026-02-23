@@ -33,3 +33,19 @@ export async function downloadEncryptedFile(path: string) {
 export async function deleteEncryptedFile(path: string) {
   await bucket.file(path).delete({ ignoreNotFound: true });
 }
+
+export async function generateSignedUploadUrl(
+  path: string,
+  contentType: string = 'application/pdf',
+  expiresInMinutes: number = 15
+) {
+  const file = bucket.file(path);
+  const [url] = await file.getSignedUrl({
+    version: 'v4',
+    action: 'write',
+    expires: Date.now() + expiresInMinutes * 60 * 1000,
+    contentType
+  });
+
+  return url;
+}

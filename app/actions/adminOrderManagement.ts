@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/admin-auth';
 
 import { prisma } from '@/lib/db';
 import { encryptBuffer } from '@/lib/crypto';
-import { deleteEncryptedFile, uploadEncryptedFile } from '@/lib/gcs';
+import { deleteEncryptedFile, downloadEncryptedFile, uploadEncryptedFile } from '@/lib/gcs';
 import { AdminRole, OrderStatus } from '@prisma/client';
 import { processAndSaveSummary } from '@/lib/aiService';
 import { sendSMS } from '@/lib/sms';
@@ -450,6 +450,7 @@ export async function uploadReportAction(
   formData: FormData
 ) {
   let createdStoragePath: string | null = null;
+  let tempUploadPathForCleanup: string | null = null;
 
   try {
     await requireAdmin({ roles: ORDER_ADMIN_ROLES });
@@ -457,15 +458,12 @@ export async function uploadReportAction(
     const orderId = Number(formData.get('orderId'));
     const typeRaw = formData.get('type');
     const type = typeRaw === 'PARTIAL' || typeRaw === 'COMPLETED' ? typeRaw : null;
+    const tempUploadPath = String(formData.get('tempUploadPath') || '').trim();
+    const uploadedFileNameRaw = String(formData.get('uploadedFileName') || '').trim();
+    const uploadedFileTypeRaw = String(formData.get('uploadedFileType') || '').trim().toLowerCase();
 
-    if (!(file instanceof File) || Number.isNaN(orderId) || !type) {
+    if (Number.isNaN(orderId) || !type) {
       return { success: false, error: 'Missing fields' };
-    }
-
-    const isPdfFile =
-      file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    if (!isPdfFile) {
-      return { success: false, error: 'Only PDF reports are allowed' };
     }
 
     const coveredOrderItemIds = type === 'PARTIAL' ? parseCoveredOrderItemIds(formData) : [];
@@ -514,10 +512,40 @@ export async function uploadReportAction(
       }
     }
 
-    const originalBuffer = Buffer.from(await file.arrayBuffer());
+    let originalBuffer: Buffer;
+    let originalFileName = '';
+
+    if (file instanceof File) {
+      const isPdfFile =
+        file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+      if (!isPdfFile) {
+        return { success: false, error: 'Only PDF reports are allowed' };
+      }
+
+      originalBuffer = Buffer.from(await file.arrayBuffer());
+      originalFileName = file.name;
+    } else if (tempUploadPath) {
+      const allowedPrefix = `tmp/report-uploads/order-${orderId}/`;
+      if (!tempUploadPath.startsWith(allowedPrefix)) {
+        return { success: false, error: 'Invalid temporary upload path' };
+      }
+
+      const isPdfByName = uploadedFileNameRaw.toLowerCase().endsWith('.pdf');
+      const isPdfByType = uploadedFileTypeRaw === 'application/pdf';
+      if (!isPdfByName && !isPdfByType) {
+        return { success: false, error: 'Only PDF reports are allowed' };
+      }
+
+      originalBuffer = await downloadEncryptedFile(tempUploadPath);
+      originalFileName = uploadedFileNameRaw || tempUploadPath.split('/').pop() || `report-${Date.now()}.pdf`;
+      tempUploadPathForCleanup = tempUploadPath;
+    } else {
+      return { success: false, error: 'Report file is required' };
+    }
+
     const optimizedBuffer = await optimizePdfBuffer(originalBuffer);
     const { encrypted, iv, tag } = encryptBuffer(optimizedBuffer);
-    const safeFileName = sanitizeReportFileName(file.name);
+    const safeFileName = sanitizeReportFileName(originalFileName);
 
     createdStoragePath = `reports/order-${orderId}/${type.toLowerCase()}/${Date.now()}-${safeFileName}.enc`;
     await uploadEncryptedFile(createdStoragePath, encrypted);
@@ -639,6 +667,14 @@ export async function uploadReportAction(
       }
     }
 
+    if (tempUploadPathForCleanup) {
+      try {
+        await deleteEncryptedFile(tempUploadPathForCleanup);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup temporary upload object:', cleanupError);
+      }
+    }
+
     revalidatePath(`/admin/orders/${orderId}`);
     revalidatePath(`/dashboard/orders/${orderId}`);
     return { success: true };
@@ -650,6 +686,14 @@ export async function uploadReportAction(
         await deleteEncryptedFile(createdStoragePath);
       } catch (cleanupError) {
         console.error('Failed to cleanup uploaded file after upload error:', cleanupError);
+      }
+    }
+
+    if (tempUploadPathForCleanup) {
+      try {
+        await deleteEncryptedFile(tempUploadPathForCleanup);
+      } catch (cleanupError) {
+        console.error('Failed to cleanup temporary upload object after upload error:', cleanupError);
       }
     }
 

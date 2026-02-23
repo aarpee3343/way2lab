@@ -1,9 +1,8 @@
 // app/admin/orders/_components/UploadReportForm.tsx
 'use client';
 
-import { useActionState, useState, type FormEvent } from 'react';
+import { useActionState, useState, useTransition, type FormEvent } from 'react';
 import { uploadReportAction } from '@/app/actions/adminOrderManagement';
-import { useFormStatus } from 'react-dom';
 
 type UploadState = { success: boolean; error?: string };
 const initialState: UploadState = { success: false };
@@ -13,16 +12,6 @@ type OrderItemOption = {
   itemName: string | null;
   itemType: string;
 };
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-
-  return (
-    <button disabled={pending} className="admin-btn-primary w-full">
-      {pending ? 'Uploading...' : 'Upload Report'}
-    </button>
-  );
-}
 
 export default function UploadReportForm({
   orderId,
@@ -38,24 +27,34 @@ export default function UploadReportForm({
   const [reportType, setReportType] = useState<'PARTIAL' | 'COMPLETED' | ''>('');
   const [showTypePrompt, setShowTypePrompt] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [uploadingToStorage, setUploadingToStorage] = useState(false);
+  const [isSubmitting, startTransition] = useTransition();
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const formElement = event.currentTarget;
+    const fileInput = formElement.elements.namedItem('file') as HTMLInputElement | null;
+    const file = fileInput?.files?.[0] || null;
+
+    if (!file) {
+      setLocalError('Please select a PDF report.');
+      return;
+    }
 
     if (!reportType) {
-      event.preventDefault();
       setShowTypePrompt(true);
       setLocalError('Choose upload type: Partial or Completed.');
       return;
     }
 
-    if (reportType === 'PARTIAL') {
-      const selectedItems = new FormData(formElement).getAll('partialOrderItemIds');
-      if (!selectedItems.length) {
-        event.preventDefault();
-        setLocalError('Select at least one test/package for partial upload.');
-        return;
-      }
+    const browserFormData = new FormData(formElement);
+    const partialItemIds = browserFormData
+      .getAll('partialOrderItemIds')
+      .map(item => String(item));
+
+    if (reportType === 'PARTIAL' && partialItemIds.length === 0) {
+      setLocalError('Select at least one test/package for partial upload.');
+      return;
     }
 
     if (reportType === 'COMPLETED') {
@@ -63,19 +62,78 @@ export default function UploadReportForm({
         'Are you sure you want to upload a completed report? This will remove all partial reports for this order.'
       );
       if (!shouldProceed) {
-        event.preventDefault();
         return;
       }
     }
 
     setLocalError(null);
+    setUploadingToStorage(true);
+
+    try {
+      const prepareUploadRes = await fetch('/api/admin/reports/upload-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderId,
+          type: reportType,
+          fileName: file.name,
+          fileType: file.type,
+          fileSizeBytes: file.size
+        })
+      });
+
+      if (!prepareUploadRes.ok) {
+        const payload = await prepareUploadRes.json().catch(() => ({}));
+        throw new Error(payload?.message || 'Failed to prepare report upload');
+      }
+
+      const preparePayload = await prepareUploadRes.json();
+      const uploadUrl = String(preparePayload?.uploadUrl || '');
+      const tempPath = String(preparePayload?.tempPath || '');
+      const safeFileName = String(preparePayload?.fileName || file.name);
+
+      if (!uploadUrl || !tempPath) {
+        throw new Error('Invalid signed upload response');
+      }
+
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/pdf'
+        },
+        body: file
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Direct upload to storage failed');
+      }
+
+      const serverFormData = new FormData();
+      serverFormData.set('orderId', String(orderId));
+      serverFormData.set('type', reportType);
+      serverFormData.set('tempUploadPath', tempPath);
+      serverFormData.set('uploadedFileName', safeFileName);
+      serverFormData.set('uploadedFileType', file.type || 'application/pdf');
+      serverFormData.set('uploadedFileSizeBytes', String(file.size));
+
+      partialItemIds.forEach(itemId => {
+        serverFormData.append('partialOrderItemIds', itemId);
+      });
+
+      startTransition(() => {
+        formAction(serverFormData);
+      });
+    } catch (error) {
+      setLocalError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setUploadingToStorage(false);
+    }
   };
 
-  return (
-    <form action={formAction} onSubmit={handleSubmit} className="admin-space-y">
-      <input type="hidden" name="orderId" value={orderId} />
-      <input type="hidden" name="type" value={reportType} />
+  const submitPending = uploadingToStorage || isSubmitting;
 
+  return (
+    <form onSubmit={handleSubmit} className="admin-space-y">
       <div>
         <label className="admin-form-label">Upload PDF Report</label>
         <input
@@ -148,7 +206,9 @@ export default function UploadReportForm({
         </p>
       )}
 
-      <SubmitButton />
+      <button disabled={submitPending} className="admin-btn-primary w-full">
+        {submitPending ? 'Uploading...' : 'Upload Report'}
+      </button>
 
       {localError && <p className="text-sm text-red-600">{localError}</p>}
 
