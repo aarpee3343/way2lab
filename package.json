@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@google-cloud/storage": "^7.14.0",
+    "@napi-rs/canvas": "^0.1.94",
     "@prisma/client": "^5.22.0",
     "@react-pdf/renderer": "^4.1.6",
     "@tanstack/react-query": "^5.90.20",
@@ -37,6 +38,7 @@
     "papaparse": "^5.4.1",
     "pdf-lib": "^1.17.1",
     "pdf2json": "^3.1.5",
+    "pdfjs-dist": "^4.10.38",
     "pdfkit": "^0.15.2",
     "prisma": "^5.22.0",
     "puppeteer": "^24.36.1",

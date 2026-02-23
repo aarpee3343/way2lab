@@ -53,24 +53,145 @@ const getCoverageFromPartialReports = (
 
 async function optimizePdfBuffer(buffer: Buffer) {
   try {
-    const { PDFDocument } = await import('pdf-lib');
-    const document = await PDFDocument.load(buffer, { ignoreEncryption: true });
-    const optimized = Buffer.from(
-      await document.save({
-        useObjectStreams: true,
-        addDefaultPage: false
-      })
-    );
+    const initial = await optimizePdfBufferLight(buffer);
+    const baseline = initial.length > 0 && initial.length < buffer.length ? initial : buffer;
 
-    if (optimized.length > 0 && optimized.length < buffer.length) {
-      return optimized;
+    const aggressive = await optimizePdfBufferAggressive(baseline, {
+      quality: 0.72,
+      dpi: 140,
+      maxPages: 60,
+      minTriggerBytes: 2 * 1024 * 1024
+    });
+
+    if (aggressive.length > 0 && aggressive.length < baseline.length) {
+      return aggressive;
     }
 
-    return buffer;
+    const fallbackAggressive = await optimizePdfBufferAggressive(baseline, {
+      quality: 0.58,
+      dpi: 120,
+      maxPages: 40,
+      minTriggerBytes: 2 * 1024 * 1024
+    });
+
+    if (fallbackAggressive.length > 0 && fallbackAggressive.length < baseline.length) {
+      return fallbackAggressive;
+    }
+
+    return baseline;
   } catch (error) {
     console.error('PDF optimization skipped:', error);
     return buffer;
   }
+}
+
+async function optimizePdfBufferLight(buffer: Buffer) {
+  const { PDFDocument } = await import('pdf-lib');
+  const document = await PDFDocument.load(buffer, { ignoreEncryption: true });
+  return Buffer.from(
+    await document.save({
+      useObjectStreams: true,
+      addDefaultPage: false
+    })
+  );
+}
+
+async function optimizePdfBufferAggressive(
+  sourceBuffer: Buffer,
+  options: {
+    quality: number;
+    dpi: number;
+    maxPages: number;
+    minTriggerBytes: number;
+  }
+) {
+  const { quality, dpi, maxPages, minTriggerBytes } = options;
+  if (sourceBuffer.length < minTriggerBytes) {
+    return sourceBuffer;
+  }
+
+  try {
+    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+    const { PDFDocument } = await import('pdf-lib');
+    const canvasModule = await import('@napi-rs/canvas');
+
+    const loadingTask = pdfjs.getDocument({
+      data: new Uint8Array(sourceBuffer),
+      isEvalSupported: false,
+      useSystemFonts: false
+    } as any);
+    const sourcePdf = await loadingTask.promise;
+    const pageCount = sourcePdf.numPages;
+
+    if (pageCount <= 0 || pageCount > maxPages) {
+      return sourceBuffer;
+    }
+
+    const outputPdf = await PDFDocument.create();
+
+    for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+      const page = await sourcePdf.getPage(pageNumber);
+      const outputViewport = page.getViewport({ scale: 1 });
+      const renderScale = Math.max(dpi / 72, 0.8);
+      const renderViewport = page.getViewport({ scale: renderScale });
+
+      const canvas = canvasModule.createCanvas(
+        Math.max(1, Math.floor(renderViewport.width)),
+        Math.max(1, Math.floor(renderViewport.height))
+      );
+
+      const context = canvas.getContext('2d');
+      await page.render({
+        canvasContext: context as any,
+        viewport: renderViewport
+      }).promise;
+
+      const jpgBuffer = await canvasToJpegBuffer(canvas, quality);
+      const image = await outputPdf.embedJpg(jpgBuffer);
+
+      const outPage = outputPdf.addPage([outputViewport.width, outputViewport.height]);
+      outPage.drawImage(image, {
+        x: 0,
+        y: 0,
+        width: outputViewport.width,
+        height: outputViewport.height
+      });
+    }
+
+    const compressed = Buffer.from(
+      await outputPdf.save({
+        useObjectStreams: true
+      })
+    );
+
+    return compressed.length > 0 ? compressed : sourceBuffer;
+  } catch (error) {
+    console.error('Aggressive PDF optimization skipped:', error);
+    return sourceBuffer;
+  }
+}
+
+async function canvasToJpegBuffer(canvas: any, quality: number) {
+  const q = Math.max(0.35, Math.min(quality, 0.9));
+  const attempts = [
+    () => canvas.toBuffer('image/jpeg', { quality: q }),
+    () => canvas.toBuffer('image/jpeg', { quality: Math.round(q * 100) }),
+    () => canvas.toBuffer('image/jpeg', q),
+    () => canvas.toBuffer('image/jpeg')
+  ];
+
+  for (const attempt of attempts) {
+    try {
+      const result = await attempt();
+      if (result && result.length) {
+        return Buffer.from(result);
+      }
+    } catch {
+      // Try next signature.
+    }
+  }
+
+  throw new Error('Failed to encode rendered PDF page as JPEG');
 }
 
 

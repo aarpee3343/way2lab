@@ -1,0 +1,12 @@
+[
+  {
+    "origin": [
+      "https://www.waytolab.com",
+      "https://waytolab.com",
+      "http://localhost:3000"
+    ],
+    "method": ["PUT", "POST", "GET", "HEAD", "OPTIONS"],
+    "responseHeader": ["Content-Type", "ETag", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]

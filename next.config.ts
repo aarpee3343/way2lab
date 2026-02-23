@@ -2,7 +2,13 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // ✅ REQUIRED for Prisma + PDF libs in App Router
-  serverExternalPackages: ['@prisma/client', 'pdf2json', 'pdfkit'],
+  serverExternalPackages: [
+    '@prisma/client',
+    'pdf2json',
+    'pdfkit',
+    'pdfjs-dist',
+    '@napi-rs/canvas'
+  ],
 
   reactStrictMode: false,
   poweredByHeader: false,
