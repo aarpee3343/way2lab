@@ -262,6 +262,14 @@ model Lab {
   reviewCount           Int             @default(0) @map("review_count")
   features              Json?           @default("[]")
   timings               Json?
+  isApiIntegrated       Boolean         @default(false) @map("is_api_integrated")
+  apiProvider           String?         @map("api_provider")
+  apiBaseUrl            String?         @map("api_base_url")
+  apiAuthType           String?         @map("api_auth_type")
+  apiUsername           String?         @map("api_username")
+  apiPassword           String?         @map("api_password")
+  apiKey                String?         @map("api_key")
+  apiSecret             String?         @map("api_secret")
   packages              LabPackage[]
   pincodes              LabPincode[]
   tests                 LabTest[]

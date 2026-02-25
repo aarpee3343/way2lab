@@ -125,6 +125,14 @@ export default function EditLabPage() {
           gstNo: lab.gstNo,
           activeStatus: lab.activeStatus,
           homeCollectionCharges: lab.homeCollectionCharges,
+          isApiIntegrated: lab.isApiIntegrated ?? false,
+          apiProvider: lab.apiProvider || '',
+          apiBaseUrl: lab.apiBaseUrl || '',
+          apiAuthType: lab.apiAuthType || 'API_KEY',
+          apiUsername: lab.apiUsername || '',
+          apiPassword: lab.apiPassword || '',
+          apiKey: lab.apiKey || '',
+          apiSecret: lab.apiSecret || '',
           latitude: lab.latitude,
           longitude: lab.longitude,
           googlePlaceId: '',
@@ -248,6 +256,27 @@ export default function EditLabPage() {
   };
 
   const handleSubmit = async () => {
+    if (form.isApiIntegrated) {
+      if (!String(form.apiProvider || '').trim()) {
+        toast.error('API provider is required when integration is enabled');
+        return;
+      }
+      if (!String(form.apiBaseUrl || '').trim()) {
+        toast.error('API base URL is required when integration is enabled');
+        return;
+      }
+
+      const hasCredentials =
+        Boolean(String(form.apiKey || '').trim()) ||
+        (Boolean(String(form.apiUsername || '').trim()) && Boolean(String(form.apiPassword || '').trim())) ||
+        Boolean(String(form.apiSecret || '').trim());
+
+      if (!hasCredentials) {
+        toast.error('Add API credentials (API key or username/password) to enable integration');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     const payload = {
@@ -488,6 +517,95 @@ export default function EditLabPage() {
                         <span>Active</span>
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <div className="admin-form-section">
+                  <h3 className="admin-form-title">
+                    <Info size={16} /> API Integration (Optional)
+                  </h3>
+                  <div className="admin-form-grid">
+                    <div className="col-span-2">
+                      <label className="admin-form-label">Enable API Integration</label>
+                      <div className="admin-form-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={form.isApiIntegrated}
+                          onChange={e => setForm({ ...form, isApiIntegrated: e.target.checked })}
+                        />
+                        <span>Lab uses external API for bookings/status sync</span>
+                      </div>
+                    </div>
+
+                    {form.isApiIntegrated && (
+                      <>
+                        <div>
+                          <label className="admin-form-label">Provider *</label>
+                          <input
+                            className="admin-form-input"
+                            placeholder="e.g. Apollo"
+                            value={form.apiProvider || ''}
+                            onChange={e => setForm({ ...form, apiProvider: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="admin-form-label">Auth Type</label>
+                          <select
+                            className="admin-form-select"
+                            value={form.apiAuthType || 'API_KEY'}
+                            onChange={e => setForm({ ...form, apiAuthType: e.target.value })}
+                          >
+                            <option value="API_KEY">API Key</option>
+                            <option value="BASIC">Username & Password</option>
+                            <option value="TOKEN">Token</option>
+                          </select>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="admin-form-label">API Base URL *</label>
+                          <input
+                            className="admin-form-input"
+                            placeholder="https://example.com/api"
+                            value={form.apiBaseUrl || ''}
+                            onChange={e => setForm({ ...form, apiBaseUrl: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="admin-form-label">API Username</label>
+                          <input
+                            className="admin-form-input"
+                            value={form.apiUsername || ''}
+                            onChange={e => setForm({ ...form, apiUsername: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="admin-form-label">API Password</label>
+                          <input
+                            type="password"
+                            className="admin-form-input"
+                            value={form.apiPassword || ''}
+                            onChange={e => setForm({ ...form, apiPassword: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="admin-form-label">API Key</label>
+                          <input
+                            type="password"
+                            className="admin-form-input"
+                            value={form.apiKey || ''}
+                            onChange={e => setForm({ ...form, apiKey: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <label className="admin-form-label">API Secret / Token</label>
+                          <input
+                            type="password"
+                            className="admin-form-input"
+                            value={form.apiSecret || ''}
+                            onChange={e => setForm({ ...form, apiSecret: e.target.value })}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>

@@ -5,19 +5,21 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 
 const logos = [
-  'dr-lal-pathlabs.png',
-  'thyrocare.png',
-  'metropolis.png',
-  'srl-diagnostics.png',
-  'apollo-diagnostics.png',
-  'max-healthcare.png',
+  'apollo_one_logo.webp',
+  'apollo-clinic-logo.svg',
+  'apollo-cradle-logo.png',
+  'Prohealth-Logo.png',
+  'Spectra-Logo.png',
+  'waytolab_logo.png',
   'advance-pathology-diagnostic-centre-farrukhabad.png',
   'the-health-county-labs.png',
 ];
 
 function LabLogoImage({ logo }: { logo: string }) {
   const [failed, setFailed] = useState(false);
-  const label = logo.replace('.png', '').replace(/-/g, ' ');
+  const label = logo
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[-_]/g, ' ');
 
   if (failed) {
     return (
@@ -33,7 +35,7 @@ function LabLogoImage({ logo }: { logo: string }) {
       alt={`${label} logo`}
       width={160}
       height={48}
-      className="h-12 w-auto object-contain grayscale opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500"
+      className="h-12 w-auto object-contain opacity-100 transition-all duration-500"
       onError={() => setFailed(true)}
     />
   );
@@ -64,7 +66,7 @@ export default function LabSlider() {
 
       {/* Infinite scrolling container */}
       <div className="relative w-full overflow-hidden">
-        <div className="flex animate-scroll-slow">
+        <div className="flex animate-scroll-slow">c
           {[...logos, ...logos, ...logos, ...logos].map((logo, i) => (
             <motion.div
               key={i}

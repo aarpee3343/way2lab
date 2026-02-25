@@ -38,6 +38,7 @@ export default async function LabsPage() {
               <th className="px-6 py-4">Contact</th>
               <th className="px-6 py-4">Tests Assigned</th>
               <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Integration</th>
               <th className="px-6 py-4 text-right">Actions</th>
             </tr>
           </thead>
@@ -77,6 +78,15 @@ export default async function LabsPage() {
                     {lab.activeStatus ? 'Active' : 'Inactive'}
                   </span>
                 </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+                    lab.isApiIntegrated
+                      ? 'bg-blue-50 text-blue-700 border-blue-100'
+                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                  }`}>
+                    {lab.isApiIntegrated ? 'API' : 'Manual'}
+                  </span>
+                </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end gap-2">
                     <Link href={`/admin/labs/${lab.id}`} className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Edit">
@@ -92,7 +102,7 @@ export default async function LabsPage() {
             
             {labs.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                <td colSpan={7} className="px-6 py-12 text-center text-slate-400">
                   No labs found. Add your first lab partner.
                 </td>
               </tr>

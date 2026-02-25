@@ -6,6 +6,12 @@ import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import crypto from 'crypto';
 
+const toOptionalString = (value: unknown): string | null => {
+  if (value === null || value === undefined) return null;
+  const normalized = String(value).trim();
+  return normalized.length > 0 ? normalized : null;
+};
+
 // 1. Get Lab Form Data (Packages & Tests for selection)
 export async function getLabFormData() {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
@@ -60,10 +66,12 @@ export async function getLabFormData() {
 
 
 // 2. Create Lab (Wizard Logic)
- export async function createLabAction(data: any) {
+export async function createLabAction(data: any) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
     await prisma.$transaction(async (tx) => {
+      const isApiIntegrated = Boolean(data.isApiIntegrated);
+
       // A. CREATE LAB
       const lab = await tx.lab.create({
         data: {
@@ -93,6 +101,14 @@ export async function getLabFormData() {
           gstNo: data.gstNo ?? undefined,
 
           homeCollectionCharges: Number(data.homeCollectionCharges) || 0,
+          isApiIntegrated,
+          apiProvider: isApiIntegrated ? toOptionalString(data.apiProvider) : null,
+          apiBaseUrl: isApiIntegrated ? toOptionalString(data.apiBaseUrl) : null,
+          apiAuthType: isApiIntegrated ? toOptionalString(data.apiAuthType) : null,
+          apiUsername: isApiIntegrated ? toOptionalString(data.apiUsername) : null,
+          apiPassword: isApiIntegrated ? toOptionalString(data.apiPassword) : null,
+          apiKey: isApiIntegrated ? toOptionalString(data.apiKey) : null,
+          apiSecret: isApiIntegrated ? toOptionalString(data.apiSecret) : null,
         },
       });
 
@@ -198,6 +214,14 @@ export async function getLabById(id: number) {
     activeStatus: lab.activeStatus,
 
     homeCollectionCharges: Number(lab.homeCollectionCharges),
+    isApiIntegrated: lab.isApiIntegrated,
+    apiProvider: lab.apiProvider,
+    apiBaseUrl: lab.apiBaseUrl,
+    apiAuthType: lab.apiAuthType,
+    apiUsername: lab.apiUsername,
+    apiPassword: lab.apiPassword,
+    apiKey: lab.apiKey,
+    apiSecret: lab.apiSecret,
 
     pincodes: lab.pincodes.map(p => p.pincode),
 
@@ -224,6 +248,7 @@ export async function getLabById(id: number) {
 export async function updateLabAction(id: number, data: any) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   try {
+    const isApiIntegrated = Boolean(data.isApiIntegrated);
     // 1️⃣ TRANSACTION (FAST)
     await prisma.$transaction(async (tx) => {
       await tx.lab.update({
@@ -246,6 +271,14 @@ export async function updateLabAction(id: number, data: any) {
           gstNo: data.gstNo ?? undefined,
           activeStatus: data.activeStatus,
           homeCollectionCharges: Number(data.homeCollectionCharges) || 0,
+          isApiIntegrated,
+          apiProvider: isApiIntegrated ? toOptionalString(data.apiProvider) : null,
+          apiBaseUrl: isApiIntegrated ? toOptionalString(data.apiBaseUrl) : null,
+          apiAuthType: isApiIntegrated ? toOptionalString(data.apiAuthType) : null,
+          apiUsername: isApiIntegrated ? toOptionalString(data.apiUsername) : null,
+          apiPassword: isApiIntegrated ? toOptionalString(data.apiPassword) : null,
+          apiKey: isApiIntegrated ? toOptionalString(data.apiKey) : null,
+          apiSecret: isApiIntegrated ? toOptionalString(data.apiSecret) : null,
         },
       });
     });
