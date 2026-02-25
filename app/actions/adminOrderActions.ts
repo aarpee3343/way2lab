@@ -299,6 +299,7 @@ export async function placeAdminOrderAction(data: any) {
         const passwordSeed = `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
         const hashedPassword = await bcrypt.hash(passwordSeed, 10);
         const email = typeof data.email === 'string' && data.email.trim() ? data.email.trim() : null;
+        const loginMethod = email ? 'email' : 'phone';
 
         const customer = await tx.customer.create({
           data: {
@@ -309,6 +310,8 @@ export async function placeAdminOrderAction(data: any) {
             dateOfBirth: data.dob ? new Date(data.dob) : null,
             uhid,
             password: hashedPassword,
+            isActive: true,
+            loginMethod,
           },
         });
 
