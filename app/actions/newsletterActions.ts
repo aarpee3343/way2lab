@@ -229,10 +229,15 @@ async function buildCustomerRecipientRows(
     id: number;
     email: string | null;
     name: string | null;
-  }>
+  }>,
+  options?: {
+    source?: string;
+    enforceSubscriptionRules?: boolean;
+  }
 ) {
   const recipientMap = new Map<string, RecipientCandidate>();
   const BATCH_SIZE = 100;
+  const enforceSubscriptionRules = options?.enforceSubscriptionRules ?? true;
 
   for (let i = 0; i < customers.length; i += BATCH_SIZE) {
     const batch = customers.slice(i, i + BATCH_SIZE);
@@ -240,7 +245,18 @@ async function buildCustomerRecipientRows(
       batch.map(async (customer) => {
         const email = normalizeEmail(customer.email || '');
         if (!isValidEmail(email)) return null;
-        const subscriber = await ensureSubscriber(email, customer.name || undefined, 'customer');
+        if (!enforceSubscriptionRules) {
+          return {
+            email,
+            name: customer.name,
+            customerId: customer.id,
+            subscriberId: null,
+            unsubscribeToken: '',
+            isUnsubscribed: false,
+          } satisfies RecipientCandidate;
+        }
+
+        const subscriber = await ensureSubscriber(email, customer.name || undefined, options?.source || 'customer');
         return {
           email,
           name: customer.name,
@@ -290,7 +306,7 @@ async function buildGeneralRecipients(segment: GeneralAudienceSegment) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return buildCustomerRecipientRows(customers);
+    return buildCustomerRecipientRows(customers, { source: 'customer', enforceSubscriptionRules: true });
   }
 
   if (segment === 'NO_ORDERS') {
@@ -306,7 +322,7 @@ async function buildGeneralRecipients(segment: GeneralAudienceSegment) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return buildCustomerRecipientRows(customers);
+    return buildCustomerRecipientRows(customers, { source: 'customer', enforceSubscriptionRules: true });
   }
 
   if (segment === 'INACTIVE_90_DAYS') {
@@ -328,7 +344,7 @@ async function buildGeneralRecipients(segment: GeneralAudienceSegment) {
       },
       orderBy: { createdAt: 'desc' },
     });
-    return buildCustomerRecipientRows(customers);
+    return buildCustomerRecipientRows(customers, { source: 'customer', enforceSubscriptionRules: true });
   }
 
   const customers = await prisma.customer.findMany({
@@ -356,7 +372,8 @@ async function buildGeneralRecipients(segment: GeneralAudienceSegment) {
         id: customer.id,
         email: customer.email,
         name: customer.name,
-      }))
+      })),
+    { source: 'customer', enforceSubscriptionRules: true }
   );
 }
 
@@ -397,7 +414,7 @@ async function buildCorporateRecipients(input: CampaignInput) {
     orderBy: { createdAt: 'desc' },
   });
 
-  return buildCustomerRecipientRows(customers);
+  return buildCustomerRecipientRows(customers, { source: 'corporate', enforceSubscriptionRules: false });
 }
 
 async function buildRecipients(input: CampaignInput) {
@@ -424,16 +441,15 @@ async function buildRecipients(input: CampaignInput) {
     const emails = parseCustomEmails(input.customEmails || '');
 
     const rows = await Promise.all(
-      emails.map(async (email) => {
-        const subscriber = await ensureSubscriber(email, undefined, 'custom_list');
-        return {
+      emails.map(async (email) =>
+        ({
           email,
           name: null,
-          subscriberId: subscriber.id,
-          unsubscribeToken: subscriber.unsubscribeToken,
-          isUnsubscribed: subscriber.status === 'UNSUBSCRIBED',
-        } satisfies RecipientCandidate;
-      })
+          subscriberId: null,
+          unsubscribeToken: '',
+          isUnsubscribed: false,
+        } satisfies RecipientCandidate)
+      )
     );
 
     for (const row of rows) {
@@ -551,10 +567,10 @@ async function processSingleRecipient(
     : campaign.contentHtml;
 
   const unsubscribeToken = recipient.subscriber?.unsubscribeToken || '';
-  const unsubscribeUrl = unsubscribeToken
-    ? `${getAppBaseUrl()}/unsubscribe?token=${unsubscribeToken}`
-    : `${getAppBaseUrl()}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
-  const htmlWithUnsubscribe = attachUnsubscribe(personalizedHtml, unsubscribeUrl);
+  const htmlWithUnsubscribe =
+    recipient.subscriberId && unsubscribeToken
+      ? attachUnsubscribe(personalizedHtml, `${getAppBaseUrl()}/unsubscribe?token=${unsubscribeToken}`)
+      : personalizedHtml;
 
   const mailRes = await sendEmail({
     to: recipient.email,
