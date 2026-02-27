@@ -2,20 +2,34 @@
 
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
+import { Prisma } from '@prisma/client';
 import { requireAdmin } from '@/lib/admin-auth';
 import { prisma } from '@/lib/db';
 import { sendEmail } from '@/lib/mailer';
 import { writeAdminAuditLog } from '@/lib/audit';
 
 type AudienceType = 'SUBSCRIBERS' | 'CUSTOMERS' | 'CUSTOM_LIST';
+type SendMode = 'GENERAL' | 'CORPORATE' | 'CUSTOM_LIST';
+type GeneralAudienceSegment =
+  | 'ALL_SUBSCRIBERS'
+  | 'ALL_CUSTOMERS'
+  | 'NO_ORDERS'
+  | 'ONE_TIME_CUSTOMERS'
+  | 'INACTIVE_90_DAYS';
+type CorporateAudienceSegment = 'ALL_CORPORATE_USERS' | 'AVAILED_PACKAGE' | 'NOT_AVAILED_PACKAGE';
 
 type CampaignInput = {
   subject: string;
   htmlContent: string;
   templateName?: string;
   audienceType: AudienceType;
+  sendMode?: SendMode;
   personalize?: boolean;
   customEmails?: string;
+  generalSegment?: GeneralAudienceSegment;
+  corporateId?: number | null;
+  corporatePackageId?: number | null;
+  corporateSegment?: CorporateAudienceSegment;
 };
 
 type RecipientCandidate = {
@@ -62,12 +76,29 @@ function escapeHtml(value: string) {
     .replace(/'/g, '&#39;');
 }
 
-function applyPersonalization(html: string, vars: { name?: string; email: string; firstName?: string }) {
+function applyPersonalization(html: string, vars: ExtendedPersonalizationVars) {
   return html
     .replace(/\{\{\s*name\s*\}\}/gi, escapeHtml(vars.name || 'Valued Customer'))
     .replace(/\{\{\s*firstName\s*\}\}/gi, escapeHtml(vars.firstName || vars.name || 'Customer'))
-    .replace(/\{\{\s*email\s*\}\}/gi, escapeHtml(vars.email));
+    .replace(/\{\{\s*email\s*\}\}/gi, escapeHtml(vars.email))
+    .replace(/\{\{\s*corporateName\s*\}\}/gi, escapeHtml(vars.corporateName || 'WayToLab Partner'))
+    .replace(
+      /\{\{\s*assignedPackages\s*\}\}/gi,
+      escapeHtml(vars.assignedPackages || 'Health packages curated for you')
+    )
+    .replace(/\{\{\s*packageName\s*\}\}/gi, escapeHtml(vars.packageName || 'your wellness package'))
+    .replace(/\{\{\s*packageCount\s*\}\}/gi, escapeHtml(String(vars.packageCount || '0')));
 }
+
+type ExtendedPersonalizationVars = {
+  name?: string;
+  email: string;
+  firstName?: string;
+  corporateName?: string;
+  assignedPackages?: string;
+  packageName?: string;
+  packageCount?: string;
+};
 
 function parseCustomEmails(input: string) {
   const unique = new Set<string>();
@@ -192,26 +223,63 @@ export async function unsubscribeNewsletterAction(payload: { token?: string; ema
   }
 }
 
-async function buildRecipients(audienceType: AudienceType, customEmails?: string) {
+async function buildCustomerRecipientRows(
+  customers: Array<{
+    id: number;
+    email: string | null;
+    name: string | null;
+  }>
+) {
   const recipientMap = new Map<string, RecipientCandidate>();
+  const BATCH_SIZE = 100;
 
-  if (audienceType === 'SUBSCRIBERS') {
-    const subscribers = await prisma.newsletterSubscriber.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  for (let i = 0; i < customers.length; i += BATCH_SIZE) {
+    const batch = customers.slice(i, i + BATCH_SIZE);
+    const rows = await Promise.all(
+      batch.map(async (customer) => {
+        const email = normalizeEmail(customer.email || '');
+        if (!isValidEmail(email)) return null;
+        const subscriber = await ensureSubscriber(email, customer.name || undefined, 'customer');
+        return {
+          email,
+          name: customer.name,
+          customerId: customer.id,
+          subscriberId: subscriber.id,
+          unsubscribeToken: subscriber.unsubscribeToken,
+          isUnsubscribed: subscriber.status === 'UNSUBSCRIBED',
+        } satisfies RecipientCandidate;
+      })
+    );
 
-    for (const sub of subscribers) {
-      recipientMap.set(sub.email, {
-        email: sub.email,
-        name: sub.name,
-        subscriberId: sub.id,
-        unsubscribeToken: sub.unsubscribeToken,
-        isUnsubscribed: sub.status === 'UNSUBSCRIBED',
-      });
+    for (const row of rows) {
+      if (!row) continue;
+      recipientMap.set(row.email, row);
     }
   }
 
-  if (audienceType === 'CUSTOMERS') {
+  return Array.from(recipientMap.values());
+}
+
+async function buildSubscriberRecipients() {
+  const subscribers = await prisma.newsletterSubscriber.findMany({
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return subscribers.map((sub) => ({
+    email: sub.email,
+    name: sub.name,
+    subscriberId: sub.id,
+    unsubscribeToken: sub.unsubscribeToken,
+    isUnsubscribed: sub.status === 'UNSUBSCRIBED',
+  })) satisfies RecipientCandidate[];
+}
+
+async function buildGeneralRecipients(segment: GeneralAudienceSegment) {
+  if (segment === 'ALL_SUBSCRIBERS') {
+    return buildSubscriberRecipients();
+  }
+
+  if (segment === 'ALL_CUSTOMERS') {
     const customers = await prisma.customer.findMany({
       where: { email: { not: null } },
       select: {
@@ -221,35 +289,138 @@ async function buildRecipients(audienceType: AudienceType, customEmails?: string
       },
       orderBy: { createdAt: 'desc' },
     });
+    return buildCustomerRecipientRows(customers);
+  }
 
-    const BATCH_SIZE = 100;
-    for (let i = 0; i < customers.length; i += BATCH_SIZE) {
-      const batch = customers.slice(i, i + BATCH_SIZE);
-      const rows = await Promise.all(
-        batch.map(async (customer) => {
-          const email = normalizeEmail(customer.email || '');
-          if (!isValidEmail(email)) return null;
-          const subscriber = await ensureSubscriber(email, customer.name || undefined, 'customer');
-          return {
-            email,
-            name: customer.name,
-            customerId: customer.id,
-            subscriberId: subscriber.id,
-            unsubscribeToken: subscriber.unsubscribeToken,
-            isUnsubscribed: subscriber.status === 'UNSUBSCRIBED',
-          } satisfies RecipientCandidate;
-        })
-      );
+  if (segment === 'NO_ORDERS') {
+    const customers = await prisma.customer.findMany({
+      where: {
+        email: { not: null },
+        orders: { none: {} },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return buildCustomerRecipientRows(customers);
+  }
 
-      for (const row of rows) {
-        if (!row) continue;
-        recipientMap.set(row.email, row);
-      }
+  if (segment === 'INACTIVE_90_DAYS') {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 90);
+
+    const customers = await prisma.customer.findMany({
+      where: {
+        email: { not: null },
+        AND: [
+          { orders: { some: {} } },
+          { orders: { none: { createdAt: { gte: cutoff } } } },
+        ],
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+    return buildCustomerRecipientRows(customers);
+  }
+
+  const customers = await prisma.customer.findMany({
+    where: {
+      email: { not: null },
+      orders: { some: {} },
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      _count: {
+        select: {
+          orders: true,
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return buildCustomerRecipientRows(
+    customers
+      .filter((customer) => customer._count.orders === 1)
+      .map((customer) => ({
+        id: customer.id,
+        email: customer.email,
+        name: customer.name,
+      }))
+  );
+}
+
+async function buildCorporateRecipients(input: CampaignInput) {
+  const corporateId = Number(input.corporateId || 0);
+  if (!corporateId) return [];
+
+  const where: Prisma.CustomerWhereInput = {
+    corporateId,
+    email: { not: null },
+  };
+
+  if (input.corporatePackageId && input.corporateSegment === 'AVAILED_PACKAGE') {
+    where.assignedPackages = {
+      some: {
+        packageId: input.corporatePackageId,
+        availedAt: { not: null },
+      },
+    };
+  }
+
+  if (input.corporatePackageId && input.corporateSegment === 'NOT_AVAILED_PACKAGE') {
+    where.assignedPackages = {
+      some: {
+        packageId: input.corporatePackageId,
+        availedAt: null,
+      },
+    };
+  }
+
+  const customers = await prisma.customer.findMany({
+    where,
+    select: {
+      id: true,
+      email: true,
+      name: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  return buildCustomerRecipientRows(customers);
+}
+
+async function buildRecipients(input: CampaignInput) {
+  const recipientMap = new Map<string, RecipientCandidate>();
+
+  const sendMode = input.sendMode || (input.audienceType === 'CUSTOM_LIST' ? 'CUSTOM_LIST' : 'GENERAL');
+  const generalSegment = input.generalSegment || (input.audienceType === 'SUBSCRIBERS' ? 'ALL_SUBSCRIBERS' : 'ALL_CUSTOMERS');
+
+  if (sendMode === 'GENERAL') {
+    const recipients = await buildGeneralRecipients(generalSegment);
+    for (const row of recipients) {
+      recipientMap.set(row.email, row);
     }
   }
 
-  if (audienceType === 'CUSTOM_LIST') {
-    const emails = parseCustomEmails(customEmails || '');
+  if (sendMode === 'CORPORATE') {
+    const recipients = await buildCorporateRecipients(input);
+    for (const row of recipients) {
+      recipientMap.set(row.email, row);
+    }
+  }
+
+  if (sendMode === 'CUSTOM_LIST' || input.audienceType === 'CUSTOM_LIST') {
+    const emails = parseCustomEmails(input.customEmails || '');
 
     const rows = await Promise.all(
       emails.map(async (email) => {
@@ -309,6 +480,7 @@ async function processSingleRecipient(
     name: string | null;
     campaignId: number;
     subscriberId: number | null;
+    customerId: number | null;
     subscriber: { unsubscribeToken: string } | null;
   },
   campaign: {
@@ -317,13 +489,64 @@ async function processSingleRecipient(
     personalize: boolean;
   }
 ) {
-  const firstName = (recipient.name || '').trim().split(/\s+/)[0] || 'Customer';
-  const personalizedHtml = campaign.personalize
-    ? applyPersonalization(campaign.contentHtml, {
-        name: recipient.name || undefined,
+  let personalizationVars: ExtendedPersonalizationVars = {
+    name: recipient.name || undefined,
+    email: recipient.email,
+    firstName: (recipient.name || '').trim().split(/\s+/)[0] || 'Customer',
+    corporateName: '',
+    assignedPackages: '',
+    packageName: '',
+    packageCount: '0',
+  };
+
+  if (campaign.personalize && recipient.customerId) {
+    const customer = await prisma.customer.findUnique({
+      where: { id: recipient.customerId },
+      select: {
+        name: true,
+        corporate: {
+          select: {
+            companyName: true,
+          },
+        },
+        assignedPackages: {
+          select: {
+            availedAt: true,
+            package: {
+              select: {
+                packageName: true,
+              },
+            },
+          },
+          orderBy: { assignedAt: 'desc' },
+        },
+      },
+    });
+
+    if (customer) {
+      const packageNames = customer.assignedPackages
+        .map((entry) => entry.package.packageName?.trim())
+        .filter(Boolean) as string[];
+      const uniquePackageNames = [...new Set(packageNames)];
+      const highlightedPackage =
+        customer.assignedPackages.find((entry) => entry.availedAt)?.package.packageName ||
+        uniquePackageNames[0] ||
+        '';
+
+      personalizationVars = {
+        name: customer.name || personalizationVars.name,
         email: recipient.email,
-        firstName,
-      })
+        firstName: (customer.name || personalizationVars.name || '').trim().split(/\s+/)[0] || 'Customer',
+        corporateName: customer.corporate?.companyName || '',
+        assignedPackages: uniquePackageNames.join(', '),
+        packageName: highlightedPackage,
+        packageCount: String(uniquePackageNames.length),
+      };
+    }
+  }
+
+  const personalizedHtml = campaign.personalize
+    ? applyPersonalization(campaign.contentHtml, personalizationVars)
     : campaign.contentHtml;
 
   const unsubscribeToken = recipient.subscriber?.unsubscribeToken || '';
@@ -438,6 +661,7 @@ async function processCampaignBatchInternal(campaignId: number, batchSize = 50):
             name: row.name,
             campaignId: row.campaignId,
             subscriberId: row.subscriberId,
+            customerId: row.customerId,
             subscriber: row.subscriber,
           },
           {
@@ -561,9 +785,19 @@ export async function sendPromotionalCampaignAction(input: CampaignInput) {
   if (!htmlContent) {
     return { success: false, error: 'Email HTML content is required.' };
   }
+  if ((input.sendMode || 'GENERAL') === 'CORPORATE' && !Number(input.corporateId || 0)) {
+    return { success: false, error: 'Please select a corporate to continue.' };
+  }
+  if (
+    (input.sendMode || 'GENERAL') === 'CORPORATE' &&
+    !Number(input.corporatePackageId || 0) &&
+    ['AVAILED_PACKAGE', 'NOT_AVAILED_PACKAGE'].includes(String(input.corporateSegment || ''))
+  ) {
+    return { success: false, error: 'Please select a package for the chosen corporate filter.' };
+  }
 
   try {
-    const recipients = await buildRecipients(input.audienceType, input.customEmails);
+    const recipients = await buildRecipients(input);
     if (!recipients.length) {
       return { success: false, error: 'No recipients found for selected audience.' };
     }
@@ -618,8 +852,13 @@ export async function sendPromotionalCampaignAction(input: CampaignInput) {
       action: 'campaign.send.requested',
       entityType: 'email_campaign',
       metadata: {
+        sendMode: input.sendMode || 'GENERAL',
         audienceType: input.audienceType,
         personalize: Boolean(input.personalize),
+        generalSegment: input.generalSegment || null,
+        corporateId: input.corporateId || null,
+        corporatePackageId: input.corporatePackageId || null,
+        corporateSegment: input.corporateSegment || null,
       },
     });
   }
@@ -638,7 +877,7 @@ export async function getEmailMarketingDashboardAction(search?: string) {
       }
     : {};
 
-  const [subscribers, campaigns, recentRecipients, recentAuditLogs, total, active, unsubscribed] = await Promise.all([
+  const [subscribers, campaigns, recentRecipients, recentAuditLogs, total, active, unsubscribed, corporates] = await Promise.all([
     prisma.newsletterSubscriber.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -682,6 +921,41 @@ export async function getEmailMarketingDashboardAction(search?: string) {
     prisma.newsletterSubscriber.count(),
     prisma.newsletterSubscriber.count({ where: { status: 'SUBSCRIBED' } }),
     prisma.newsletterSubscriber.count({ where: { status: 'UNSUBSCRIBED' } }),
+    prisma.corporate.findMany({
+      where: { isActive: true },
+      orderBy: { companyName: 'asc' },
+      select: {
+        id: true,
+        companyName: true,
+        _count: {
+          select: {
+            employees: true,
+          },
+        },
+        services: {
+          where: {
+            isActive: true,
+            packageId: { not: null },
+          },
+          select: {
+            packageId: true,
+            package: {
+              select: {
+                id: true,
+                packageName: true,
+              },
+            },
+          },
+        },
+        packages: {
+          where: { isActive: true },
+          select: {
+            id: true,
+            packageName: true,
+          },
+        },
+      },
+    }),
   ]);
 
   return {
@@ -735,5 +1009,31 @@ export async function getEmailMarketingDashboardAction(search?: string) {
       metadata: row.metadata,
       createdAt: row.createdAt.toISOString(),
     })),
+    corporates: corporates.map((corporate) => {
+      const packageMap = new Map<number, { id: number; packageName: string }>();
+
+      for (const service of corporate.services) {
+        if (service.package?.id) {
+          packageMap.set(service.package.id, {
+            id: service.package.id,
+            packageName: service.package.packageName,
+          });
+        }
+      }
+
+      for (const pkg of corporate.packages) {
+        packageMap.set(pkg.id, {
+          id: pkg.id,
+          packageName: pkg.packageName,
+        });
+      }
+
+      return {
+        id: corporate.id,
+        companyName: corporate.companyName,
+        employeeCount: corporate._count.employees,
+        packages: Array.from(packageMap.values()).sort((a, b) => a.packageName.localeCompare(b.packageName)),
+      };
+    }),
   };
 }

@@ -33,12 +33,17 @@ export async function getAdminCustomersList(params?: {
   status?: CustomerStatusFilter;
   type?: CustomerTypeFilter;
   search?: string;
+  page?: number;
+  pageSize?: number;
 }) {
   await requireAdmin({ roles: ['SUPER_ADMIN', 'ADMIN'] });
 
   const status = params?.status || 'all';
   const type = params?.type || 'all';
   const search = (params?.search || '').trim();
+  const page = Math.max(1, Number(params?.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(params?.pageSize) || 100));
+  const skip = (page - 1) * pageSize;
 
   const andFilters: Prisma.CustomerWhereInput[] = [];
 
@@ -62,41 +67,46 @@ export async function getAdminCustomersList(params?: {
 
   const where = andFilters.length ? { AND: andFilters } : undefined;
 
-  const customers = await prisma.customer.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    select: {
-      id: true,
-      uhid: true,
-      name: true,
-      email: true,
-      phone: true,
-      isActive: true,
-      createdAt: true,
-      corporateId: true,
-      corporate: {
-        select: {
-          id: true,
-          companyName: true,
+  const [total, customers] = await Promise.all([
+    prisma.customer.count({ where }),
+    prisma.customer.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: pageSize,
+      select: {
+        id: true,
+        uhid: true,
+        name: true,
+        email: true,
+        phone: true,
+        isActive: true,
+        createdAt: true,
+        corporateId: true,
+        corporate: {
+          select: {
+            id: true,
+            companyName: true,
+          },
+        },
+        _count: {
+          select: {
+            orders: true,
+          },
+        },
+        orders: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            createdAt: true,
+          },
         },
       },
-      _count: {
-        select: {
-          orders: true,
-        },
-      },
-      orders: {
-        orderBy: { createdAt: 'desc' },
-        take: 1,
-        select: {
-          id: true,
-          createdAt: true,
-        },
-      },
-    },
-  });
+    }),
+  ]);
 
-  return customers.map((customer) => ({
+  const items = customers.map((customer) => ({
     id: customer.id,
     uhid: customer.uhid,
     name: customer.name,
@@ -116,6 +126,16 @@ export async function getAdminCustomersList(params?: {
       ? customer.orders[0].createdAt.toISOString()
       : null,
   }));
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  return {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages,
+  };
 }
 
 export async function setCustomerActiveStatus(customerId: number, isActive: boolean) {

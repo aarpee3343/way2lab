@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Megaphone, MailCheck, Send, Users } from 'lucide-react';
+import { Building2, MailCheck, Megaphone, Send, Sparkles, Target, Users, WandSparkles } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import {
   getEmailMarketingDashboardAction,
@@ -9,15 +9,41 @@ import {
   sendPromotionalCampaignAction,
 } from '@/app/actions/newsletterActions';
 
-const TEMPLATE_PRESETS: Record<string, string> = {
-  promo_basic: `
+const TEMPLATE_PRESETS = {
+  promo_basic: {
+    label: 'Flash Offer',
+    blurb: 'Short campaign for subscribers and broad customer blasts.',
+    html: `
 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
   <h2 style="margin:0 0 12px;">Hello {{firstName}},</h2>
   <p>We have a special diagnostic offer for you this week.</p>
   <p>Use code <strong>WELLNESS10</strong> at checkout and save on selected health packages.</p>
   <p>Book now: <a href="https://waytolab.com/search">https://waytolab.com/search</a></p>
 </div>`.trim(),
-  promo_health_tips: `
+  },
+  growth_reactivation: {
+    label: 'Order Reactivation',
+    blurb: 'Best for inactive or no-order audiences to increase conversions.',
+    html: `
+<div style="font-family:Arial,sans-serif;line-height:1.7;color:#172554;background:#eff6ff;padding:28px;border-radius:24px;">
+  <p style="margin:0 0 10px;font-size:12px;letter-spacing:0.18em;text-transform:uppercase;color:#1d4ed8;">Way2Lab Priority Access</p>
+  <h2 style="margin:0 0 12px;font-size:28px;color:#0f172a;">{{firstName}}, it is a smart week to book your next health check.</h2>
+  <p style="margin:0 0 18px;color:#334155;">Get faster booking slots, trusted lab partners, and curated preventive packages built for busy schedules.</p>
+  <div style="background:#ffffff;border-radius:18px;padding:18px 20px;margin:0 0 18px;border:1px solid #bfdbfe;">
+    <p style="margin:0 0 8px;font-weight:700;color:#0f172a;">Why customers are booking now</p>
+    <ul style="margin:0;padding-left:18px;color:#475569;">
+      <li>Better preventive screening bundles</li>
+      <li>Flexible home collection and faster slot discovery</li>
+      <li>One place to compare labs and complete checkout</li>
+    </ul>
+  </div>
+  <a href="https://waytolab.com/search" style="display:inline-block;padding:12px 22px;border-radius:999px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;">Explore packages</a>
+</div>`.trim(),
+  },
+  promo_health_tips: {
+    label: 'Health Tips',
+    blurb: 'Educational message with a softer marketing tone.',
+    html: `
 <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;">
   <h2 style="margin:0 0 12px;">Health Update for {{name}}</h2>
   <p>Stay proactive with routine diagnostics and preventive screening.</p>
@@ -28,22 +54,103 @@ const TEMPLATE_PRESETS: Record<string, string> = {
   </ul>
   <p>Need help booking? Reply to this email.</p>
 </div>`.trim(),
-  custom_blank: '',
-};
+  },
+  corporate_wow: {
+    label: 'Corporate WOW',
+    blurb: 'Stylish corporate mail with company and assigned-package personalization.',
+    html: `
+<div style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
+  <div style="max-width:720px;margin:0 auto;padding:28px 18px;">
+    <div style="background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 52%,#38bdf8 100%);border-radius:30px;overflow:hidden;box-shadow:0 25px 60px rgba(15,23,42,0.18);">
+      <div style="padding:36px 34px 26px;color:#e2e8f0;">
+        <p style="margin:0 0 14px;font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#bfdbfe;">Corporate Wellness Access</p>
+        <h1 style="margin:0 0 12px;font-size:34px;line-height:1.15;color:#ffffff;">{{firstName}}, your {{corporateName}} health benefits are ready to use.</h1>
+        <p style="margin:0;max-width:520px;font-size:16px;line-height:1.7;color:#dbeafe;">We have mapped your company wellness access on Way2Lab so you can move from eligibility to booking in a few clicks.</p>
+      </div>
+      <div style="padding:0 24px 28px;">
+        <div style="background:#ffffff;border-radius:26px;padding:26px;border:1px solid rgba(255,255,255,0.4);">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px;">
+            <div style="background:#eff6ff;border-radius:20px;padding:18px;">
+              <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#2563eb;">Corporate</p>
+              <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">{{corporateName}}</p>
+            </div>
+            <div style="background:#ecfeff;border-radius:20px;padding:18px;">
+              <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#0891b2;">Assigned Packages</p>
+              <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">{{packageCount}}</p>
+            </div>
+          </div>
+          <div style="background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);border-radius:22px;padding:20px 22px;margin-bottom:18px;">
+            <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#4338ca;">Mapped for you</p>
+            <p style="margin:0;font-size:16px;line-height:1.8;color:#334155;">{{assignedPackages}}</p>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
+            <div>
+              <p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#0f172a;">Book faster, use your company benefits smarter.</p>
+              <p style="margin:0;color:#475569;">Choose your package, confirm your slot, and complete the booking in minutes.</p>
+            </div>
+            <a href="https://waytolab.com/dashboard/benefits" style="display:inline-block;padding:14px 24px;border-radius:999px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;">Open my benefits</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`.trim(),
+  },
+  custom_blank: {
+    label: 'Blank Template',
+    blurb: 'Start from scratch with full HTML control.',
+    html: '',
+  },
+} satisfies Record<string, { label: string; blurb: string; html: string }>;
+
+const SEND_MODES = [
+  { value: 'GENERAL', label: 'General Marketing', description: 'Growth campaigns for subscribers and customers.', icon: Target },
+  { value: 'CORPORATE', label: 'Corporate Campaign', description: 'Target one corporate with package-aware messaging.', icon: Building2 },
+  { value: 'CUSTOM_LIST', label: 'Custom Email List', description: 'Send to pasted addresses only.', icon: Send },
+] as const;
+
+const GENERAL_SEGMENTS = [
+  { value: 'ALL_SUBSCRIBERS', label: 'All subscribed emails', hint: 'Broadest reach for awareness campaigns.' },
+  { value: 'ALL_CUSTOMERS', label: 'All existing customers', hint: 'Reach every customer with a valid email.' },
+  { value: 'NO_ORDERS', label: 'Customers with no orders', hint: 'Best for first-order conversion pushes.' },
+  { value: 'ONE_TIME_CUSTOMERS', label: 'One-time customers', hint: 'Good for repeat-purchase nudges.' },
+  { value: 'INACTIVE_90_DAYS', label: 'Inactive 90+ days', hint: 'Useful for win-back campaigns.' },
+] as const;
+
+const CORPORATE_SEGMENTS = [
+  { value: 'ALL_CORPORATE_USERS', label: 'All corporate users', hint: 'Send to every employee mapped to that corporate.' },
+  { value: 'AVAILED_PACKAGE', label: 'Who availed package', hint: 'Only users who already used the selected package.' },
+  { value: 'NOT_AVAILED_PACKAGE', label: 'Did not avail package', hint: 'Users assigned the selected package but not used yet.' },
+] as const;
+
+const PERSONALIZATION_TOKENS = ['{{name}}', '{{firstName}}', '{{email}}', '{{corporateName}}', '{{assignedPackages}}', '{{packageCount}}'];
 
 type DashboardData = Awaited<ReturnType<typeof getEmailMarketingDashboardAction>>;
+type SendMode = (typeof SEND_MODES)[number]['value'];
+type GeneralSegment = (typeof GENERAL_SEGMENTS)[number]['value'];
+type CorporateSegment = (typeof CORPORATE_SEGMENTS)[number]['value'];
+type TemplateName = keyof typeof TEMPLATE_PRESETS;
+
+function getAudienceType(sendMode: SendMode, generalSegment: GeneralSegment) {
+  if (sendMode === 'CUSTOM_LIST') return 'CUSTOM_LIST' as const;
+  if (sendMode === 'CORPORATE') return 'CUSTOMERS' as const;
+  return generalSegment === 'ALL_SUBSCRIBERS' ? ('SUBSCRIBERS' as const) : ('CUSTOMERS' as const);
+}
 
 export default function EmailMarketingPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [data, setData] = useState<DashboardData | null>(null);
-
   const [subject, setSubject] = useState('');
-  const [templateName, setTemplateName] = useState('promo_basic');
-  const [audienceType, setAudienceType] = useState<'SUBSCRIBERS' | 'CUSTOMERS' | 'CUSTOM_LIST'>('SUBSCRIBERS');
-  const [personalize, setPersonalize] = useState(false);
+  const [sendMode, setSendMode] = useState<SendMode>('GENERAL');
+  const [templateName, setTemplateName] = useState<TemplateName>('promo_basic');
+  const [generalSegment, setGeneralSegment] = useState<GeneralSegment>('ALL_SUBSCRIBERS');
+  const [corporateId, setCorporateId] = useState('');
+  const [corporatePackageId, setCorporatePackageId] = useState('');
+  const [corporateSegment, setCorporateSegment] = useState<CorporateSegment>('ALL_CORPORATE_USERS');
+  const [personalize, setPersonalize] = useState(true);
   const [customEmails, setCustomEmails] = useState('');
-  const [htmlContent, setHtmlContent] = useState(TEMPLATE_PRESETS.promo_basic);
+  const [htmlContent, setHtmlContent] = useState(TEMPLATE_PRESETS.promo_basic.html);
   const [sending, setSending] = useState(false);
   const [processingQueue, setProcessingQueue] = useState(false);
 
@@ -59,6 +166,17 @@ export default function EmailMarketingPage() {
     );
   }, [data, search]);
 
+  const selectedCorporate = useMemo(() => {
+    if (!data) return null;
+    return data.corporates.find((corporate) => String(corporate.id) === corporateId) || null;
+  }, [corporateId, data]);
+
+  const corporatePackages = useMemo(() => selectedCorporate?.packages || [], [selectedCorporate]);
+  const selectedTemplate = TEMPLATE_PRESETS[templateName];
+  const selectedGeneralSegment = GENERAL_SEGMENTS.find((segment) => segment.value === generalSegment);
+  const selectedCorporateSegment = CORPORATE_SEGMENTS.find((segment) => segment.value === corporateSegment);
+  const resolvedAudienceType = getAudienceType(sendMode, generalSegment);
+
   const loadData = async (searchText?: string) => {
     const res = await getEmailMarketingDashboardAction(searchText);
     setData(res);
@@ -69,6 +187,33 @@ export default function EmailMarketingPage() {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (!selectedCorporate) {
+      setCorporatePackageId('');
+      setCorporateSegment('ALL_CORPORATE_USERS');
+      return;
+    }
+
+    if (corporatePackageId && !selectedCorporate.packages.some((pkg) => String(pkg.id) === corporatePackageId)) {
+      setCorporatePackageId('');
+      setCorporateSegment('ALL_CORPORATE_USERS');
+    }
+  }, [corporatePackageId, selectedCorporate]);
+
+  useEffect(() => {
+    if (!corporatePackageId && corporateSegment !== 'ALL_CORPORATE_USERS') {
+      setCorporateSegment('ALL_CORPORATE_USERS');
+    }
+  }, [corporatePackageId, corporateSegment]);
+
+  const applyTemplate = (next: TemplateName) => {
+    setTemplateName(next);
+    setHtmlContent(TEMPLATE_PRESETS[next].html);
+    if (next === 'corporate_wow') {
+      setPersonalize(true);
+    }
+  };
+
   const onSendCampaign = async () => {
     if (!subject.trim()) {
       toast.error('Subject is required');
@@ -78,8 +223,16 @@ export default function EmailMarketingPage() {
       toast.error('HTML content is required');
       return;
     }
-    if (audienceType === 'CUSTOM_LIST' && !customEmails.trim()) {
+    if (sendMode === 'CUSTOM_LIST' && !customEmails.trim()) {
       toast.error('Enter at least one email for custom list');
+      return;
+    }
+    if (sendMode === 'CORPORATE' && !corporateId) {
+      toast.error('Select a corporate first');
+      return;
+    }
+    if (sendMode === 'CORPORATE' && !corporatePackageId && corporateSegment !== 'ALL_CORPORATE_USERS') {
+      toast.error('Choose a package for availed or not-availed targeting');
       return;
     }
 
@@ -89,9 +242,14 @@ export default function EmailMarketingPage() {
         subject,
         htmlContent,
         templateName,
-        audienceType,
+        audienceType: resolvedAudienceType,
+        sendMode,
         personalize,
         customEmails,
+        generalSegment,
+        corporateId: corporateId ? Number(corporateId) : null,
+        corporatePackageId: corporatePackageId ? Number(corporatePackageId) : null,
+        corporateSegment,
       });
 
       if (!res.success) {
@@ -134,7 +292,7 @@ export default function EmailMarketingPage() {
           <Megaphone size={22} /> Email Marketing
         </h1>
         <p className="admin-page-subtitle">
-          Manage subscriptions, unsubscribe status, and promotional campaigns.
+          Manage subscriptions, targeted campaigns, and corporate outreach from one workspace.
         </p>
       </div>
 
@@ -153,95 +311,347 @@ export default function EmailMarketingPage() {
         </div>
       </div>
 
-      <div className="admin-card p-6">
-        <h2 className="admin-form-title mb-4">
-          <Send size={16} /> Send Promotional Email
-        </h2>
+      <div className="admin-card overflow-hidden">
+        <div className="grid grid-cols-1 xl:grid-cols-[1.35fr_0.85fr]">
+          <div className="p-6">
+            <div className="mb-6 rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.2),_transparent_35%),linear-gradient(135deg,#f8fafc_0%,#eff6ff_45%,#f8fafc_100%)] p-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/80 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.24em] text-sky-700">
+                    <Sparkles size={12} /> Campaign Studio
+                  </p>
+                  <h2 className="text-2xl font-black text-slate-950">Choose how this email should be sent</h2>
+                  <p className="mt-2 max-w-2xl text-sm text-slate-600">
+                    Use corporate mode for company-specific mail with package targeting. Use general marketing when the goal is to increase overall order count.
+                  </p>
+                </div>
+                <div className="rounded-3xl bg-slate-950 px-4 py-3 text-white shadow-lg">
+                  <p className="text-xs uppercase tracking-[0.2em] text-sky-200">Recommended</p>
+                  <p className="mt-1 text-sm font-semibold">
+                    {sendMode === 'CORPORATE' ? 'Corporate WOW + personalization ON' : 'Inactive 90+ days for win-back'}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div>
-            <label className="admin-form-label">Subject</label>
-            <input
-              className="admin-form-input"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="Enter campaign subject"
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {SEND_MODES.map((mode) => {
+                const Icon = mode.icon;
+                const active = sendMode === mode.value;
+                return (
+                  <button
+                    key={mode.value}
+                    type="button"
+                    onClick={() => {
+                      setSendMode(mode.value);
+                      if (mode.value === 'CORPORATE' && templateName === 'promo_basic') {
+                        applyTemplate('corporate_wow');
+                      }
+                    }}
+                    className={`rounded-3xl border p-4 text-left transition ${
+                      active
+                        ? 'border-slate-950 bg-slate-950 text-white shadow-[0_24px_50px_rgba(15,23,42,0.22)]'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-sky-300 hover:bg-sky-50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`inline-flex h-11 w-11 items-center justify-center rounded-2xl ${
+                          active ? 'bg-white/15 text-white' : 'bg-slate-100 text-slate-700'
+                        }`}
+                      >
+                        <Icon size={18} />
+                      </span>
+                      <div>
+                        <p className="font-bold">{mode.label}</p>
+                        <p className={`text-xs ${active ? 'text-slate-200' : 'text-slate-500'}`}>{mode.description}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
 
-          <div>
-            <label className="admin-form-label">Audience</label>
-            <select
-              className="admin-form-select"
-              value={audienceType}
-              onChange={(e) => setAudienceType(e.target.value as 'SUBSCRIBERS' | 'CUSTOMERS' | 'CUSTOM_LIST')}
-            >
-              <option value="SUBSCRIBERS">All Subscribed Emails</option>
-              <option value="CUSTOMERS">All Existing Customers</option>
-              <option value="CUSTOM_LIST">Custom Email List</option>
-            </select>
-          </div>
+            <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <label className="admin-form-label">Subject</label>
+                <input
+                  className="admin-form-input"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder={
+                    sendMode === 'CORPORATE'
+                      ? 'Example: Your corporate wellness access is now live'
+                      : 'Enter campaign subject'
+                  }
+                />
+              </div>
 
-          <div>
-            <label className="admin-form-label">Template Preset</label>
-            <select
-              className="admin-form-select"
-              value={templateName}
-              onChange={(e) => {
-                const next = e.target.value;
-                setTemplateName(next);
-                setHtmlContent(TEMPLATE_PRESETS[next] ?? '');
-              }}
-            >
-              <option value="promo_basic">Promotional Offer</option>
-              <option value="promo_health_tips">Health Tips</option>
-              <option value="custom_blank">Blank Template</option>
-            </select>
-          </div>
+              <div>
+                <label className="admin-form-label">Template Preset</label>
+                <select
+                  className="admin-form-select"
+                  value={templateName}
+                  onChange={(e) => applyTemplate(e.target.value as TemplateName)}
+                >
+                  {Object.entries(TEMPLATE_PRESETS).map(([key, preset]) => (
+                    <option key={key} value={key}>
+                      {preset.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-xs text-slate-500">{selectedTemplate.blurb}</p>
+              </div>
+            </div>
 
-          <div className="flex items-end">
-            <label className="admin-form-checkbox">
-              <input
-                type="checkbox"
-                checked={personalize}
-                onChange={(e) => setPersonalize(e.target.checked)}
+            {sendMode === 'GENERAL' && (
+              <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+                <div className="mb-4 flex items-center gap-2 text-slate-900">
+                  <Target size={16} />
+                  <h3 className="font-bold">General marketing audience</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <label className="admin-form-label">Audience segment</label>
+                    <select
+                      className="admin-form-select"
+                      value={generalSegment}
+                      onChange={(e) => setGeneralSegment(e.target.value as GeneralSegment)}
+                    >
+                      {GENERAL_SEGMENTS.map((segment) => (
+                        <option key={segment.value} value={segment.value}>
+                          {segment.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-700">Order Growth Tip</p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      {selectedGeneralSegment?.hint || 'Choose a segment based on the conversion goal.'}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      For increasing orders, start with `Customers with no orders` or `Inactive 90+ days`.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sendMode === 'CORPORATE' && (
+              <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+                <div className="mb-4 flex items-center gap-2 text-slate-900">
+                  <Building2 size={16} />
+                  <h3 className="font-bold">Corporate targeting</h3>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <div>
+                    <label className="admin-form-label">Select corporate</label>
+                    <select
+                      className="admin-form-select"
+                      value={corporateId}
+                      onChange={(e) => setCorporateId(e.target.value)}
+                    >
+                      <option value="">Choose corporate</option>
+                      {data.corporates.map((corporate) => (
+                        <option key={corporate.id} value={corporate.id}>
+                          {corporate.companyName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="admin-form-label">Select package (optional)</label>
+                    <select
+                      className="admin-form-select"
+                      value={corporatePackageId}
+                      onChange={(e) => setCorporatePackageId(e.target.value)}
+                      disabled={!selectedCorporate}
+                    >
+                      <option value="">Not package specific</option>
+                      {corporatePackages.map((pkg) => (
+                        <option key={pkg.id} value={pkg.id}>
+                          {pkg.packageName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="admin-form-label">Send to</label>
+                    <select
+                      className="admin-form-select"
+                      value={corporateSegment}
+                      onChange={(e) => setCorporateSegment(e.target.value as CorporateSegment)}
+                      disabled={!corporatePackageId}
+                    >
+                      {CORPORATE_SEGMENTS.map((segment) => (
+                        <option
+                          key={segment.value}
+                          value={segment.value}
+                          disabled={!corporatePackageId && segment.value !== 'ALL_CORPORATE_USERS'}
+                        >
+                          {segment.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-4">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Corporate snapshot</p>
+                    <p className="mt-2 text-lg font-bold text-slate-900">{selectedCorporate?.companyName || 'No corporate selected'}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {selectedCorporate
+                        ? `${selectedCorporate.employeeCount} mapped users and ${selectedCorporate.packages.length} available packages`
+                        : 'Choose a corporate to unlock package-aware targeting.'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Targeting rule</p>
+                    <p className="mt-2 text-sm text-slate-700">
+                      {selectedCorporateSegment?.hint || 'All corporate users will receive this email.'}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      `Who availed package` and `Did not avail package` work only when a package is selected.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {sendMode === 'CUSTOM_LIST' && (
+              <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+                <label className="admin-form-label">Custom Emails</label>
+                <textarea
+                  className="admin-form-textarea"
+                  rows={5}
+                  placeholder="Add emails separated by comma or new line"
+                  value={customEmails}
+                  onChange={(e) => setCustomEmails(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="mt-6 rounded-3xl border border-slate-200 bg-white p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <label className="admin-form-label mb-0">HTML Content</label>
+                  <p className="text-xs text-slate-500">HTML is supported. Unsubscribe link is auto-injected.</p>
+                </div>
+                <label className="admin-form-checkbox">
+                  <input type="checkbox" checked={personalize} onChange={(e) => setPersonalize(e.target.checked)} />
+                  <span>Use personalization tokens</span>
+                </label>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {PERSONALIZATION_TOKENS.map((token) => (
+                  <span
+                    key={token}
+                    className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-700"
+                  >
+                    {token}
+                  </span>
+                ))}
+              </div>
+
+              <textarea
+                className="admin-form-textarea mt-4 font-mono text-xs"
+                rows={18}
+                value={htmlContent}
+                onChange={(e) => setHtmlContent(e.target.value)}
+                placeholder="Build the campaign HTML here"
               />
-              <span>Personalize using {'{{name}}'}, {'{{firstName}}'}, {'{{email}}'}</span>
-            </label>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button className="admin-btn-primary" onClick={onSendCampaign} disabled={sending}>
+                <MailCheck size={16} /> {sending ? 'Sending...' : 'Send Campaign'}
+              </button>
+              <button className="admin-btn-secondary" onClick={onProcessQueue} disabled={processingQueue}>
+                <Send size={16} /> {processingQueue ? 'Processing Queue...' : 'Process Queue Now'}
+              </button>
+            </div>
           </div>
-        </div>
 
-        {audienceType === 'CUSTOM_LIST' && (
-          <div className="mt-4">
-            <label className="admin-form-label">Custom Emails</label>
-            <textarea
-              className="admin-form-textarea"
-              rows={4}
-              placeholder="Add emails separated by comma or new line"
-              value={customEmails}
-              onChange={(e) => setCustomEmails(e.target.value)}
-            />
+          <div className="border-t border-slate-200 bg-slate-50/70 p-6 xl:border-l xl:border-t-0">
+            <div className="rounded-[30px] bg-[linear-gradient(160deg,#0f172a_0%,#1e293b_48%,#0f766e_100%)] p-5 text-white shadow-[0_30px_70px_rgba(15,23,42,0.22)]">
+              <div className="flex items-center gap-2 text-sky-200">
+                <WandSparkles size={16} />
+                <p className="text-xs font-bold uppercase tracking-[0.22em]">Live Strategy</p>
+              </div>
+              <h3 className="mt-3 text-2xl font-black">
+                {sendMode === 'CORPORATE' ? 'Corporate messages can be fully personalized' : 'Use segmented campaigns to lift order count'}
+              </h3>
+              <p className="mt-3 text-sm leading-6 text-slate-200">
+                {sendMode === 'CORPORATE'
+                  ? 'This flow injects employee name, corporate name, and assigned package summary when personalization is enabled.'
+                  : 'General campaigns now let you target no-order, one-time, and inactive users instead of only blasting everyone.'}
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-4">
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Current delivery setup</p>
+                <div className="mt-3 space-y-3 text-sm text-slate-700">
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Send mode</span>
+                    <span className="font-semibold text-slate-900">
+                      {SEND_MODES.find((mode) => mode.value === sendMode)?.label}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Audience type</span>
+                    <span className="font-semibold text-slate-900">{resolvedAudienceType}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Template</span>
+                    <span className="font-semibold text-slate-900">{selectedTemplate.label}</span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="text-slate-500">Personalization</span>
+                    <span className="font-semibold text-slate-900">{personalize ? 'Enabled' : 'Disabled'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Use this when</p>
+                <div className="mt-3 space-y-3 text-sm text-slate-700">
+                  <p>
+                    <span className="font-semibold text-slate-900">General:</span> acquisition, reactivation, and order-growth promotions.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-900">Corporate:</span> company-specific benefit activation, package reminders, and utilization campaigns.
+                  </p>
+                  <p>
+                    <span className="font-semibold text-slate-900">Custom list:</span> one-off outreach to manually prepared recipients.
+                  </p>
+                </div>
+              </div>
+
+              {sendMode === 'CORPORATE' && (
+                <div className="rounded-3xl border border-slate-200 bg-white p-5">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-slate-500">Corporate tokens preview</p>
+                  <div className="mt-3 space-y-2 text-sm text-slate-700">
+                    <p>
+                      <span className="font-semibold text-slate-900">{'{{corporateName}}'}</span> inserts the selected user&apos;s company.
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{'{{assignedPackages}}'}</span> inserts that user&apos;s assigned packages.
+                    </p>
+                    <p>
+                      <span className="font-semibold text-slate-900">{'{{packageCount}}'}</span> inserts the number of assigned packages.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-        )}
-
-        <div className="mt-4">
-          <label className="admin-form-label">HTML Content</label>
-          <textarea
-            className="admin-form-textarea font-mono text-xs"
-            rows={14}
-            value={htmlContent}
-            onChange={(e) => setHtmlContent(e.target.value)}
-            placeholder="HTML supported. Unsubscribe link is auto-injected."
-          />
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button className="admin-btn-primary" onClick={onSendCampaign} disabled={sending}>
-            <MailCheck size={16} /> {sending ? 'Sending...' : 'Send Campaign'}
-          </button>
-          <button className="admin-btn-secondary" onClick={onProcessQueue} disabled={processingQueue}>
-            <Send size={16} /> {processingQueue ? 'Processing Queue...' : 'Process Queue Now'}
-          </button>
         </div>
       </div>
 
@@ -371,7 +781,9 @@ export default function EmailMarketingPage() {
               ) : (
                 data.recentRecipients.map((row) => (
                   <tr key={row.id}>
-                    <td>#{row.campaign.id} - {row.campaign.subject}</td>
+                    <td>
+                      #{row.campaign.id} - {row.campaign.subject}
+                    </td>
                     <td>{row.email}</td>
                     <td>{row.status}</td>
                     <td>{row.errorMessage || '-'}</td>

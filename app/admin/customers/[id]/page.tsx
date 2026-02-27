@@ -278,6 +278,7 @@ export default function AdminCustomerDetailsPage({
           {customer.assignedPackages.length === 0 ? (
             <p className="text-sm text-slate-500">No assigned package records.</p>
           ) : (
+            <div className="admin-table-wrapper">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -306,6 +307,7 @@ export default function AdminCustomerDetailsPage({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>
@@ -318,6 +320,7 @@ export default function AdminCustomerDetailsPage({
           {customer.orders.length === 0 ? (
             <p className="text-sm text-slate-500">No orders found for this customer.</p>
           ) : (
+            <div className="admin-table-wrapper">
             <table className="admin-table">
               <thead>
                 <tr>
@@ -361,6 +364,7 @@ export default function AdminCustomerDetailsPage({
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       </div>

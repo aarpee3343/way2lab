@@ -12,7 +12,10 @@ import {
 } from '@/app/actions/adminCustomerActions';
 import { toast } from '@/lib/safe-toast';
 
-type CustomerListItem = Awaited<ReturnType<typeof getAdminCustomersList>>[number];
+const PAGE_SIZE = 100;
+
+type CustomerListResponse = Awaited<ReturnType<typeof getAdminCustomersList>>;
+type CustomerListItem = CustomerListResponse['items'][number];
 
 const formatDate = (value: string | null) => {
   if (!value) return '-';
@@ -37,17 +40,51 @@ export default function AdminCustomersPage() {
   const [statusFilter, setStatusFilter] = useState<CustomerStatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>('all');
   const [search, setSearch] = useState('');
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    total: 0,
+    page: 1,
+    pageSize: PAGE_SIZE,
+    totalPages: 1,
+  });
 
-  const load = async (status: CustomerStatusFilter, type: CustomerTypeFilter, query: string) => {
+  const loadStats = async () => {
+    try {
+      const statsData = await getAdminCustomersStats();
+      setStats(statsData);
+    } catch {
+      toast.error('Failed to load customer stats');
+    }
+  };
+
+  const load = async (
+    status: CustomerStatusFilter,
+    type: CustomerTypeFilter,
+    query: string,
+    currentPage: number
+  ) => {
     setLoading(true);
 
     try {
-      const [rows, statsData] = await Promise.all([
-        getAdminCustomersList({ status, type, search: query }),
-        getAdminCustomersStats(),
-      ]);
-      setItems(rows);
-      setStats(statsData);
+      const rows = await getAdminCustomersList({
+        status,
+        type,
+        search: query,
+        page: currentPage,
+        pageSize: PAGE_SIZE,
+      });
+
+      setItems(rows.items);
+      setPagination({
+        total: rows.total,
+        page: rows.page,
+        pageSize: rows.pageSize,
+        totalPages: rows.totalPages,
+      });
+
+      if (rows.total > 0 && currentPage > rows.totalPages) {
+        setPage(rows.totalPages);
+      }
     } catch {
       toast.error('Failed to load customers');
     } finally {
@@ -56,11 +93,19 @@ export default function AdminCustomersPage() {
   };
 
   useEffect(() => {
+    loadStats();
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, typeFilter, search]);
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      load(statusFilter, typeFilter, search);
+      load(statusFilter, typeFilter, search, page);
     }, 250);
     return () => clearTimeout(timer);
-  }, [statusFilter, typeFilter, search]);
+  }, [statusFilter, typeFilter, search, page]);
 
   const handleStatusToggle = async (customerId: number, nextStatus: boolean) => {
     const actionLabel = nextStatus ? 'activate' : 'deactivate';
@@ -76,8 +121,11 @@ export default function AdminCustomersPage() {
     }
 
     toast.success(nextStatus ? 'Customer account activated' : 'Customer account deactivated');
-    await load(statusFilter, typeFilter, search);
+    await Promise.all([load(statusFilter, typeFilter, search, page), loadStats()]);
   };
+
+  const startItem = pagination.total === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+  const endItem = pagination.total === 0 ? 0 : Math.min(pagination.page * pagination.pageSize, pagination.total);
 
   return (
     <div className="admin-space-y">
@@ -131,94 +179,121 @@ export default function AdminCustomersPage() {
           </div>
         </div>
 
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Customer</th>
-              <th>Number</th>
-              <th>Type</th>
-              <th>Orders</th>
-              <th>Account Status</th>
-              <th>Joined</th>
-              <th className="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+        <div className="admin-table-wrapper">
+          <table className="admin-table">
+            <thead>
               <tr>
-                <td colSpan={7} className="text-center py-10 text-slate-400">
-                  Loading customers...
-                </td>
+                <th>Customer</th>
+                <th>Number</th>
+                <th>Type</th>
+                <th>Orders</th>
+                <th>Account Status</th>
+                <th>Joined</th>
+                <th className="text-right">Actions</th>
               </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="text-center py-10 text-slate-400">
-                  No customers found.
-                </td>
-              </tr>
-            ) : (
-              items.map((customer) => (
-                <tr key={customer.id}>
-                  <td>
-                    <div className="admin-table-row-primary">{customer.name || 'Unnamed Customer'}</div>
-                    <div className="admin-table-row-secondary">{customer.email || '-'}</div>
-                    {customer.uhid ? (
-                      <div className="admin-table-row-secondary">UHID: {customer.uhid}</div>
-                    ) : null}
-                  </td>
-                  <td className="admin-table-row-primary">{customer.phone || '-'}</td>
-                  <td>
-                    {customer.corporate ? (
-                      <div className="flex flex-col gap-1">
-                        <span className="admin-badge admin-badge-info">Corporate User</span>
-                        <span className="admin-table-row-secondary">{customer.corporate.companyName}</span>
-                      </div>
-                    ) : (
-                      <span className="admin-badge admin-badge-default">General User</span>
-                    )}
-                  </td>
-                  <td>
-                    <div className="admin-table-row-primary">{customer.orderCount}</div>
-                    <div className="admin-table-row-secondary">Last: {formatDate(customer.lastOrderAt)}</div>
-                  </td>
-                  <td>
-                    <div
-                      className={`admin-status-indicator ${
-                        customer.isActive ? 'admin-badge-success' : 'admin-badge-default'
-                      }`}
-                    >
-                      <div
-                        className={`admin-status-dot ${
-                          customer.isActive ? 'bg-emerald-500' : 'bg-slate-400'
-                        }`}
-                      />
-                      {customer.isActive ? 'Active' : 'Inactive'}
-                    </div>
-                  </td>
-                  <td>{formatDate(customer.createdAt)}</td>
-                  <td className="text-right">
-                    <div className="flex gap-2 justify-end">
-                      <Link href={`/admin/customers/${customer.id}`} className="admin-btn-secondary text-xs">
-                        View
-                      </Link>
-                      <button
-                        className={customer.isActive ? 'admin-btn-danger text-xs' : 'admin-btn-primary text-xs'}
-                        disabled={updatingId === customer.id}
-                        onClick={() => handleStatusToggle(customer.id, !customer.isActive)}
-                      >
-                        {updatingId === customer.id
-                          ? 'Updating...'
-                          : customer.isActive
-                          ? 'Deactivate'
-                          : 'Activate'}
-                      </button>
-                    </div>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-slate-400">
+                    Loading customers...
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-10 text-slate-400">
+                    No customers found.
+                  </td>
+                </tr>
+              ) : (
+                items.map((customer) => (
+                  <tr key={customer.id}>
+                    <td>
+                      <div className="admin-table-row-primary">{customer.name || 'Unnamed Customer'}</div>
+                      <div className="admin-table-row-secondary">{customer.email || '-'}</div>
+                      {customer.uhid ? (
+                        <div className="admin-table-row-secondary">UHID: {customer.uhid}</div>
+                      ) : null}
+                    </td>
+                    <td className="admin-table-row-primary">{customer.phone || '-'}</td>
+                    <td>
+                      {customer.corporate ? (
+                        <div className="flex flex-col gap-1">
+                          <span className="admin-badge admin-badge-info">Corporate User</span>
+                          <span className="admin-table-row-secondary">{customer.corporate.companyName}</span>
+                        </div>
+                      ) : (
+                        <span className="admin-badge admin-badge-default">General User</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="admin-table-row-primary">{customer.orderCount}</div>
+                      <div className="admin-table-row-secondary">Last: {formatDate(customer.lastOrderAt)}</div>
+                    </td>
+                    <td>
+                      <div
+                        className={`admin-status-indicator ${
+                          customer.isActive ? 'admin-badge-success' : 'admin-badge-default'
+                        }`}
+                      >
+                        <div
+                          className={`admin-status-dot ${
+                            customer.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                          }`}
+                        />
+                        {customer.isActive ? 'Active' : 'Inactive'}
+                      </div>
+                    </td>
+                    <td>{formatDate(customer.createdAt)}</td>
+                    <td className="text-right">
+                      <div className="flex gap-2 justify-end">
+                        <Link href={`/admin/customers/${customer.id}`} className="admin-btn-secondary text-xs">
+                          View
+                        </Link>
+                        <button
+                          className={customer.isActive ? 'admin-btn-danger text-xs' : 'admin-btn-primary text-xs'}
+                          disabled={updatingId === customer.id}
+                          onClick={() => handleStatusToggle(customer.id, !customer.isActive)}
+                        >
+                          {updatingId === customer.id
+                            ? 'Updating...'
+                            : customer.isActive
+                            ? 'Deactivate'
+                            : 'Activate'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="px-4 py-3 border-t border-slate-200 flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-slate-50">
+          <div className="text-sm text-slate-600">
+            Showing {startItem}-{endItem} of {pagination.total} customers (100 per page)
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="admin-btn-secondary text-xs"
+              disabled={loading || page <= 1}
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            >
+              Previous
+            </button>
+            <span className="text-xs font-semibold text-slate-600 px-2">
+              Page {pagination.page} / {pagination.totalPages}
+            </span>
+            <button
+              className="admin-btn-secondary text-xs"
+              disabled={loading || page >= pagination.totalPages}
+              onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
