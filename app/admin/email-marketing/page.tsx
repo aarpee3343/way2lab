@@ -54,12 +54,34 @@ function buildCorporateWowTemplate(company: {
       <td align="center" style="padding:18px 10px;">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background-color:#ffffff;border-radius:24px;overflow:hidden;">
           <tr>
+            <td align="center" style="padding:12px 18px;background-color:#dbeafe;border-bottom:1px solid #bfdbfe;">
+              <table role="presentation" cellspacing="0" cellpadding="0" style="margin:0 auto;">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <img src="${company.logoUrl}" alt="${company.brandName}" width="72" style="display:block;width:72px;max-width:72px;height:auto;border:0;" />
+                  </td>
+                  <td style="vertical-align:middle;padding:0 10px;font-size:16px;line-height:16px;font-weight:700;color:#1d4ed8;">|</td>
+                  <td style="vertical-align:middle;padding-left:10px;">
+                    <p style="margin:0;font-size:14px;line-height:18px;font-weight:800;letter-spacing:2.4px;text-transform:uppercase;color:#0f172a;">WayToLab Healthcare</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
             <td style="padding:24px 22px;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 70%,#38bdf8 100%);">
-              <img src="${company.logoUrl}" alt="${company.brandName}" width="118" style="display:block;width:118px;max-width:100%;height:auto;border:0;" />
-              <p style="margin:18px 0 8px;font-size:11px;line-height:16px;letter-spacing:2px;text-transform:uppercase;color:#bfdbfe;">Corporate Wellness Access</p>
-              <h1 style="margin:0 0 10px;font-size:26px;line-height:32px;font-weight:700;color:#ffffff;">{{firstName}}, your {{corporateName}} health benefits are ready.</h1>
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:0 0 10px;">
+                    <span style="display:inline-block;padding:7px 12px;border-radius:999px;background-color:rgba(255,255,255,0.14);font-size:11px;line-height:16px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:#dbeafe;">
+                      Corporate Wellness Access
+                    </span>
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin:0 0 10px;font-size:25px;line-height:31px;font-weight:800;color:#ffffff;">{{firstName}}, unlock your {{corporateName}} health benefits.</h1>
               <p style="margin:0;font-size:14px;line-height:22px;color:#dbeafe;">
-                You now have access to your mapped wellness benefits on ${company.brandName}. Review your assigned packages and book in a few taps.
+                Your company wellness access is now live on ${company.brandName}. Review assigned packages, choose the right checkup, and book faster.
               </p>
             </td>
           </tr>
