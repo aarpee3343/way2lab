@@ -3,6 +3,7 @@
 import crypto from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { Prisma } from '@prisma/client';
+import { getAdminSettings } from '@/app/actions/adminSettingsActions';
 import { requireAdmin } from '@/lib/admin-auth';
 import { prisma } from '@/lib/db';
 import { sendEmail } from '@/lib/mailer';
@@ -877,7 +878,7 @@ export async function getEmailMarketingDashboardAction(search?: string) {
       }
     : {};
 
-  const [subscribers, campaigns, recentRecipients, recentAuditLogs, total, active, unsubscribed, corporates] = await Promise.all([
+  const [subscribers, campaigns, recentRecipients, recentAuditLogs, total, active, unsubscribed, corporates, settings] = await Promise.all([
     prisma.newsletterSubscriber.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -956,6 +957,7 @@ export async function getEmailMarketingDashboardAction(search?: string) {
         },
       },
     }),
+    getAdminSettings(),
   ]);
 
   return {
@@ -1009,6 +1011,24 @@ export async function getEmailMarketingDashboardAction(search?: string) {
       metadata: row.metadata,
       createdAt: row.createdAt.toISOString(),
     })),
+    companyIdentity: {
+      logoUrl: `${getAppBaseUrl()}/logo.png`,
+      brandName: settings.companyProfile.brandName,
+      legalName: settings.companyProfile.legalName,
+      website: settings.companyProfile.website,
+      supportEmail: settings.companyProfile.supportEmail,
+      customerCareNumber: settings.companyProfile.customerCareNumber,
+      alternateContactNumber: settings.companyProfile.alternateContactNumber,
+      addressLine1: settings.companyProfile.addressLine1,
+      addressLine2: settings.companyProfile.addressLine2,
+      city: settings.companyProfile.city,
+      state: settings.companyProfile.state,
+      pincode: settings.companyProfile.pincode,
+      country: settings.companyProfile.country,
+      pan: settings.companyProfile.pan,
+      gstin: settings.companyProfile.gstin,
+      cin: settings.companyProfile.cin,
+    },
     corporates: corporates.map((corporate) => {
       const packageMap = new Map<number, { id: number; packageName: string }>();
 

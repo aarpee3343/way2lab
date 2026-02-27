@@ -9,6 +9,132 @@ import {
   sendPromotionalCampaignAction,
 } from '@/app/actions/newsletterActions';
 
+function buildCorporateWowTemplate(company: {
+  logoUrl: string;
+  brandName: string;
+  legalName: string;
+  website: string;
+  supportEmail: string;
+  customerCareNumber: string;
+  alternateContactNumber: string;
+  addressLine1: string;
+  addressLine2: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+  pan: string;
+  gstin: string;
+  cin: string;
+}) {
+  const contactParts = [company.customerCareNumber, company.alternateContactNumber].filter(Boolean).join(' | ');
+  const addressParts = [
+    company.addressLine1,
+    company.addressLine2,
+    company.city,
+    company.state,
+    company.pincode,
+    company.country,
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const identityParts = [
+    company.legalName && `Legal Name: ${company.legalName}`,
+    company.gstin && `GSTIN: ${company.gstin}`,
+    company.pan && `PAN: ${company.pan}`,
+    company.cin && `CIN: ${company.cin}`,
+  ]
+    .filter(Boolean)
+    .join(' | ');
+
+  return `
+<div style="margin:0;padding:0;background-color:#eef4ff;font-family:Arial,sans-serif;color:#0f172a;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#eef4ff;margin:0;padding:0;">
+    <tr>
+      <td align="center" style="padding:18px 10px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background-color:#ffffff;border-radius:24px;overflow:hidden;">
+          <tr>
+            <td style="padding:24px 22px;background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 70%,#38bdf8 100%);">
+              <img src="${company.logoUrl}" alt="${company.brandName}" width="118" style="display:block;width:118px;max-width:100%;height:auto;border:0;" />
+              <p style="margin:18px 0 8px;font-size:11px;line-height:16px;letter-spacing:2px;text-transform:uppercase;color:#bfdbfe;">Corporate Wellness Access</p>
+              <h1 style="margin:0 0 10px;font-size:26px;line-height:32px;font-weight:700;color:#ffffff;">{{firstName}}, your {{corporateName}} health benefits are ready.</h1>
+              <p style="margin:0;font-size:14px;line-height:22px;color:#dbeafe;">
+                You now have access to your mapped wellness benefits on ${company.brandName}. Review your assigned packages and book in a few taps.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:20px 22px 8px;">
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                <tr>
+                  <td style="padding:0 0 12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f8fbff;border:1px solid #dbeafe;border-radius:18px;">
+                      <tr>
+                        <td style="padding:16px 16px 10px;">
+                          <p style="margin:0 0 6px;font-size:11px;line-height:16px;letter-spacing:1.8px;text-transform:uppercase;color:#2563eb;">Corporate</p>
+                          <p style="margin:0;font-size:20px;line-height:26px;font-weight:700;color:#0f172a;">{{corporateName}}</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding:0 16px 16px;">
+                          <p style="margin:0;font-size:13px;line-height:20px;color:#475569;">Assigned packages: <strong>{{packageCount}}</strong></p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 0 12px;">
+                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:18px;">
+                      <tr>
+                        <td style="padding:16px 16px 8px;">
+                          <p style="margin:0 0 6px;font-size:11px;line-height:16px;letter-spacing:1.8px;text-transform:uppercase;color:#4338ca;">Mapped For You</p>
+                          <p style="margin:0;font-size:14px;line-height:22px;color:#334155;">{{assignedPackages}}</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 0 18px;">
+                    <p style="margin:0 0 8px;font-size:16px;line-height:24px;font-weight:700;color:#0f172a;">Use your corporate benefits with a faster booking flow.</p>
+                    <p style="margin:0;font-size:14px;line-height:22px;color:#475569;">Choose your preferred package, pick a convenient slot, and complete the order in minutes.</p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 0 22px;">
+                    <a href="https://waytolab.com/dashboard/benefits" style="display:inline-block;background-color:#0f172a;color:#ffffff;text-decoration:none;font-size:14px;line-height:20px;font-weight:700;padding:12px 20px;border-radius:999px;">Open my benefits</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 22px;background-color:#f8fafc;border-top:1px solid #e2e8f0;">
+              <p style="margin:0 0 10px;font-size:12px;line-height:18px;font-weight:700;color:#0f172a;">${company.brandName}</p>
+              ${
+                addressParts
+                  ? `<p style="margin:0 0 8px;font-size:12px;line-height:18px;color:#475569;">${addressParts}</p>`
+                  : ''
+              }
+              <p style="margin:0 0 8px;font-size:12px;line-height:18px;color:#475569;">
+                ${company.website ? `<a href="${company.website}" style="color:#1d4ed8;text-decoration:none;">${company.website}</a>` : ''}
+                ${company.website && (company.supportEmail || contactParts) ? ' | ' : ''}
+                ${company.supportEmail ? `<a href="mailto:${company.supportEmail}" style="color:#1d4ed8;text-decoration:none;">${company.supportEmail}</a>` : ''}
+                ${(company.website || company.supportEmail) && contactParts ? ' | ' : ''}
+                ${contactParts}
+              </p>
+              ${identityParts ? `<p style="margin:0 0 10px;font-size:11px;line-height:17px;color:#64748b;">${identityParts}</p>` : ''}
+              <p style="margin:0 0 8px;font-size:11px;line-height:17px;color:#64748b;">This email was sent by your authorized Wellness Partner, authorized by your corporate entity.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</div>`.trim();
+}
+
 const TEMPLATE_PRESETS = {
   promo_basic: {
     label: 'Flash Offer',
@@ -58,43 +184,7 @@ const TEMPLATE_PRESETS = {
   corporate_wow: {
     label: 'Corporate WOW',
     blurb: 'Stylish corporate mail with company and assigned-package personalization.',
-    html: `
-<div style="margin:0;padding:0;background:#f8fafc;font-family:Arial,sans-serif;color:#0f172a;">
-  <div style="max-width:720px;margin:0 auto;padding:28px 18px;">
-    <div style="background:linear-gradient(135deg,#0f172a 0%,#1d4ed8 52%,#38bdf8 100%);border-radius:30px;overflow:hidden;box-shadow:0 25px 60px rgba(15,23,42,0.18);">
-      <div style="padding:36px 34px 26px;color:#e2e8f0;">
-        <p style="margin:0 0 14px;font-size:12px;letter-spacing:0.22em;text-transform:uppercase;color:#bfdbfe;">Corporate Wellness Access</p>
-        <h1 style="margin:0 0 12px;font-size:34px;line-height:1.15;color:#ffffff;">{{firstName}}, your {{corporateName}} health benefits are ready to use.</h1>
-        <p style="margin:0;max-width:520px;font-size:16px;line-height:1.7;color:#dbeafe;">We have mapped your company wellness access on Way2Lab so you can move from eligibility to booking in a few clicks.</p>
-      </div>
-      <div style="padding:0 24px 28px;">
-        <div style="background:#ffffff;border-radius:26px;padding:26px;border:1px solid rgba(255,255,255,0.4);">
-          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-bottom:18px;">
-            <div style="background:#eff6ff;border-radius:20px;padding:18px;">
-              <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#2563eb;">Corporate</p>
-              <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">{{corporateName}}</p>
-            </div>
-            <div style="background:#ecfeff;border-radius:20px;padding:18px;">
-              <p style="margin:0 0 8px;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#0891b2;">Assigned Packages</p>
-              <p style="margin:0;font-size:22px;font-weight:700;color:#0f172a;">{{packageCount}}</p>
-            </div>
-          </div>
-          <div style="background:linear-gradient(180deg,#f8fafc 0%,#eef2ff 100%);border-radius:22px;padding:20px 22px;margin-bottom:18px;">
-            <p style="margin:0 0 8px;font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:#4338ca;">Mapped for you</p>
-            <p style="margin:0;font-size:16px;line-height:1.8;color:#334155;">{{assignedPackages}}</p>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;">
-            <div>
-              <p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#0f172a;">Book faster, use your company benefits smarter.</p>
-              <p style="margin:0;color:#475569;">Choose your package, confirm your slot, and complete the booking in minutes.</p>
-            </div>
-            <a href="https://waytolab.com/dashboard/benefits" style="display:inline-block;padding:14px 24px;border-radius:999px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;">Open my benefits</a>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>`.trim(),
+    html: '',
   },
   custom_blank: {
     label: 'Blank Template',
@@ -130,6 +220,33 @@ type SendMode = (typeof SEND_MODES)[number]['value'];
 type GeneralSegment = (typeof GENERAL_SEGMENTS)[number]['value'];
 type CorporateSegment = (typeof CORPORATE_SEGMENTS)[number]['value'];
 type TemplateName = keyof typeof TEMPLATE_PRESETS;
+
+function getTemplateHtml(templateName: TemplateName, data: DashboardData | null) {
+  if (templateName === 'corporate_wow') {
+    return buildCorporateWowTemplate(
+      data?.companyIdentity || {
+        logoUrl: '/logo.png',
+        brandName: 'WayToLab',
+        legalName: 'WayToLab Healthcare Private Limited',
+        website: 'https://way2lab.com',
+        supportEmail: '',
+        customerCareNumber: '',
+        alternateContactNumber: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        pincode: '',
+        country: 'India',
+        pan: '',
+        gstin: '',
+        cin: '',
+      }
+    );
+  }
+
+  return TEMPLATE_PRESETS[templateName].html;
+}
 
 function getAudienceType(sendMode: SendMode, generalSegment: GeneralSegment) {
   if (sendMode === 'CUSTOM_LIST') return 'CUSTOM_LIST' as const;
@@ -208,7 +325,7 @@ export default function EmailMarketingPage() {
 
   const applyTemplate = (next: TemplateName) => {
     setTemplateName(next);
-    setHtmlContent(TEMPLATE_PRESETS[next].html);
+    setHtmlContent(getTemplateHtml(next, data));
     if (next === 'corporate_wow') {
       setPersonalize(true);
     }
