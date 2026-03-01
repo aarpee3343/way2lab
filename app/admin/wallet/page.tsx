@@ -47,9 +47,11 @@ const formatDateTime = (value?: string | null) => {
 };
 
 export default function AdminWalletPage() {
+  const PAGE_SIZE = 10;
   const [data, setData] = useState<WalletDashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [customerLookup, setCustomerLookup] = useState<any>(null);
   const [lookupPhone, setLookupPhone] = useState('');
   const [creditForm, setCreditForm] = useState({
@@ -94,10 +96,15 @@ export default function AdminWalletPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
+      setCurrentPage(1);
       load(search);
     }, 250);
     return () => clearTimeout(timer);
   }, [load, search]);
+
+  const wallets = data?.wallets || [];
+  const totalWalletPages = Math.max(1, Math.ceil(wallets.length / PAGE_SIZE));
+  const paginatedWallets = wallets.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   const lookupCustomer = async () => {
     const response = await getWalletCustomerLookup(lookupPhone);
@@ -340,12 +347,12 @@ export default function AdminWalletPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {(data?.wallets || []).length === 0 ? (
+                  {wallets.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-10 text-center text-slate-400">No wallet records found.</td>
                     </tr>
                   ) : (
-                    data?.wallets.map((row) => (
+                    paginatedWallets.map((row) => (
                       <tr key={row.id}>
                         <td>
                           <div className="admin-table-row-primary">{row.name}</div>
@@ -370,6 +377,35 @@ export default function AdminWalletPage() {
                 </tbody>
               </table>
             </div>
+            {wallets.length > PAGE_SIZE ? (
+              <div className="flex items-center justify-between gap-3 border-t border-slate-200 pt-4">
+                <div className="text-sm text-slate-500">
+                  Showing {(currentPage - 1) * PAGE_SIZE + 1}-
+                  {Math.min(currentPage * PAGE_SIZE, wallets.length)} of {wallets.length}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    className="admin-btn-secondary text-xs"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+                  >
+                    Previous
+                  </button>
+                  <div className="text-sm font-medium text-slate-600">
+                    Page {currentPage} of {totalWalletPages}
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-btn-secondary text-xs"
+                    disabled={currentPage >= totalWalletPages}
+                    onClick={() => setCurrentPage((page) => Math.min(totalWalletPages, page + 1))}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
