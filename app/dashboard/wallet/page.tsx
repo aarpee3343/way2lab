@@ -1,6 +1,9 @@
 import { Clock3, Gift, History, Wallet } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import { getCurrentUserWalletOverview } from '@/app/actions/adminWalletActions';
+
+export const dynamic = 'force-dynamic';
 
 const formatMoney = (value: number) =>
   new Intl.NumberFormat('en-IN', {
@@ -21,7 +24,15 @@ const formatDateTime = (value?: string | null) => {
 };
 
 export default async function DashboardWalletPage() {
-  const data = await getCurrentUserWalletOverview();
+  let data;
+  try {
+    data = await getCurrentUserWalletOverview();
+  } catch (error: any) {
+    if (error?.message === 'UNAUTHORIZED') {
+      redirect('/login');
+    }
+    throw error;
+  }
 
   return (
     <div className="space-y-8">
