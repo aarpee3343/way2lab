@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(passToHash, 10);
 
     // 4. Generate UHID (shared generator for all customer creation flows)
-    const uhid = await generateCustomerUHID();
+    const uhid = await generateCustomerUHID({ scheme: 'SELF' });
 
     // ---------------------------------------------------------
     // 5. Corporate Domain Auto-Mapping Logic

@@ -1,18 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
-
-async function generateFamilyUHID() {
-  let attempts = 0;
-    while (attempts < 10) {
-      const randomSuffix = Math.random().toString(36).substring(2, 9).toUpperCase();
-      const uhid = `WTLF${randomSuffix}`;
-      const exists = await prisma.familyMember.findFirst({ where: { uhid } });
-      if (!exists) return uhid;
-      attempts++;
-    }
-    throw new Error("Failed to generate unique UHID");
-  }
+import { generateFamilyUHID } from '@/lib/utils/generators';
 
 export async function POST(req: Request) {
   const user = await getAuthUser(req);

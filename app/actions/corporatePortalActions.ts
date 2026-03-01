@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 import { encryptBuffer } from '@/lib/crypto';
 import { uploadEncryptedFile } from '@/lib/gcs';
+import { generateUHIDBatch } from '@/lib/utils/generators';
 
 type CorpSession = {
   userId: number;
@@ -845,7 +846,7 @@ export async function uploadEmployeesForCorp(corporateId: number, employees: any
     const existingCustomers = orConditions.length
       ? await prisma.customer.findMany({
           where: { OR: orConditions },
-          select: { id: true, email: true, phone: true, department: true, location: true }
+          select: { id: true, email: true, phone: true, department: true, location: true, uhid: true }
         })
       : [];
 
@@ -856,21 +857,22 @@ export async function uploadEmployeesForCorp(corporateId: number, employees: any
       if (c.phone) existingByPhone.set(c.phone, c);
     });
 
-    let nextUhidNumber = 100001;
-    const needsGeneratedUhid = uniqueEmployees.some((e) => !e.uhid);
-    if (needsGeneratedUhid) {
-      const lastCustomer = await prisma.customer.findFirst({
-        where: { uhid: { not: null } },
-        orderBy: { id: 'desc' },
-        select: { uhid: true }
-      });
-      if (lastCustomer?.uhid) {
-        const match = lastCustomer.uhid.match(/\d+/);
-        if (match) nextUhidNumber = parseInt(match[0], 10) + 1;
-      }
-    }
-
-    const buildUhid = () => `WTL-${nextUhidNumber++}`;
+    const requiredGeneratedUhids = uniqueEmployees.reduce((count, emp) => {
+      const existing =
+        (emp.email && existingByEmail.get(emp.email)) ||
+        (emp.phone && existingByPhone.get(emp.phone));
+      if (existing) return count + (existing.uhid ? 0 : 1);
+      return count + (emp.uhid ? 0 : 1);
+    }, 0);
+    const generatedUhids = requiredGeneratedUhids
+      ? await generateUHIDBatch({ scheme: 'SELF', count: requiredGeneratedUhids })
+      : [];
+    let generatedUhidIndex = 0;
+    const takeGeneratedUhid = () => {
+      const uhid = generatedUhids[generatedUhidIndex++];
+      if (!uhid) throw new Error('Failed to allocate customer UHID');
+      return uhid;
+    };
 
     let mapped = 0;
     let created = 0;
@@ -891,7 +893,8 @@ export async function uploadEmployeesForCorp(corporateId: number, employees: any
             corporateId,
             employeeId: emp.employeeId,
             department: emp.department || existing.department,
-            location: emp.location || existing.location
+            location: emp.location || existing.location,
+            uhid: existing.uhid || takeGeneratedUhid(),
           }
         });
       } else {
@@ -909,7 +912,7 @@ export async function uploadEmployeesForCorp(corporateId: number, employees: any
           corporateId,
           isActive: true,
           loginMethod,
-          uhid: emp.uhid || buildUhid()
+          uhid: emp.uhid || takeGeneratedUhid()
         });
       }
     }

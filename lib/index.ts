@@ -21,5 +21,11 @@ export type {
 export { getAuthUser } from './auth';
 
 // Utils
-export { generateOrderNumber, generateCustomerUHID } from './utils/generators';
+export {
+  generateOrderNumber,
+  generateCustomerUHID,
+  generateFamilyUHID,
+  generateUHIDBatch,
+  ensureCustomerUHID,
+} from './utils/generators';
 export { sendEmail } from './mailer';

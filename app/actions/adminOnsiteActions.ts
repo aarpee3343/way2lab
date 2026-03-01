@@ -5,7 +5,7 @@ import prisma from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import { revalidatePath } from 'next/cache';
-import { generateOrderNumber, generateCustomerUHID } from '@/lib/utils/generators';
+import { ensureCustomerUHID, generateOrderNumber, generateCustomerUHID } from '@/lib/utils/generators';
 import { OrderStatus, Prisma } from '@prisma/client';
 
 type OnsiteField = {
@@ -146,7 +146,8 @@ export async function createOnsiteEmployee(data: {
       name: true,
       employeeId: true,
       dateOfBirth: true,
-      gender: true
+      gender: true,
+      uhid: true,
     }
   });
 
@@ -159,6 +160,9 @@ export async function createOnsiteEmployee(data: {
     };
     if (parsedDob) updateData.dateOfBirth = parsedDob;
     if (gender) updateData.gender = gender;
+    if (!existing.uhid) {
+      updateData.uhid = await generateCustomerUHID({ scheme: 'ONSITE_CORPORATE' });
+    }
 
     const updated = await prisma.customer.update({
       where: { id: existing.id },
@@ -167,7 +171,7 @@ export async function createOnsiteEmployee(data: {
     return { success: true, customer: updated };
   }
 
-  const uhid = await generateCustomerUHID();
+  const uhid = await generateCustomerUHID({ scheme: 'ONSITE_CORPORATE' });
   const passwordSeed = `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
   const hashedPassword = await bcrypt.hash(passwordSeed, 10);
 
@@ -423,6 +427,7 @@ export async function createOnsiteBooking(data: {
 
   const order = await prisma.$transaction(async (tx) => {
     const orderNumber = await generateOrderNumber({ category: 'ONSITE', tx });
+    const patientUHID = await ensureCustomerUHID(customerId, 'ONSITE_CORPORATE', tx);
 
     if (!camp.labName && resolvedLabName) {
       await tx.onsiteCamp.update({
@@ -440,6 +445,7 @@ export async function createOnsiteBooking(data: {
         patientPhone: customer.phone || null,
         patientDob: customer.dateOfBirth || null,
         patientGender: customer.gender || null,
+        patientUHID,
         patientType: 'self',
         patientRelation: 'Self',
         totalAmount: subtotal,

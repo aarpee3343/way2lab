@@ -8,9 +8,40 @@ import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 import {
   generateOrderNumber,
-  generateCustomerUHID
+  generateCustomerUHID,
+  ensureCustomerUHID,
+  generateFamilyUHID,
 } from '@/lib/utils/generators';
 import { getISTDateInputValue } from '@/lib/date-time';
+
+const normalizeText = (value: unknown) => {
+  if (value === null || value === undefined) return null;
+  const trimmed = String(value).trim();
+  return trimmed ? trimmed : null;
+};
+
+const parseOptionalDate = (value: unknown) => {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(String(value));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+const buildCustomerProfileUpdate = (data: any) => {
+  const next: Record<string, unknown> = {};
+  const name = normalizeText(data.name);
+  const email = normalizeText(data.email);
+  const gender = normalizeText(data.gender);
+  const phone = normalizeText(data.phone);
+  const dateOfBirth = parseOptionalDate(data.dob);
+
+  if (name) next.name = name;
+  if (email) next.email = email;
+  if (gender) next.gender = gender;
+  if (phone) next.phone = phone;
+  if (dateOfBirth) next.dateOfBirth = dateOfBirth;
+
+  return next;
+};
 
 /* ---------------------------------------------------
    1. Check Customer & Fetch Addresses
@@ -19,7 +50,9 @@ export async function checkCustomerAction(phone: string) {
   await requireAdmin({ roles: ['SUPER_ADMIN'] });
   const customer = await prisma.customer.findFirst({
     where: { phone },
-    include: { addresses: true }
+    include: {
+      addresses: { orderBy: { id: 'desc' } }
+    }
   });
 
   if (!customer) return { found: false };
@@ -35,8 +68,10 @@ export async function checkCustomerAction(phone: string) {
     found: true,
     data: {
       id: customer.id,
+      uhid: customer.uhid,
       name: customer.name,
       email: customer.email,
+      phone: customer.phone,
       gender: customer.gender,
       dob: customer.dateOfBirth ? getISTDateInputValue(new Date(customer.dateOfBirth)) : undefined,
       age,
@@ -111,7 +146,9 @@ export async function getCorporateEmployeeDetailsForOrder(
       id: customerId,
       ...(corporateId ? { corporateId } : {})
     },
-    include: { addresses: true }
+    include: {
+      addresses: { orderBy: { id: 'desc' } }
+    }
   });
 
   if (!customer) return { found: false };
@@ -126,6 +163,7 @@ export async function getCorporateEmployeeDetailsForOrder(
     found: true,
     data: {
       id: customer.id,
+      uhid: customer.uhid,
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
@@ -289,25 +327,35 @@ export async function placeAdminOrderAction(data: any) {
   try {
     return await prisma.$transaction(async (tx) => {
       let customerId = data.customerId;
+      const patientMode = data.patientMode === 'family' ? 'family' : 'self';
+      const addressMode = data.addressMode === 'saved' ? 'saved' : 'new';
+      const customerProfileUpdate = buildCustomerProfileUpdate(data);
+      let patientUHID: string | null = null;
       const subtotal = Number(data.subtotal) || 0;
       const homeCharges = Number(data.homeCharges) || 0;
       const couponCode = typeof data.couponCode === 'string' ? data.couponCode.trim() : '';
+      let patientName = normalizeText(data.name) || 'Customer';
+      let patientDob = parseOptionalDate(data.dob);
+      let patientGender = normalizeText(data.gender);
+      let patientPhone = normalizeText(data.phone);
+      let patientType: 'self' | 'family' = 'self';
+      let patientRelation: string | null = null;
 
       /* ---------- A. Customer ---------- */
       if (!customerId) {
-        const uhid = await generateCustomerUHID();
+        const uhid = await generateCustomerUHID({ scheme: 'ADMIN_ORDER', tx });
         const passwordSeed = `${crypto.randomBytes(8).toString('hex')}${Date.now()}`;
         const hashedPassword = await bcrypt.hash(passwordSeed, 10);
-        const email = typeof data.email === 'string' && data.email.trim() ? data.email.trim() : null;
+        const email = normalizeText(data.email);
         const loginMethod = email ? 'email' : 'phone';
 
         const customer = await tx.customer.create({
           data: {
-            name: data.name,
-            phone: data.phone,
+            name: normalizeText(data.name),
+            phone: normalizeText(data.phone),
             email,
-            gender: data.gender,
-            dateOfBirth: data.dob ? new Date(data.dob) : null,
+            gender: patientGender,
+            dateOfBirth: patientDob,
             uhid,
             password: hashedPassword,
             isActive: true,
@@ -316,16 +364,71 @@ export async function placeAdminOrderAction(data: any) {
         });
 
         customerId = customer.id;
+        patientUHID = customer.uhid || uhid;
+      } else {
+        patientUHID = await ensureCustomerUHID(customerId, 'ADMIN_ORDER', tx);
+        if (Object.keys(customerProfileUpdate).length > 0) {
+          await tx.customer.update({
+            where: { id: customerId },
+            data: customerProfileUpdate,
+          });
+        }
+      }
+
+      if (!customerId) {
+        throw new Error('Customer could not be resolved for this order');
+      }
+
+      if (customerId && patientMode === 'family') {
+        const familyName = normalizeText(data.familyMember?.name);
+        const familyGender = normalizeText(data.familyMember?.gender);
+        const familyEmail = normalizeText(data.familyMember?.email);
+        const familyPhone = normalizeText(data.familyMember?.phone);
+        const familyDob = parseOptionalDate(data.familyMember?.dob);
+
+        if (!familyName || !familyDob || !familyGender) {
+          throw new Error('Family member name, gender, and date of birth are required');
+        }
+
+        const familyMember = await tx.familyMember.create({
+          data: {
+            customerId,
+            uhid: await generateFamilyUHID({ tx }),
+            name: familyName,
+            relationship: 'Others',
+            gender: familyGender,
+            dateOfBirth: familyDob,
+            phone: familyPhone,
+            email: familyEmail,
+          },
+        });
+
+        patientType = 'family';
+        patientRelation = familyMember.relationship;
+        patientName = familyMember.name;
+        patientDob = familyMember.dateOfBirth;
+        patientGender = familyMember.gender;
+        patientPhone = familyMember.phone || patientPhone;
+        patientUHID = familyMember.uhid || null;
       }
 
       /* ---------- B. Address ---------- */
-      let addressId = data.existingAddressId;
+      let addressId = addressMode === 'saved' ? Number(data.existingAddressId) || null : null;
 
-      if (!addressId) {
+      if (addressId) {
+        const existingAddress = await tx.customerAddress.findFirst({
+          where: { id: addressId, customerId },
+          select: { id: true }
+        });
+        if (!existingAddress) {
+          throw new Error('Selected address does not belong to this customer');
+        }
+      } else {
         const address = await tx.customerAddress.create({
           data: {
             customerId,
             addressLine1: data.address,
+            addressLine2: normalizeText(data.addressLine2),
             city: data.city,
             state: data.state,
             pincode: data.pincode,
@@ -414,10 +517,13 @@ export async function placeAdminOrderAction(data: any) {
           collectionInstructions: data.instructions || '',
 
           // Patient
-          patientName: data.name,
-          patientDob: data.dob ? new Date(data.dob) : null,
-          patientGender: data.gender,
-          patientPhone: data.phone,
+          patientName,
+          patientDob,
+          patientGender,
+          patientPhone,
+          patientUHID,
+          patientType,
+          patientRelation,
         },
       });
 

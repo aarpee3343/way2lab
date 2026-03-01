@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
+import { generateFamilyUHID } from '@/lib/utils/generators';
 
 // GET Family Members
 export async function GET(req: Request) {
@@ -26,10 +27,7 @@ export async function POST(req: Request) {
 
   try {
     const { name, relationship, gender, date_of_birth, phone, email } = await req.json();
-
-    // Generate UHID
-    const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-    const uhid = `WTLF${randomSuffix}`;
+    const uhid = await generateFamilyUHID();
 
     const member = await prisma.familyMember.create({
       data: {

@@ -491,9 +491,8 @@ export const db = {
         email?: string;
       }
     ) => {
-      // Generate UHID
-      const randomSuffix = Math.floor(100000 + Math.random() * 900000);
-      const uhid = `WTLF${randomSuffix}`;
+      const { generateFamilyUHID } = await import('./utils/generators');
+      const uhid = await generateFamilyUHID();
 
       return await prisma.familyMember.create({
         data: {
