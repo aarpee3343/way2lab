@@ -40,6 +40,8 @@ const getReportETA = (items: any[] = []) => {
   return maxHours || 24;
 };
 
+const formatCurrency = (value?: number | string | null) => `₹${Number(value || 0).toFixed(2)}`;
+
 /* ---------------- MAIN COMPONENT ---------------- */
 
 function SuccessContent() {
@@ -152,10 +154,14 @@ function SuccessContent() {
   const totalDiscount = Number(order.discountAmount || 0);
   const couponDiscount = Math.max(0, totalDiscount - labDiscount);
   const rawHomeCollection = Number(order.homeCollectionCharges || 0);
+  const walletUsed = Number(order.walletAmountUsed || 0);
   const homeCollection = isCorporatePackageOrder ? 0 : rawHomeCollection;
-  const payable = isCorporatePackageOrder
+  const billedAmount = isCorporatePackageOrder
     ? Math.max(0, Number(order.finalAmount || 0) - rawHomeCollection)
     : Number(order.finalAmount || 0);
+  const paidAmount = (order.payments || []).reduce((sum: number, payment: any) => sum + Number(payment.amount || 0), 0);
+  const refundedAmount = (order.refunds || []).reduce((sum: number, refund: any) => sum + Number(refund.amount || 0), 0);
+  const balanceDue = Math.max(0, billedAmount - (paidAmount - refundedAmount));
   const totalSavings = labDiscount + couponDiscount;
 
   const reportHours = getReportETA(order.items);
@@ -232,7 +238,7 @@ function SuccessContent() {
             {order.items.map((i: any, idx: number) => (
               <div key={idx} className="flex justify-between text-sm">
                 <span className="text-slate-700">{i.itemName}</span>
-                <span className="font-bold">₹{i.price}</span>
+                <span className="font-bold">{formatCurrency(i.price)}</span>
               </div>
             ))}
           </div>
@@ -244,8 +250,22 @@ function SuccessContent() {
           {labDiscount > 0 && <SummaryRow label="Lab Discount" value={-labDiscount} />}
           {couponDiscount > 0 && <SummaryRow label="Coupon Discount" value={-couponDiscount} />}
           {homeCollection > 0 && <SummaryRow label="Home Collection Charges" value={homeCollection} />}
+          {walletUsed > 0 && <SummaryRow label="Wallet Used" value={-walletUsed} />}
           <hr className="my-2" />
-          <SummaryRow label="Total Payable" value={isCorporateSponsored ? 0 : payable} bold />
+          <SummaryRow label="Order Total" value={isCorporateSponsored ? 0 : billedAmount} />
+          <SummaryRow label="Paid" value={isCorporateSponsored ? 0 : paidAmount} />
+          {refundedAmount > 0 && <SummaryRow label="Refunded" value={-refundedAmount} />}
+          <SummaryRow label="Balance Due" value={isCorporateSponsored ? 0 : balanceDue} bold />
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700">
+            <p><span className="font-bold text-slate-900">Payment Mode:</span> {order.paymentMode || 'Pay Upon Service'}</p>
+            <p className="mt-1"><span className="font-bold text-slate-900">Payment Status:</span> {order.paymentStatus || 'Pending'}</p>
+            {walletUsed > 0 && (
+              <p className="mt-1 font-semibold text-violet-700">
+                Wallet applied: {formatCurrency(walletUsed)}
+                {balanceDue > 0 ? `, remaining payable ${formatCurrency(balanceDue)}` : ', order fully settled by wallet'}
+              </p>
+            )}
+          </div>
           {isCorporateSponsored && (
             <p className="text-xs font-bold text-emerald-700 mt-1 bg-emerald-50 p-2 rounded border border-emerald-200">
               Corporate sponsored package â€¢ Payable â‚¹0
@@ -257,7 +277,7 @@ function SuccessContent() {
             </p>
           )}
           {totalSavings > 0 && (
-            <p className="text-xs font-bold text-emerald-600 mt-1">You saved ₹{totalSavings}</p>
+            <p className="text-xs font-bold text-emerald-600 mt-1">You saved {formatCurrency(totalSavings)}</p>
           )}
         </Card>
 
@@ -306,7 +326,7 @@ const SummaryRow = ({ label, value, bold }: any) => (
   <div className={`flex justify-between ${bold ? 'font-extrabold text-lg' : 'text-sm'}`}>
     <span>{label}</span>
     <span className={value < 0 ? 'text-red-500' : ''}>
-      ₹{Math.abs(value)}
+      {value < 0 ? '-' : ''}{formatCurrency(Math.abs(Number(value || 0)))}
     </span>
   </div>
 );

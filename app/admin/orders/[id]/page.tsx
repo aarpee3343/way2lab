@@ -23,6 +23,7 @@ import {
   FlaskConical,
   Calendar,
   CreditCard,
+  RotateCcw,
   UploadCloud,
   Edit,
   UserCog,
@@ -97,6 +98,7 @@ export default async function OrderDetailsPage({
       address: true,
       reports: { orderBy: { createdAt: 'desc' } },
       payments: { orderBy: { createdAt: 'desc' } },
+      refunds: { where: { status: 'PROCESSED' }, orderBy: { createdAt: 'desc' } },
       activities: { orderBy: { createdAt: 'desc' } }
     }
   });
@@ -125,8 +127,12 @@ export default async function OrderDetailsPage({
 
   const subtotal = Number(order.totalAmount) || 0;
   const discountAmount = Number(order.discountAmount) || 0;
-  const finalAmount =
+  const billedAmount =
     Number(order.finalAmount) || Math.max(subtotal - discountAmount, 0);
+  const walletAmountUsed = Number(order.walletAmountUsed) || 0;
+  const paidAmount = order.payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+  const refundedAmount = order.refunds.reduce((sum, refund) => sum + Number(refund.amount || 0), 0);
+  const balanceDue = Math.max(0, billedAmount - (paidAmount - refundedAmount));
 
   const discountPercentage =
     subtotal > 0 ? Math.round((discountAmount / subtotal) * 100) : 0;
@@ -224,7 +230,7 @@ export default async function OrderDetailsPage({
 
       {/* ================= SUMMARY ================= */}
       <div className="admin-stat-grid mb-8">
-        <StatCard label="Final Amount" value={`₹${finalAmount}`} highlight />
+        <StatCard label="Order Total" value={`Rs ${billedAmount.toFixed(2)}`} highlight />
         <StatCard
           label="Order Status"
           value={order.status.replace('_', ' ')}
@@ -237,7 +243,7 @@ export default async function OrderDetailsPage({
           badge
           color={getPaymentColor(order.paymentStatus)}
         />
-        <StatCard label="Items" value={order.items.length.toString()} />
+        <StatCard label="Balance Due" value={`Rs ${balanceDue.toFixed(2)}`} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -257,15 +263,19 @@ export default async function OrderDetailsPage({
             />
 
             <div className="bg-slate-50 p-4 rounded-xl space-y-2 mt-4">
-              <Row label="Subtotal" value={`₹${subtotal}`} />
+              <Row label="Subtotal" value={`Rs ${subtotal.toFixed(2)}`} />
               {discountAmount > 0 && (
                 <Row
                   label={`Discount (${discountPercentage}%)`}
-                  value={`-₹${discountAmount}`}
+                  value={`-Rs ${discountAmount.toFixed(2)}`}
                   danger
                 />
               )}
-              <Row label="Final Amount" value={`₹${finalAmount}`} strong />
+              {walletAmountUsed > 0 && <Row label="Wallet Used" value={`-Rs ${walletAmountUsed.toFixed(2)}`} />}
+              <Row label="Order Total" value={`Rs ${billedAmount.toFixed(2)}`} strong />
+              <Row label="Collected" value={`Rs ${paidAmount.toFixed(2)}`} />
+              {refundedAmount > 0 && <Row label="Refunded" value={`Rs ${refundedAmount.toFixed(2)}`} danger />}
+              <Row label="Balance Due" value={`Rs ${balanceDue.toFixed(2)}`} strong />
             </div>
           </Card>
 
@@ -291,7 +301,7 @@ export default async function OrderDetailsPage({
                       </span>
                     </td>
                     <td className="text-right admin-table-row-primary">
-                      ₹{Number(item.price).toFixed(2)}
+                      Rs {Number(item.price).toFixed(2)}
                     </td>
                   </tr>
                 ))}
@@ -307,6 +317,7 @@ export default async function OrderDetailsPage({
                   <tr>
                     <th>Date</th>
                     <th>Method</th>
+                    <th>Type</th>
                     <th>Status</th>
                     <th className="text-right">Amount</th>
                   </tr>
@@ -316,13 +327,14 @@ export default async function OrderDetailsPage({
                     <tr key={p.id}>
                       <td className="admin-table-row-secondary">{formatISTDateTime(p.createdAt)}</td>
                       <td>{p.method}</td>
+                      <td>{p.paymentType}</td>
                       <td>
                         <span className={`admin-badge ${p.status === 'Paid' ? 'admin-badge-success' : 'admin-badge-warning'}`}>
                           {p.status}
                         </span>
                       </td>
                       <td className="text-right admin-table-row-primary">
-                        ₹{p.amount.toString()}
+                        Rs {Number(p.amount).toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -330,6 +342,35 @@ export default async function OrderDetailsPage({
               </table>
             ) : (
               <p className="text-sm text-slate-400">No payments recorded.</p>
+            )}
+          </Card>
+
+          <Card title="Refund Transactions" icon={RotateCcw}>
+            {order.refunds.length ? (
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Destination</th>
+                    <th>Status</th>
+                    <th>Reason</th>
+                    <th className="text-right">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {order.refunds.map(refund => (
+                    <tr key={refund.id}>
+                      <td className="admin-table-row-secondary">{formatISTDateTime(refund.createdAt)}</td>
+                      <td>{refund.destination}</td>
+                      <td>{refund.status}</td>
+                      <td>{refund.reason}</td>
+                      <td className="text-right admin-table-row-primary">Rs {Number(refund.amount).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="text-sm text-slate-400">No refunds recorded.</p>
             )}
           </Card>
 

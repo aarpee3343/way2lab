@@ -15,7 +15,8 @@ import {
   ShieldCheck,
   Calendar,
   Clock,
-  Loader2
+  Loader2,
+  Wallet
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 
@@ -81,6 +82,8 @@ export default function ConfirmOrderPage() {
   const [patient, setPatient] = useState<any>(null);
   const [homeCharge, setHomeCharge] = useState(0);
   const [user, setUser] = useState<any>(null);
+  const [wallet, setWallet] = useState<any>(null);
+  const [walletUseAmount, setWalletUseAmount] = useState(0);
 
   /* ---------- GUARDS ---------- */
   useEffect(() => {
@@ -100,9 +103,13 @@ export default function ConfirmOrderPage() {
       try {
         
         // 1. Fetch User (This acts as the Auth Check)
-        const meRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`);
+        const [meRes, walletRes] = await Promise.all([
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`),
+          axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/wallet`)
+        ]);
         const userData = meRes.data.user;
         setUser(userData);
+        setWallet(walletRes.data?.data || null);
 
         // 2. Fetch Address
         const addrRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/user/addresses`);
@@ -192,8 +199,6 @@ export default function ConfirmOrderPage() {
   const testDiscount = mrpTotal - sellingTotal;
   const couponDiscount = totals.couponDiscount || 0;
 
-  const finalTotal = Math.max(0, payableTotal - couponDiscount + homeCharge);
-
   /* ---------- CORPORATE BILLING CHECK ---------- */
   const isCorporateCovered =
     !!user.corporateId &&
@@ -202,6 +207,11 @@ export default function ConfirmOrderPage() {
         i.isCorporate === true &&
         getCorporatePaymentType(i, patientTypeKey) === 'CORPORATE_PAYS'
     );
+
+  const finalTotal = Math.max(0, payableTotal - couponDiscount + homeCharge);
+  const maxWalletUsable = Math.min(finalTotal, Number(wallet?.wallet?.balance || 0));
+  const appliedWallet = isCorporateCovered ? 0 : Math.min(walletUseAmount, maxWalletUsable);
+  const balanceDue = Math.max(0, finalTotal - appliedWallet);
 
   /* ---------- PLACE ORDER ---------- */
   const placeOrder = async () => {
@@ -231,12 +241,21 @@ export default function ConfirmOrderPage() {
         paymentMode:
           isCorporateCovered && finalTotal === 0
             ? 'Corporate Credit'
+            : appliedWallet > 0 && balanceDue > 0
+              ? 'Wallet + Pay Upon Service'
+              : appliedWallet > 0
+                ? 'Wallet'
             : 'Pay Upon Service',
 
         paymentStatus:
           isCorporateCovered && finalTotal === 0
             ? 'CORPORATE_BILLING'
+            : appliedWallet >= finalTotal && finalTotal > 0
+              ? 'Paid'
+              : appliedWallet > 0
+                ? 'Partial'
             : 'PENDING',
+        walletAmountToUse: appliedWallet,
 
         totals: {
           subtotal: mrpTotal,
@@ -341,10 +360,40 @@ export default function ConfirmOrderPage() {
           {testDiscount > 0 && <Row label="WayToLab Discount" value={-testDiscount} />}
           {couponDiscount > 0 && <Row label="Coupon Discount" value={-couponDiscount} />}
           {homeCharge > 0 && <Row label="Home Collection Charges" value={homeCharge} />}
+          <Row label="Order Total" value={finalTotal} />
+
+          {!isCorporateCovered && (
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-700">
+                <Wallet size={16} className="text-emerald-600" /> Wallet Balance
+              </div>
+              <p className="text-xs text-slate-500 mb-3">
+                Available: ₹{Number(wallet?.wallet?.balance || 0).toFixed(2)}
+              </p>
+              <input
+                type="number"
+                min={0}
+                max={maxWalletUsable}
+                step="0.01"
+                value={appliedWallet || ''}
+                onChange={(e) => {
+                  const next = Math.max(0, Number(e.target.value || 0));
+                  setWalletUseAmount(Math.min(next, maxWalletUsable));
+                }}
+                className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm"
+                placeholder="Use wallet amount"
+                disabled={maxWalletUsable <= 0}
+              />
+              <p className="mt-2 text-[11px] text-slate-500">
+                You can use up to ₹{maxWalletUsable.toFixed(2)} on this order.
+              </p>
+            </div>
+          )}
 
           <hr className="my-3" />
 
-          <Row label="Amount Payable" value={finalTotal} bold />
+          {appliedWallet > 0 && <Row label="Wallet Used" value={-appliedWallet} />}
+          <Row label="Balance Due" value={balanceDue} bold />
 
           {isCorporateCovered && finalTotal === 0 && (
             <p className="text-xs text-green-700 font-bold mt-2 bg-green-50 p-2 rounded border border-green-200 text-center">

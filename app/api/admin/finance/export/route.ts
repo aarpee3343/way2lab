@@ -52,11 +52,19 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const format = String(searchParams.get('format') || 'csv').toLowerCase();
   const query = String(searchParams.get('query') || '').trim();
+  const segment = String(searchParams.get('segment') || 'all').toLowerCase();
   const { start, end } = getRange(searchParams.get('from'), searchParams.get('to'));
+  const orderSegmentWhere =
+    segment === 'general'
+      ? { customer: { corporateId: null } }
+      : segment === 'corporate'
+        ? { customer: { corporateId: { not: null } } }
+        : {};
 
   const payments = await prisma.payment.findMany({
     where: {
       paymentDate: { gte: start, lte: end },
+      ...(segment !== 'all' ? { order: orderSegmentWhere } : {}),
       ...(query
         ? {
             OR: [
@@ -90,6 +98,7 @@ export async function GET(req: Request) {
   const refunds = await prisma.paymentRefund.findMany({
     where: {
       createdAt: { gte: start, lte: end },
+      ...(segment !== 'all' ? { order: orderSegmentWhere } : {}),
       ...(query
         ? {
             OR: [
@@ -128,6 +137,7 @@ export async function GET(req: Request) {
       patient: p.order?.patientName || '',
       segment: p.order?.customer?.corporateId ? `Corporate:${p.order?.customer?.corporate?.companyName || ''}` : 'General',
       method: p.method,
+      paymentType: p.paymentType,
       status: p.status,
       transactionId: p.transactionId || '',
       amount: Number(p.amount || 0),
@@ -140,6 +150,7 @@ export async function GET(req: Request) {
       patient: r.order?.patientName || '',
       segment: r.order?.customer?.corporateId ? `Corporate:${r.order?.customer?.corporate?.companyName || ''}` : 'General',
       method: r.mode,
+      paymentType: `REFUND:${r.destination}`,
       status: r.status,
       transactionId: r.transactionId || '',
       amount: -Number(r.amount || 0),
@@ -161,7 +172,7 @@ export async function GET(req: Request) {
       doc.fontSize(16).text('WayToLab Finance Ledger');
       doc.moveDown(0.3);
       doc.fontSize(10).fillColor('#555').text(`Range: ${fmtDate(start)} - ${fmtDate(end)}`);
-      doc.text(`Payments: INR ${totals.payments.toFixed(2)} | Refunds: INR ${totals.refunds.toFixed(2)} | Net: INR ${(totals.payments - totals.refunds).toFixed(2)}`);
+      doc.text(`Segment: ${segment.toUpperCase()} | Payments: INR ${totals.payments.toFixed(2)} | Refunds: INR ${totals.refunds.toFixed(2)} | Net: INR ${(totals.payments - totals.refunds).toFixed(2)}`);
       doc.moveDown(0.5);
 
       let y = doc.y;
@@ -202,7 +213,7 @@ export async function GET(req: Request) {
     });
   }
 
-  const header = ['Date', 'Type', 'OrderNumber', 'Patient', 'Segment', 'Method', 'Status', 'TransactionId', 'Amount', 'Notes'];
+  const header = ['Date', 'Type', 'OrderNumber', 'Patient', 'Segment', 'Method', 'PaymentType', 'Status', 'TransactionId', 'Amount', 'Notes'];
   const lines = [
     header.join(','),
     ...rows.map((r) =>
@@ -213,6 +224,7 @@ export async function GET(req: Request) {
         csvEscape(r.patient),
         csvEscape(r.segment),
         csvEscape(r.method),
+        csvEscape(r.paymentType),
         csvEscape(r.status),
         csvEscape(r.transactionId),
         csvEscape(r.amount.toFixed(2)),

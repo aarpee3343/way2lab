@@ -1,10 +1,12 @@
 'use server';
 
+import crypto from 'node:crypto';
+
 import { requireAdmin } from '@/lib/admin-auth';
 import { prisma } from '@/lib/db';
 import { revalidatePath } from 'next/cache';
 import { writeAdminAuditLog } from '@/lib/audit';
-import { OrderStatus } from '@prisma/client';
+import { OrderStatus, RefundDestination } from '@prisma/client';
 import {
   canTransitionPaymentState,
   derivePaymentState,
@@ -12,6 +14,8 @@ import {
   toStoredPaymentStatus,
 } from '@/lib/payment-state';
 import { getCorporateBillableAmountForOrder, getCorporateBillableOrders } from '@/lib/corporate-finance';
+import { creditWallet } from '@/lib/wallet';
+import { getIdempotentResponse, storeIdempotentResponse } from '@/lib/idempotency';
 
 type FinanceFilters = {
   from?: string;
@@ -19,7 +23,12 @@ type FinanceFilters = {
   query?: string;
   page?: number;
   limit?: number;
+  segment?: 'all' | 'general' | 'corporate';
 };
+
+type FinanceActionResult =
+  | { success: true; [key: string]: any }
+  | { success: false; error: string; [key: string]: any };
 
 const FINANCE_ROLES = ['SUPER_ADMIN', 'ADMIN'] as const;
 
@@ -37,6 +46,70 @@ function toDateRange(from?: string, to?: string) {
 
 function money(value: unknown) {
   return Number(value || 0);
+}
+
+function getSegmentOrderWhere(segment?: FinanceFilters['segment']) {
+  if (segment === 'general') {
+    return { customer: { corporateId: null } };
+  }
+  if (segment === 'corporate') {
+    return { customer: { corporateId: { not: null } } };
+  }
+  return {};
+}
+
+function revalidateFinancePaths(orderId: number, corporateId?: number | null, customerId?: number | null) {
+  revalidatePath(`/admin/orders/${orderId}`);
+  revalidatePath('/admin/orders');
+  revalidatePath('/admin/finance');
+  revalidatePath('/admin/corporate-finance');
+  revalidatePath(`/dashboard/orders/${orderId}`);
+
+  if (corporateId) {
+    revalidatePath(`/admin/corporates/${corporateId}/finance`);
+  }
+
+  if (customerId) {
+    revalidatePath('/dashboard/wallet');
+    revalidatePath('/admin/wallet');
+    revalidatePath(`/admin/wallet/${customerId}`);
+  }
+}
+
+function buildFinanceIdempotencyKey(scope: string, adminId: number, payload: unknown) {
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(payload))
+    .digest('hex')
+    .slice(0, 32);
+  return `finance:${scope}:admin:${adminId}:${hash}`;
+}
+
+async function getFinanceActionIdempotencyResult<T extends FinanceActionResult>(
+  key: string,
+  route: string,
+  adminId: number
+) {
+  const row = await getIdempotentResponse(key, route, 'SERVER_ACTION', adminId);
+  return row?.responseBody as T | null;
+}
+
+async function storeFinanceActionIdempotencyResult(
+  key: string,
+  route: string,
+  adminId: number,
+  result: FinanceActionResult,
+  ttlSeconds = 60 * 10
+) {
+  await storeIdempotentResponse({
+    key,
+    route,
+    method: 'SERVER_ACTION',
+    userId: adminId,
+    responseCode: result.success ? 200 : 400,
+    responseBody: result,
+    ttlSeconds,
+  });
 }
 
 async function recalculateOrderPaymentStatus(orderId: number) {
@@ -105,8 +178,21 @@ export async function updateOrderPaymentStatusManualAction(input: {
     const orderId = Number(input.orderId);
     const targetStatus = normalizePaymentState(input.targetStatus);
     const reason = String(input.reason || '').trim();
+    const idempotencyKey = buildFinanceIdempotencyKey('payment-status', admin.id, {
+      orderId,
+      targetStatus,
+      reason: reason.toLowerCase(),
+    });
+    const existing = await getFinanceActionIdempotencyResult<FinanceActionResult>(
+      idempotencyKey,
+      'admin-finance:payment-status',
+      admin.id
+    );
+    if (existing) return existing;
     if (!orderId || !reason) {
-      return { success: false, error: 'Order id and reason are required' };
+      const result = { success: false, error: 'Order id and reason are required' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:payment-status', admin.id, result);
+      return result;
     }
 
     const [order, paidAgg, refundedAgg] = await Promise.all([
@@ -177,12 +263,24 @@ export async function updateOrderPaymentStatusManualAction(input: {
       metadata: { oldStatus: order.paymentStatus || null, newStatus: nextStored, reason },
     });
 
-    revalidatePath(`/admin/orders/${orderId}`);
-    revalidatePath('/admin/orders');
-    revalidatePath('/admin/finance');
-    return { success: true };
+    revalidateFinancePaths(orderId, order.customer?.corporateId || null, null);
+    const result = { success: true } as const;
+    await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:payment-status', admin.id, result);
+    return result;
   } catch (error: any) {
-    return { success: false, error: error?.message || 'Failed to update payment status' };
+    const result = { success: false, error: error?.message || 'Failed to update payment status' } as const;
+    await storeFinanceActionIdempotencyResult(
+      buildFinanceIdempotencyKey('payment-status', admin.id, {
+        orderId: Number(input.orderId),
+        targetStatus: normalizePaymentState(input.targetStatus),
+        reason: String(input.reason || '').trim().toLowerCase(),
+      }),
+      'admin-finance:payment-status',
+      admin.id,
+      result,
+      60
+    );
+    return result;
   }
 }
 
@@ -200,15 +298,34 @@ export async function recordManualPaymentAction(input: {
     const method = String(input.method || '').trim();
     const txnId = String(input.transactionId || '').trim();
     const notes = String(input.notes || '').trim();
+    const idempotencyKey = buildFinanceIdempotencyKey('manual-payment', admin.id, {
+      orderId,
+      amount: Number.isFinite(amount) ? amount.toFixed(2) : 'invalid',
+      method: method.toLowerCase(),
+      transactionId: txnId || null,
+      notes: notes.toLowerCase(),
+    });
+    const existing = await getFinanceActionIdempotencyResult<FinanceActionResult>(
+      idempotencyKey,
+      'admin-finance:manual-payment',
+      admin.id
+    );
+    if (existing) return existing;
 
     if (!orderId || !Number.isFinite(orderId)) {
-      return { success: false, error: 'Invalid order id' };
+      const result = { success: false, error: 'Invalid order id' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:manual-payment', admin.id, result);
+      return result;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      return { success: false, error: 'Amount must be greater than zero' };
+      const result = { success: false, error: 'Amount must be greater than zero' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:manual-payment', admin.id, result);
+      return result;
     }
     if (!method) {
-      return { success: false, error: 'Payment method is required' };
+      const result = { success: false, error: 'Payment method is required' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:manual-payment', admin.id, result);
+      return result;
     }
 
     const existingOrder = await prisma.order.findUnique({
@@ -250,18 +367,32 @@ export async function recordManualPaymentAction(input: {
       return { success: false, error: 'Amount exceeds remaining by more than 10%' };
     }
 
-    const payment = await prisma.payment.create({
-      data: {
-        orderId,
-        amount,
-        method,
-        transactionId: txnId || null,
-        notes: notes || null,
-        status: 'verified',
-        paymentType: 'MANUAL_PAYMENT',
-        receivedByAdminId: admin.id,
-      },
-      select: { id: true },
+    const payment = await prisma.$transaction(async (tx) => {
+      const createdPayment = await tx.payment.create({
+        data: {
+          orderId,
+          amount,
+          method,
+          transactionId: txnId || null,
+          notes: notes || null,
+          status: 'verified',
+          paymentType: 'MANUAL_PAYMENT',
+          receivedByAdminId: admin.id,
+        },
+        select: { id: true },
+      });
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'PAYMENT_RECORDED',
+          oldValue: null,
+          newValue: `Manual payment ${amount.toFixed(2)} via ${method}`,
+          performedBy: `ADMIN:${admin.email}`,
+        }
+      });
+
+      return createdPayment;
     });
 
     const summary = await recalculateOrderPaymentStatus(orderId);
@@ -275,13 +406,27 @@ export async function recordManualPaymentAction(input: {
       metadata: { orderId, amount, method, txnId: txnId || null },
     });
 
-    revalidatePath(`/admin/orders/${orderId}`);
-    revalidatePath('/admin/orders');
-    revalidatePath('/admin/finance');
+    revalidateFinancePaths(orderId, existingOrder.customer?.corporateId || null, null);
 
-    return { success: true, paymentId: payment.id, summary };
+    const result = { success: true, paymentId: payment.id, summary } as const;
+    await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:manual-payment', admin.id, result);
+    return result;
   } catch (error: any) {
-    return { success: false, error: error?.message || 'Failed to record payment' };
+    const result = { success: false, error: error?.message || 'Failed to record payment' } as const;
+    await storeFinanceActionIdempotencyResult(
+      buildFinanceIdempotencyKey('manual-payment', admin.id, {
+        orderId: Number(input.orderId),
+        amount: Number.isFinite(Number(input.amount)) ? Number(input.amount).toFixed(2) : 'invalid',
+        method: String(input.method || '').trim().toLowerCase(),
+        transactionId: String(input.transactionId || '').trim() || null,
+        notes: String(input.notes || '').trim().toLowerCase(),
+      }),
+      'admin-finance:manual-payment',
+      admin.id,
+      result,
+      60
+    );
+    return result;
   }
 }
 
@@ -291,6 +436,7 @@ export async function initiateRefundAction(input: {
   reason: string;
   paymentId?: number;
   mode?: string;
+  destination?: 'SOURCE' | 'WALLET';
   transactionId?: string;
   notes?: string;
 }) {
@@ -300,27 +446,59 @@ export async function initiateRefundAction(input: {
     const amount = Number(input.amount);
     const reason = String(input.reason || '').trim();
     const mode = String(input.mode || 'Manual');
+    const destination: RefundDestination = input.destination === 'SOURCE' ? 'SOURCE' : 'WALLET';
     const transactionId = String(input.transactionId || '').trim();
     const notes = String(input.notes || '').trim();
     const paymentId = input.paymentId ? Number(input.paymentId) : null;
+    const idempotencyKey = buildFinanceIdempotencyKey('refund', admin.id, {
+      orderId,
+      amount: Number.isFinite(amount) ? amount.toFixed(2) : 'invalid',
+      reason: reason.toLowerCase(),
+      paymentId: paymentId || null,
+      mode: mode.toLowerCase(),
+      destination,
+      transactionId: transactionId || null,
+      notes: notes.toLowerCase(),
+    });
+    const existing = await getFinanceActionIdempotencyResult<FinanceActionResult>(
+      idempotencyKey,
+      'admin-finance:refund',
+      admin.id
+    );
+    if (existing) return existing;
 
     if (!orderId || !Number.isFinite(orderId)) {
-      return { success: false, error: 'Invalid order id' };
+      const result = { success: false, error: 'Invalid order id' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:refund', admin.id, result);
+      return result;
     }
     if (!Number.isFinite(amount) || amount <= 0) {
-      return { success: false, error: 'Refund amount must be greater than zero' };
+      const result = { success: false, error: 'Refund amount must be greater than zero' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:refund', admin.id, result);
+      return result;
     }
     if (!reason) {
-      return { success: false, error: 'Refund reason is required' };
+      const result = { success: false, error: 'Refund reason is required' } as const;
+      await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:refund', admin.id, result);
+      return result;
     }
 
     const order = await prisma.order.findUnique({
       where: { id: orderId },
-      select: { id: true },
+      select: {
+        id: true,
+        orderNumber: true,
+        userId: true,
+        customer: {
+          select: {
+            corporateId: true,
+          },
+        },
+      },
     });
     if (!order) return { success: false, error: 'Order not found' };
 
-    const [paymentAgg, refundAgg] = await Promise.all([
+    const [paymentAgg, refundAgg, walletPaymentAgg, sourceRefundAgg, payment] = await Promise.all([
       prisma.payment.aggregate({
         where: { orderId },
         _sum: { amount: true },
@@ -329,36 +507,116 @@ export async function initiateRefundAction(input: {
         where: { orderId, status: 'PROCESSED' },
         _sum: { amount: true },
       }),
+      prisma.payment.aggregate({
+        where: {
+          orderId,
+          paymentType: 'WALLET_PAYMENT',
+        },
+        _sum: { amount: true },
+      }),
+      prisma.paymentRefund.aggregate({
+        where: {
+          orderId,
+          status: 'PROCESSED',
+          destination: 'SOURCE',
+        },
+        _sum: { amount: true },
+      }),
+      paymentId
+        ? prisma.payment.findUnique({
+            where: { id: paymentId },
+            select: {
+              id: true,
+              orderId: true,
+              paymentType: true,
+            },
+          })
+        : Promise.resolve(null),
     ]);
+
+    if (paymentId && (!payment || payment.orderId !== orderId)) {
+      return { success: false, error: 'Selected payment does not belong to this order' };
+    }
+
     const totalPaid = money(paymentAgg._sum.amount);
     const totalRefunded = money(refundAgg._sum.amount);
+    const totalWalletPaid = money(walletPaymentAgg._sum.amount);
+    const totalSourceRefunded = money(sourceRefundAgg._sum.amount);
     const refundable = Math.max(0, totalPaid - totalRefunded);
     if (amount > refundable + 0.01) {
       return { success: false, error: 'Refund exceeds refundable amount' };
     }
 
-    const refund = await prisma.paymentRefund.create({
-      data: {
-        orderId,
-        paymentId,
-        amount,
-        reason,
-        status: 'PROCESSED',
-        mode,
-        transactionId: transactionId || null,
-        notes: notes || null,
-        processedAt: new Date(),
-        createdByAdminId: admin.id,
-      },
-      select: { id: true },
-    });
-
-    if (paymentId) {
-      await prisma.payment.update({
-        where: { id: paymentId },
-        data: { refundedAmount: { increment: amount } },
-      });
+    if (destination === 'SOURCE') {
+      const sourceRefundable = Math.max(0, totalPaid - totalWalletPaid - totalSourceRefunded);
+      if (amount > sourceRefundable + 0.01) {
+        return {
+          success: false,
+          error: 'Source refund exceeds non-wallet paid amount. Use wallet refund for wallet-paid value.',
+        };
+      }
+      if (payment?.paymentType === 'WALLET_PAYMENT') {
+        return { success: false, error: 'Wallet payments must be refunded back to wallet' };
+      }
     }
+
+    const { refundId, walletTransactionId } = await prisma.$transaction(async (tx) => {
+      let nextWalletTransactionId: number | null = null;
+
+      if (destination === 'WALLET') {
+        const walletCredit = await creditWallet(tx, {
+          customerId: order.userId,
+          amount,
+          sourceType: 'REFUND_REVERSAL',
+          description: `Refund credit for order ${order.orderNumber || order.id}`,
+          orderId,
+          createdByAdminId: admin.id,
+          metadata: {
+            reason,
+            paymentId,
+            destination,
+          },
+        });
+        nextWalletTransactionId = walletCredit.transaction.id;
+      }
+
+      const refund = await tx.paymentRefund.create({
+        data: {
+          orderId,
+          paymentId,
+          amount,
+          reason,
+          status: 'PROCESSED',
+          mode,
+          destination,
+          walletTransactionId: nextWalletTransactionId,
+          transactionId: transactionId || null,
+          notes: notes || null,
+          processedAt: new Date(),
+          createdByAdminId: admin.id,
+        },
+        select: { id: true },
+      });
+
+      if (paymentId) {
+        await tx.payment.update({
+          where: { id: paymentId },
+          data: { refundedAmount: { increment: amount } },
+        });
+      }
+
+      await tx.orderActivity.create({
+        data: {
+          orderId,
+          action: 'REFUND_PROCESSED',
+          oldValue: null,
+          newValue: `${destination} refund ${amount.toFixed(2)}`,
+          performedBy: `ADMIN:${admin.email}`,
+        }
+      });
+
+      return { refundId: refund.id, walletTransactionId: nextWalletTransactionId };
+    });
 
     const summary = await recalculateOrderPaymentStatus(orderId);
 
@@ -367,17 +625,34 @@ export async function initiateRefundAction(input: {
       adminEmail: admin.email,
       action: 'finance.refund.processed',
       entityType: 'refund',
-      entityId: refund.id,
-      metadata: { orderId, paymentId, amount, reason },
+      entityId: refundId,
+      metadata: { orderId, paymentId, amount, reason, destination, walletTransactionId },
     });
 
-    revalidatePath(`/admin/orders/${orderId}`);
-    revalidatePath('/admin/orders');
-    revalidatePath('/admin/finance');
+    revalidateFinancePaths(orderId, order.customer?.corporateId || null, order.userId);
 
-    return { success: true, refundId: refund.id, summary };
+    const result = { success: true, refundId, summary } as const;
+    await storeFinanceActionIdempotencyResult(idempotencyKey, 'admin-finance:refund', admin.id, result);
+    return result;
   } catch (error: any) {
-    return { success: false, error: error?.message || 'Failed to process refund' };
+    const result = { success: false, error: error?.message || 'Failed to process refund' } as const;
+    await storeFinanceActionIdempotencyResult(
+      buildFinanceIdempotencyKey('refund', admin.id, {
+        orderId: Number(input.orderId),
+        amount: Number.isFinite(Number(input.amount)) ? Number(input.amount).toFixed(2) : 'invalid',
+        reason: String(input.reason || '').trim().toLowerCase(),
+        paymentId: input.paymentId ? Number(input.paymentId) : null,
+        mode: String(input.mode || 'Manual').toLowerCase(),
+        destination: input.destination === 'SOURCE' ? 'SOURCE' : 'WALLET',
+        transactionId: String(input.transactionId || '').trim() || null,
+        notes: String(input.notes || '').trim().toLowerCase(),
+      }),
+      'admin-finance:refund',
+      admin.id,
+      result,
+      60
+    );
+    return result;
   }
 }
 
@@ -388,10 +663,14 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
   const limit = Math.min(100, Math.max(10, Number(filters?.limit || 25)));
   const skip = (page - 1) * limit;
   const query = String(filters?.query || '').trim();
+  const segment = filters?.segment || 'all';
   const { start, end } = toDateRange(filters?.from, filters?.to);
+  const segmentOrderWhere = getSegmentOrderWhere(segment);
+  const nonBillableStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.REJECTED];
 
   const paymentWhere = {
     paymentDate: { gte: start, lte: end },
+    ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
     ...(query
       ? {
           OR: [
@@ -406,6 +685,7 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
 
   const refundWhere = {
     createdAt: { gte: start, lte: end },
+    ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
     ...(query
       ? {
           OR: [
@@ -418,15 +698,18 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       : {}),
   };
 
-  const nonBillableStatuses: OrderStatus[] = [OrderStatus.CANCELLED, OrderStatus.REJECTED];
   const orderRangeWhere = {
     createdAt: { gte: start, lte: end },
     status: { notIn: nonBillableStatuses },
+    ...segmentOrderWhere,
   };
 
   const [
     paymentsTotalAgg,
     refundsTotalAgg,
+    walletPaymentsAgg,
+    walletRefundsAgg,
+    sourceRefundsAgg,
     orderTotalAgg,
     corporateBilledAgg,
     userBilledAgg,
@@ -440,11 +723,44 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
     corporates,
   ] = await Promise.all([
     prisma.payment.aggregate({
-      where: { paymentDate: { gte: start, lte: end } },
+      where: {
+        paymentDate: { gte: start, lte: end },
+        ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
+      },
       _sum: { amount: true },
     }),
     prisma.paymentRefund.aggregate({
-      where: { createdAt: { gte: start, lte: end }, status: 'PROCESSED' },
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: 'PROCESSED',
+        ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
+      },
+      _sum: { amount: true },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        paymentDate: { gte: start, lte: end },
+        paymentType: 'WALLET_PAYMENT',
+        ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
+      },
+      _sum: { amount: true },
+    }),
+    prisma.paymentRefund.aggregate({
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: 'PROCESSED',
+        destination: 'WALLET',
+        ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
+      },
+      _sum: { amount: true },
+    }),
+    prisma.paymentRefund.aggregate({
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: 'PROCESSED',
+        destination: 'SOURCE',
+        ...(segment !== 'all' ? { order: segmentOrderWhere } : {}),
+      },
       _sum: { amount: true },
     }),
     prisma.order.aggregate({
@@ -456,7 +772,11 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       _sum: { finalAmount: true },
     }),
     prisma.order.aggregate({
-      where: { ...orderRangeWhere, customer: { corporateId: null } },
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: { notIn: nonBillableStatuses },
+        customer: { corporateId: null },
+      },
       _sum: { finalAmount: true },
     }),
     prisma.payment.aggregate({
@@ -484,6 +804,7 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
             orderNumber: true,
             patientName: true,
             finalAmount: true,
+            walletAmountUsed: true,
             customer: {
               select: {
                 corporateId: true,
@@ -518,29 +839,38 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       skip,
       take: limit,
     }),
-    prisma.corporate.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        companyName: true,
-        _count: { select: { employees: true } },
-      },
-      orderBy: { companyName: 'asc' },
-      take: 100,
-    }),
+    segment === 'general'
+      ? Promise.resolve([])
+      : prisma.corporate.findMany({
+          where: { isActive: true },
+          select: {
+            id: true,
+            companyName: true,
+            _count: { select: { employees: true } },
+          },
+          orderBy: { companyName: 'asc' },
+          take: 100,
+        }),
   ]);
 
   const totalCollected = money(paymentsTotalAgg._sum.amount);
   const totalRefunded = money(refundsTotalAgg._sum.amount);
+  const walletCollected = money(walletPaymentsAgg._sum.amount);
+  const walletRefunded = money(walletRefundsAgg._sum.amount);
+  const sourceRefunded = money(sourceRefundsAgg._sum.amount);
   const netRevenue = totalCollected - totalRefunded;
   const totalBilling = money(orderTotalAgg?._sum?.finalAmount);
   const outstanding = Math.max(0, totalBilling - netRevenue);
 
   const corporateSummaries = await Promise.all(
-    corporates.map(async (corp) => {
-      const [corpBilledAgg, corpCollectedAgg, corpRefundedAgg] = await Promise.all([
+    (corporates as any[]).map(async (corp) => {
+      const [corpBilledAgg, corpCollectedAgg, corpRefundedAgg, corpWalletAgg] = await Promise.all([
         prisma.order.aggregate({
-          where: { ...orderRangeWhere, customer: { corporateId: corp.id } },
+          where: {
+            createdAt: { gte: start, lte: end },
+            status: { notIn: nonBillableStatuses },
+            customer: { corporateId: corp.id },
+          },
           _sum: { finalAmount: true },
         }),
         prisma.payment.aggregate({
@@ -549,6 +879,14 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
         }),
         prisma.paymentRefund.aggregate({
           where: { createdAt: { gte: start, lte: end }, status: 'PROCESSED', order: { customer: { corporateId: corp.id } } },
+          _sum: { amount: true },
+        }),
+        prisma.payment.aggregate({
+          where: {
+            paymentDate: { gte: start, lte: end },
+            paymentType: 'WALLET_PAYMENT',
+            order: { customer: { corporateId: corp.id } },
+          },
           _sum: { amount: true },
         }),
       ]);
@@ -563,6 +901,7 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
         billed,
         collected,
         refunded,
+        walletCollected: money(corpWalletAgg?._sum?.amount),
         outstanding: Math.max(0, billed - (collected - refunded)),
       };
     })
@@ -577,6 +916,10 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       netRevenue,
       totalBilling,
       outstanding,
+      walletCollected,
+      walletRefunded,
+      sourceRefunded,
+      nonWalletCollected: Math.max(0, totalCollected - walletCollected),
       corporateBilling: money(corporateBilledAgg?._sum?.finalAmount),
       generalBilling: money(userBilledAgg?._sum?.finalAmount),
       corporateCollected: money(corporateCollectedAgg?._sum?.amount),
@@ -589,6 +932,7 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       query,
       page,
       limit,
+      segment,
     },
     paymentsPagination: {
       page,
@@ -613,6 +957,7 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       paymentType: p.paymentType,
       transactionId: p.transactionId,
       notes: p.notes,
+      walletAmountUsed: money(p.order?.walletAmountUsed),
       paymentDate: p.paymentDate.toISOString(),
       corporateName: p.order?.customer?.corporate?.companyName || null,
       isCorporate: Boolean(p.order?.customer?.corporateId),
@@ -626,6 +971,8 @@ export async function getFinanceDashboardDataAction(filters?: FinanceFilters) {
       reason: r.reason,
       mode: r.mode,
       status: r.status,
+      destination: r.destination,
+      walletTransactionId: r.walletTransactionId,
       transactionId: r.transactionId,
       notes: r.notes,
       createdAt: r.createdAt.toISOString(),
@@ -658,7 +1005,7 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
   const billed = billableOrders.reduce((sum, row) => sum + Number(row.unitPrice || 0), 0);
   const billableOrderIds = billableOrders.map((row) => row.orderId);
 
-  const [paymentsAgg, refundsAgg, payments, refunds] = await Promise.all([
+  const [paymentsAgg, refundsAgg, walletPaymentsAgg, payments, refunds] = await Promise.all([
     billableOrderIds.length
       ? prisma.payment.aggregate({
           where: {
@@ -679,6 +1026,16 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
         })
       : Promise.resolve({ _sum: { amount: 0 } as any }),
     billableOrderIds.length
+      ? prisma.payment.aggregate({
+          where: {
+            paymentDate: { gte: start, lte: end },
+            orderId: { in: billableOrderIds },
+            paymentType: 'WALLET_PAYMENT',
+          },
+          _sum: { amount: true },
+        })
+      : Promise.resolve({ _sum: { amount: 0 } as any }),
+    billableOrderIds.length
       ? prisma.payment.findMany({
           where: {
             paymentDate: { gte: start, lte: end },
@@ -690,6 +1047,7 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
             amount: true,
             method: true,
             status: true,
+            paymentType: true,
             transactionId: true,
             paymentDate: true,
           },
@@ -709,6 +1067,8 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
             amount: true,
             reason: true,
             status: true,
+            destination: true,
+            walletTransactionId: true,
             createdAt: true,
           },
           orderBy: { createdAt: 'desc' },
@@ -719,6 +1079,7 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
 
   const paid = money(paymentsAgg._sum.amount);
   const refunded = money(refundsAgg._sum.amount);
+  const walletCollected = money(walletPaymentsAgg._sum.amount);
   const net = paid - refunded;
 
   return {
@@ -727,6 +1088,8 @@ export async function getCorporateFinanceOverviewAction(corporateId: number, fil
       billed,
       paid,
       refunded,
+      walletCollected,
+      nonWalletCollected: Math.max(0, paid - walletCollected),
       netCollected: net,
       outstanding: Math.max(0, billed - net),
     },

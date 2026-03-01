@@ -57,6 +57,29 @@ export async function GET(
         select: { isPreEmployment: true, reportVisibility: true, isCorporate: true }
       },
 
+      payments: {
+        select: {
+          id: true,
+          amount: true,
+          method: true,
+          status: true,
+          paymentType: true,
+          paymentDate: true
+        },
+        orderBy: { paymentDate: 'desc' as const }
+      },
+      refunds: {
+        where: { status: 'PROCESSED' },
+        select: {
+          id: true,
+          amount: true,
+          reason: true,
+          destination: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: 'desc' as const }
+      },
+
       // 5. Others
       address: true,
       customer: true,

@@ -17,7 +17,9 @@ export async function GET(req: Request) {
         email: true,
         phone: true,
         gender: true,
-        dateOfBirth: true
+        dateOfBirth: true,
+        createdAt: true,
+        uhid: true
       }
     });
 

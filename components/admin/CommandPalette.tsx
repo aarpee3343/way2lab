@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { Command } from 'cmdk';
 import { useRouter } from 'next/navigation';
-import { 
-  Building2, FilePlus, FlaskConical, HandCoins, Mail, MapPin, Search, Settings, ShoppingCart, Ticket, User, UserRound 
+import {
+  Building2, FilePlus, FlaskConical, HandCoins, Mail, MapPin, Search, Settings, ShoppingCart, Ticket, User, UserRound, Wallet
 } from 'lucide-react';
 
 type SearchResult = {
@@ -25,7 +25,9 @@ const quickActions = [
   { id: 'qa-coupons', label: 'Coupons', href: '/admin/coupons', icon: Ticket, keywords: 'coupon offers discounts' },
   { id: 'qa-technicians', label: 'Technicians', href: '/admin/technicians', icon: User, keywords: 'technicians phlebotomist staff' },
   { id: 'qa-map', label: 'Live Map', href: '/admin/map', icon: MapPin, keywords: 'map tracking live' },
-  { id: 'qa-finance', label: 'Finance', href: '/admin/finance', icon: HandCoins, keywords: 'finance payments refunds' },
+  { id: 'qa-finance-general', label: 'User Finance', href: '/admin/finance', icon: HandCoins, keywords: 'finance payments refunds users wallet' },
+  { id: 'qa-finance-corporate', label: 'Corporate Finance', href: '/admin/corporate-finance', icon: Building2, keywords: 'corporate finance billing settlements' },
+  { id: 'qa-wallet', label: 'Wallet', href: '/admin/wallet', icon: Wallet, keywords: 'wallet credits campaigns rewards balance' },
   { id: 'qa-email', label: 'Email Marketing', href: '/admin/email-marketing', icon: Mail, keywords: 'email campaign newsletter' },
   { id: 'qa-support', label: 'Support Inbox', href: '/admin/support', icon: Mail, keywords: 'support tickets contact' },
   { id: 'qa-settings', label: 'Settings', href: '/admin/settings', icon: Settings, keywords: 'settings configuration' },

@@ -2,13 +2,12 @@
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
-import { DollarSign, ReceiptText, RefreshCw, RotateCcw, Wallet } from 'lucide-react';
+import { Briefcase, DollarSign, ReceiptText, RefreshCw, RotateCcw, Wallet } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import {
   getFinanceDashboardDataAction,
   initiateRefundAction,
   recordManualPaymentAction,
-  updateOrderPaymentStatusManualAction,
 } from '@/app/actions/adminFinanceActions';
 
 type FinanceData = Awaited<ReturnType<typeof getFinanceDashboardDataAction>>;
@@ -21,7 +20,7 @@ function formatINR(value: number) {
   }).format(Number(value || 0));
 }
 
-export default function AdminFinancePage() {
+export default function CorporateFinanceOverviewPage() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<FinanceData | null>(null);
   const [from, setFrom] = useState('');
@@ -29,12 +28,11 @@ export default function AdminFinancePage() {
   const [query, setQuery] = useState('');
   const [recordingPayment, setRecordingPayment] = useState(false);
   const [processingRefund, setProcessingRefund] = useState(false);
-  const [updatingPaymentStatus, setUpdatingPaymentStatus] = useState(false);
 
   const [paymentForm, setPaymentForm] = useState({
     orderId: '',
     amount: '',
-    method: 'Cash',
+    method: 'Bank Transfer',
     transactionId: '',
     notes: '',
   });
@@ -43,15 +41,10 @@ export default function AdminFinancePage() {
     paymentId: '',
     amount: '',
     reason: '',
-    mode: 'Manual',
+    mode: 'Corporate Manual',
     destination: 'WALLET',
     transactionId: '',
     notes: '',
-  });
-  const [statusForm, setStatusForm] = useState({
-    orderId: '',
-    targetStatus: 'PARTIAL',
-    reason: '',
   });
 
   const loadData = async (params?: { from?: string; to?: string; query?: string }) => {
@@ -63,7 +56,7 @@ export default function AdminFinancePage() {
         query: params?.query || query || undefined,
         page: 1,
         limit: 25,
-        segment: 'general',
+        segment: 'corporate',
       });
       setData(res);
     } finally {
@@ -79,8 +72,8 @@ export default function AdminFinancePage() {
   const quickStats = useMemo(() => {
     if (!data) return [];
     return [
-      { label: 'Net Revenue', value: formatINR(data.summary.netRevenue), icon: DollarSign, tone: 'text-emerald-700' },
-      { label: 'Collected', value: formatINR(data.summary.totalCollected), icon: ReceiptText, tone: 'text-sky-700' },
+      { label: 'Corporate Billing', value: formatINR(data.summary.totalBilling), icon: Briefcase, tone: 'text-slate-900' },
+      { label: 'Collected', value: formatINR(data.summary.totalCollected), icon: DollarSign, tone: 'text-sky-700' },
       { label: 'Wallet Used', value: formatINR(data.summary.walletCollected), icon: Wallet, tone: 'text-violet-700' },
       { label: 'Refunded', value: formatINR(data.summary.totalRefunded), icon: RotateCcw, tone: 'text-amber-700' },
       { label: 'Outstanding', value: formatINR(data.summary.outstanding), icon: ReceiptText, tone: 'text-rose-700' },
@@ -108,7 +101,7 @@ export default function AdminFinancePage() {
         toast.error(res.error || 'Failed to record payment');
         return;
       }
-      toast.success('Manual payment recorded');
+      toast.success('Corporate payment recorded');
       setPaymentForm((prev) => ({ ...prev, amount: '', transactionId: '', notes: '' }));
       await loadData();
     } finally {
@@ -142,14 +135,14 @@ export default function AdminFinancePage() {
         toast.error(res.error || 'Failed to process refund');
         return;
       }
-      toast.success(refundForm.destination === 'WALLET' ? 'Wallet refund processed' : 'Source refund processed');
+      toast.success('Corporate refund processed');
       setRefundForm((prev) => ({
         ...prev,
+        paymentId: '',
         amount: '',
+        reason: '',
         transactionId: '',
         notes: '',
-        reason: '',
-        paymentId: '',
       }));
       await loadData();
     } finally {
@@ -157,51 +150,26 @@ export default function AdminFinancePage() {
     }
   };
 
-  const onUpdatePaymentStatus = async () => {
-    const orderId = Number(statusForm.orderId);
-    if (!orderId || !statusForm.reason.trim()) {
-      toast.error('Enter order id and reason');
-      return;
-    }
-    setUpdatingPaymentStatus(true);
-    try {
-      const res = await updateOrderPaymentStatusManualAction({
-        orderId,
-        targetStatus: statusForm.targetStatus as any,
-        reason: statusForm.reason,
-      });
-      if (!res.success) {
-        toast.error(res.error || 'Failed to update payment status');
-        return;
-      }
-      toast.success('Payment status updated');
-      setStatusForm((prev) => ({ ...prev, reason: '' }));
-      await loadData();
-    } finally {
-      setUpdatingPaymentStatus(false);
-    }
-  };
-
   return (
     <div className="admin-space-y">
       <div className="admin-page-header">
-        <h1 className="admin-page-title">General User Finance</h1>
+        <h1 className="admin-page-title">Corporate Finance</h1>
         <p className="admin-page-subtitle">
-          Manual collections, wallet offsets, refunds, and settlement tracking for non-corporate customers.
+          Billing and settlement visibility for corporate orders, including wallet offsets and refund routing.
         </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <Link className="admin-btn-secondary" href="/admin/corporate-finance">
-            Corporate Finance
+          <Link className="admin-btn-secondary" href="/admin/finance">
+            General User Finance
           </Link>
           <a
             className="admin-btn-secondary"
-            href={`/api/admin/finance/export?format=csv&segment=general&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&query=${encodeURIComponent(query)}`}
+            href={`/api/admin/finance/export?format=csv&segment=corporate&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&query=${encodeURIComponent(query)}`}
           >
             Export CSV
           </a>
           <a
             className="admin-btn-secondary"
-            href={`/api/admin/finance/export?format=pdf&segment=general&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&query=${encodeURIComponent(query)}`}
+            href={`/api/admin/finance/export?format=pdf&segment=corporate&from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&query=${encodeURIComponent(query)}`}
           >
             Export PDF
           </a>
@@ -222,7 +190,7 @@ export default function AdminFinancePage() {
             <label className="admin-form-label">Search</label>
             <input
               className="admin-form-input"
-              placeholder="Order no / txn / patient"
+              placeholder="Order no / company / patient"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -264,9 +232,9 @@ export default function AdminFinancePage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className="admin-card p-5">
-              <h2 className="admin-form-title mb-4">Record Manual Payment</h2>
+              <h2 className="admin-form-title mb-4">Record Corporate Payment</h2>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <input
                   className="admin-form-input"
@@ -282,7 +250,7 @@ export default function AdminFinancePage() {
                 />
                 <input
                   className="admin-form-input"
-                  placeholder="Method (Cash / UPI / Bank)"
+                  placeholder="Method"
                   value={paymentForm.method}
                   onChange={(e) => setPaymentForm((prev) => ({ ...prev, method: e.target.value }))}
                 />
@@ -306,7 +274,7 @@ export default function AdminFinancePage() {
             </div>
 
             <div className="admin-card p-5">
-              <h2 className="admin-form-title mb-4">Initiate Refund</h2>
+              <h2 className="admin-form-title mb-4">Process Corporate Refund</h2>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <input
                   className="admin-form-input"
@@ -335,10 +303,10 @@ export default function AdminFinancePage() {
                   <option value="SOURCE">Source Refund</option>
                 </select>
                 <input
-                  className="admin-form-input"
-                  placeholder="Mode"
-                  value={refundForm.mode}
-                  onChange={(e) => setRefundForm((prev) => ({ ...prev, mode: e.target.value }))}
+                  className="admin-form-input md:col-span-2"
+                  placeholder="Reason"
+                  value={refundForm.reason}
+                  onChange={(e) => setRefundForm((prev) => ({ ...prev, reason: e.target.value }))}
                 />
                 <input
                   className="admin-form-input"
@@ -346,14 +314,8 @@ export default function AdminFinancePage() {
                   value={refundForm.transactionId}
                   onChange={(e) => setRefundForm((prev) => ({ ...prev, transactionId: e.target.value }))}
                 />
-                <input
-                  className="admin-form-input md:col-span-2"
-                  placeholder="Reason"
-                  value={refundForm.reason}
-                  onChange={(e) => setRefundForm((prev) => ({ ...prev, reason: e.target.value }))}
-                />
                 <textarea
-                  className="admin-form-textarea md:col-span-2"
+                  className="admin-form-textarea"
                   rows={3}
                   placeholder="Notes"
                   value={refundForm.notes}
@@ -364,150 +326,136 @@ export default function AdminFinancePage() {
                 {processingRefund ? 'Processing...' : 'Process Refund'}
               </button>
             </div>
+          </div>
+
+          <div className="admin-card p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="admin-form-title">Corporate Accounts Snapshot</h2>
+              <p className="text-xs text-slate-500">Open a company to settle detailed employee billing.</p>
+            </div>
+            <div className="admin-table-container">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Corporate</th>
+                    <th>Employees</th>
+                    <th>Billed</th>
+                    <th>Collected</th>
+                    <th>Wallet Used</th>
+                    <th>Refunded</th>
+                    <th>Outstanding</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.corporateSummaries.length === 0 ? (
+                    <tr>
+                      <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
+                        No corporate records
+                      </td>
+                    </tr>
+                  ) : (
+                    data.corporateSummaries.map((row) => (
+                      <tr key={row.corporateId}>
+                        <td>{row.companyName}</td>
+                        <td>{row.employees}</td>
+                        <td>{formatINR(row.billed)}</td>
+                        <td>{formatINR(row.collected)}</td>
+                        <td>{formatINR((row as any).walletCollected || 0)}</td>
+                        <td>{formatINR(row.refunded)}</td>
+                        <td className="font-semibold text-rose-700">{formatINR(row.outstanding)}</td>
+                        <td>
+                          <Link href={`/admin/corporates/${row.corporateId}/finance`} className="admin-btn-secondary">
+                            Open
+                          </Link>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            <div className="admin-card p-5">
+              <h2 className="admin-form-title mb-3">Payments</h2>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Order</th>
+                      <th>Patient</th>
+                      <th>Corporate</th>
+                      <th>Method</th>
+                      <th>Payment Type</th>
+                      <th className="text-right">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.payments.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                          No payment records
+                        </td>
+                      </tr>
+                    ) : (
+                      data.payments.map((payment) => (
+                        <tr key={payment.id}>
+                          <td>{new Date(payment.paymentDate).toLocaleString()}</td>
+                          <td>#{payment.orderNumber || payment.orderId}</td>
+                          <td>{payment.patientName || '-'}</td>
+                          <td>{payment.corporateName || '-'}</td>
+                          <td>{payment.method}</td>
+                          <td>{payment.paymentType}</td>
+                          <td className="text-right font-semibold text-emerald-700">{formatINR(payment.amount)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
             <div className="admin-card p-5">
-              <h2 className="admin-form-title mb-4">Manual Payment Status Update</h2>
-              <div className="grid grid-cols-1 gap-3">
-                <input
-                  className="admin-form-input"
-                  placeholder="Order ID"
-                  value={statusForm.orderId}
-                  onChange={(e) => setStatusForm((prev) => ({ ...prev, orderId: e.target.value }))}
-                />
-                <select
-                  className="admin-form-select"
-                  value={statusForm.targetStatus}
-                  onChange={(e) => setStatusForm((prev) => ({ ...prev, targetStatus: e.target.value }))}
-                >
-                  <option value="PENDING">PENDING</option>
-                  <option value="PARTIAL">PARTIAL</option>
-                  <option value="PAID">PAID</option>
-                  <option value="REFUNDED">REFUNDED</option>
-                  <option value="CORPORATE_BILLING">CORPORATE_BILLING</option>
-                </select>
-                <textarea
-                  className="admin-form-textarea"
-                  rows={3}
-                  placeholder="Reason"
-                  value={statusForm.reason}
-                  onChange={(e) => setStatusForm((prev) => ({ ...prev, reason: e.target.value }))}
-                />
-              </div>
-              <button className="admin-btn-primary mt-3" onClick={onUpdatePaymentStatus} disabled={updatingPaymentStatus}>
-                {updatingPaymentStatus ? 'Updating...' : 'Update Status'}
-              </button>
-            </div>
-          </div>
-
-          <div className="admin-card p-5">
-            <h2 className="admin-form-title mb-3">Collection Split</h2>
-            <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-4">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-slate-500">General Billing</p>
-                <p className="font-black text-slate-900">{formatINR(data.summary.totalBilling)}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-slate-500">Manual / Gateway Collected</p>
-                <p className="font-black text-slate-900">{formatINR(data.summary.nonWalletCollected)}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-slate-500">Wallet Used</p>
-                <p className="font-black text-slate-900">{formatINR(data.summary.walletCollected)}</p>
-              </div>
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-slate-500">Refunded To Wallet</p>
-                <p className="font-black text-slate-900">{formatINR(data.summary.walletRefunded)}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="admin-card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="admin-form-title">Payments</h2>
-              <p className="text-xs text-slate-500">Wallet debits are auto-posted as verified payments.</p>
-            </div>
-            <div className="admin-table-container">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Order</th>
-                    <th>Patient</th>
-                    <th>Method</th>
-                    <th>Payment Type</th>
-                    <th>Status</th>
-                    <th>Txn</th>
-                    <th className="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.payments.length === 0 ? (
+              <h2 className="admin-form-title mb-3">Refunds</h2>
+              <div className="admin-table-container">
+                <table className="admin-table">
+                  <thead>
                     <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
-                        No payment records
-                      </td>
+                      <th>Date</th>
+                      <th>Order</th>
+                      <th>Patient</th>
+                      <th>Corporate</th>
+                      <th>Destination</th>
+                      <th>Status</th>
+                      <th className="text-right">Amount</th>
                     </tr>
-                  ) : (
-                    data.payments.map((payment) => (
-                      <tr key={payment.id}>
-                        <td>{new Date(payment.paymentDate).toLocaleString()}</td>
-                        <td>#{payment.orderNumber || payment.orderId}</td>
-                        <td>{payment.patientName || '-'}</td>
-                        <td>{payment.method}</td>
-                        <td>{payment.paymentType}</td>
-                        <td>{payment.status}</td>
-                        <td>{payment.transactionId || '-'}</td>
-                        <td className="text-right font-semibold text-emerald-700">{formatINR(payment.amount)}</td>
+                  </thead>
+                  <tbody>
+                    {data.refunds.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-slate-400">
+                          No refund records
+                        </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="admin-card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="admin-form-title">Refunds</h2>
-              <p className="text-xs text-slate-500">Wallet refund is the default route for customer settlements.</p>
-            </div>
-            <div className="admin-table-container">
-              <table className="admin-table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Order</th>
-                    <th>Patient</th>
-                    <th>Mode</th>
-                    <th>Destination</th>
-                    <th>Reason</th>
-                    <th>Status</th>
-                    <th className="text-right">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.refunds.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-slate-400">
-                        No refund records
-                      </td>
-                    </tr>
-                  ) : (
-                    data.refunds.map((refund) => (
-                      <tr key={refund.id}>
-                        <td>{new Date(refund.createdAt).toLocaleString()}</td>
-                        <td>#{refund.orderNumber || refund.orderId}</td>
-                        <td>{refund.patientName || '-'}</td>
-                        <td>{refund.mode}</td>
-                        <td>{refund.destination}</td>
-                        <td>{refund.reason}</td>
-                        <td>{refund.status}</td>
-                        <td className="text-right font-semibold text-amber-700">{formatINR(refund.amount)}</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      data.refunds.map((refund) => (
+                        <tr key={refund.id}>
+                          <td>{new Date(refund.createdAt).toLocaleString()}</td>
+                          <td>#{refund.orderNumber || refund.orderId}</td>
+                          <td>{refund.patientName || '-'}</td>
+                          <td>{refund.corporateName || '-'}</td>
+                          <td>{refund.destination}</td>
+                          <td>{refund.status}</td>
+                          <td className="text-right font-semibold text-amber-700">{formatINR(refund.amount)}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </>

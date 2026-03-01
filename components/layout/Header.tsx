@@ -10,7 +10,7 @@ import {
   Menu, X, ShoppingCart, User, LogOut, 
   LayoutDashboard, ClipboardList, FileText, Settings,
   Home, Search, Package, Info, Phone, ArrowRight, ChevronDown, 
-  Heart, ShieldCheck, Stethoscope, MapPin, Users, Briefcase, TestTube 
+  Heart, ShieldCheck, Stethoscope, MapPin, Users, Briefcase, TestTube, Wallet
 } from 'lucide-react';
 
 export default function Header() {
@@ -100,6 +100,7 @@ export default function Header() {
   { name: 'Health Dashboard', href: '/dashboard', icon: LayoutDashboard },
 
   { name: 'Corporate Benefits', href: '/dashboard/benefits', icon: Briefcase },
+  { name: 'Wallet', href: '/dashboard/wallet', icon: Wallet },
 
   { name: 'My Orders', href: '/dashboard/orders', icon: ClipboardList },
 

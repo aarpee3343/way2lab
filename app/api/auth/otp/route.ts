@@ -67,8 +67,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: 'OTP Expired' }, { status: 400 });
       }
 
-      await prisma.verificationCode.delete({ where: { phone } }).catch(() => null);
-
       return NextResponse.json({ success: true, message: 'Verified' });
     }
 

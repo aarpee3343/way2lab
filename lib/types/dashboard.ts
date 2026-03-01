@@ -66,6 +66,7 @@ export interface DashboardResponse {
     email?: string | null;
     avatar?: string | null;
     phone?: string | null;
+    uhid?: string | null;
     gender?: string | null;
     dateOfBirth?: Date | string | null;
     createdAt?: Date | string | null;

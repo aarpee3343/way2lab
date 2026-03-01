@@ -8,21 +8,24 @@ datasource db {
 }
 
 model Admin {
-  id            Int           @id @default(autoincrement())
-  name          String        @db.VarChar(100)
-  email         String        @unique @db.VarChar(100)
-  password      String        @db.VarChar(255)
-  createdAt     DateTime      @default(now()) @map("created_at")
-  isActive      Boolean       @default(true) @map("is_active")
-  lastLoginAt   DateTime?     @map("last_login_at")
-  phone         String?       @unique @db.VarChar(20)
-  role          AdminRole     @default(SUPER_ADMIN)
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-  onsiteCamps   OnsiteCamp[]
-  onsiteEntries OnsiteEntry[]
-  auditLogs     AdminAuditLog[]
-  receivedPayments Payment[]           @relation("PaymentReceivedByAdmin")
-  createdRefunds PaymentRefund[]       @relation("RefundCreatedByAdmin")
+  id                        Int                 @id @default(autoincrement())
+  name                      String              @db.VarChar(100)
+  email                     String              @unique @db.VarChar(100)
+  password                  String              @db.VarChar(255)
+  createdAt                 DateTime            @default(now()) @map("created_at")
+  isActive                  Boolean             @default(true) @map("is_active")
+  lastLoginAt               DateTime?           @map("last_login_at")
+  phone                     String?             @unique @db.VarChar(20)
+  role                      AdminRole           @default(SUPER_ADMIN)
+  updatedAt                 DateTime            @updatedAt @map("updated_at")
+  onsiteCamps               OnsiteCamp[]
+  onsiteEntries             OnsiteEntry[]
+  auditLogs                 AdminAuditLog[]
+  receivedPayments          Payment[]           @relation("PaymentReceivedByAdmin")
+  createdRefunds            PaymentRefund[]     @relation("RefundCreatedByAdmin")
+  createdWalletTransactions WalletTransaction[] @relation("AdminCreatedWalletTransactions")
+  createdWalletCreditLots   WalletCreditLot[]   @relation("AdminCreatedWalletCreditLots")
+  createdWalletCampaigns    WalletCampaign[]    @relation("AdminCreatedWalletCampaigns")
 
   @@map("admins")
 }
@@ -82,92 +85,96 @@ model AppSetting {
 }
 
 model Customer {
-  id                  Int               @id @default(autoincrement())
-  uhid                String?           @unique @db.VarChar(20)
-  name                String?
-  email               String?           @unique
-  phone               String?           @unique
-  password            String?
-  dateOfBirth         DateTime?         @map("date_of_birth")
-  gender              String?
-  isActive            Boolean           @default(false) @map("is_active")
-  createdAt           DateTime          @default(now()) @map("created_at")
-  activationToken     String?           @map("activation_token")
-  resetTokenHash      String?           @map("reset_token_hash")
-  resetTokenExpiresAt DateTime?         @map("reset_token_expires_at")
-  googleId            String?           @unique @map("google_id")
-  avatar              String?
-  loginMethod         LoginMethod       @default(email) @map("login_method")
-  corporateId         Int?              @map("corporate_id")
-  department          String?
-  employeeId          String?           @map("employee_id")
-  location            String?
-  role                Role              @default(USER)
-  couponUsage         CouponUsage[]
-  addresses           CustomerAddress[]
-  corporate           Corporate?        @relation("CorporateEmployees", fields: [corporateId], references: [id])
-  assignedPackages    EmployeePackage[]
-  familyMembers       FamilyMember[]
-  onsiteEntries       OnsiteEntry[]
-  orders              Order[]
-  campaignRecipients  EmailCampaignRecipient[]
+  id                   Int                      @id @default(autoincrement())
+  uhid                 String?                  @unique @db.VarChar(20)
+  name                 String?
+  email                String?                  @unique
+  phone                String?                  @unique
+  password             String?
+  dateOfBirth          DateTime?                @map("date_of_birth")
+  gender               String?
+  isActive             Boolean                  @default(false) @map("is_active")
+  createdAt            DateTime                 @default(now()) @map("created_at")
+  activationToken      String?                  @map("activation_token")
+  resetTokenHash       String?                  @map("reset_token_hash")
+  resetTokenExpiresAt  DateTime?                @map("reset_token_expires_at")
+  googleId             String?                  @unique @map("google_id")
+  avatar               String?
+  loginMethod          LoginMethod              @default(email) @map("login_method")
+  corporateId          Int?                     @map("corporate_id")
+  department           String?
+  employeeId           String?                  @map("employee_id")
+  location             String?
+  role                 Role                     @default(USER)
+  couponUsage          CouponUsage[]
+  addresses            CustomerAddress[]
+  corporate            Corporate?               @relation("CorporateEmployees", fields: [corporateId], references: [id])
+  assignedPackages     EmployeePackage[]
+  familyMembers        FamilyMember[]
+  onsiteEntries        OnsiteEntry[]
+  orders               Order[]
+  campaignRecipients   EmailCampaignRecipient[]
+  walletAccount        WalletAccount?
+  walletTransactions   WalletTransaction[]
+  walletCreditLots     WalletCreditLot[]
+  walletCampaignAwards WalletCampaignAward[]
 
   @@map("customers")
 }
 
 model NewsletterSubscriber {
-  id                Int                     @id @default(autoincrement())
-  email             String                  @unique
-  name              String?
-  status            NewsletterStatus        @default(SUBSCRIBED)
-  unsubscribeToken  String                  @unique @map("unsubscribe_token")
-  source            String?                 @db.VarChar(50)
-  subscribedAt      DateTime                @default(now()) @map("subscribed_at")
-  unsubscribedAt    DateTime?               @map("unsubscribed_at")
-  lastEmailSentAt   DateTime?               @map("last_email_sent_at")
-  createdAt         DateTime                @default(now()) @map("created_at")
-  updatedAt         DateTime                @updatedAt @map("updated_at")
+  id                 Int                      @id @default(autoincrement())
+  email              String                   @unique
+  name               String?
+  status             NewsletterStatus         @default(SUBSCRIBED)
+  unsubscribeToken   String                   @unique @map("unsubscribe_token")
+  source             String?                  @db.VarChar(50)
+  subscribedAt       DateTime                 @default(now()) @map("subscribed_at")
+  unsubscribedAt     DateTime?                @map("unsubscribed_at")
+  lastEmailSentAt    DateTime?                @map("last_email_sent_at")
+  createdAt          DateTime                 @default(now()) @map("created_at")
+  updatedAt          DateTime                 @updatedAt @map("updated_at")
   campaignRecipients EmailCampaignRecipient[]
 
   @@map("newsletter_subscribers")
 }
 
 model EmailCampaign {
-  id                 Int                     @id @default(autoincrement())
-  subject            String
-  templateName       String?                 @map("template_name")
-  contentHtml        String                  @map("content_html")
-  audienceType       CampaignAudienceType    @map("audience_type")
-  personalize        Boolean                 @default(false)
-  totalRecipients    Int                     @default(0) @map("total_recipients")
-  sentCount          Int                     @default(0) @map("sent_count")
-  failedCount        Int                     @default(0) @map("failed_count")
-  unsubscribedSkipped Int                    @default(0) @map("unsubscribed_skipped")
-  status             CampaignStatus          @default(DRAFT)
-  startedAt          DateTime?               @map("started_at")
-  completedAt        DateTime?               @map("completed_at")
-  createdAt          DateTime                @default(now()) @map("created_at")
-  updatedAt          DateTime                @updatedAt @map("updated_at")
-  recipients         EmailCampaignRecipient[]
+  id                  Int                      @id @default(autoincrement())
+  subject             String
+  templateName        String?                  @map("template_name")
+  contentHtml         String                   @map("content_html")
+  audienceType        CampaignAudienceType     @map("audience_type")
+  personalize         Boolean                  @default(false)
+  totalRecipients     Int                      @default(0) @map("total_recipients")
+  sentCount           Int                      @default(0) @map("sent_count")
+  failedCount         Int                      @default(0) @map("failed_count")
+  unsubscribedSkipped Int                      @default(0) @map("unsubscribed_skipped")
+  status              CampaignStatus           @default(DRAFT)
+  startedAt           DateTime?                @map("started_at")
+  completedAt         DateTime?                @map("completed_at")
+  createdAt           DateTime                 @default(now()) @map("created_at")
+  updatedAt           DateTime                 @updatedAt @map("updated_at")
+  recipients          EmailCampaignRecipient[]
 
   @@map("email_campaigns")
 }
 
 model EmailCampaignRecipient {
-  id              Int                    @id @default(autoincrement())
-  campaignId      Int                    @map("campaign_id")
-  subscriberId    Int?                   @map("subscriber_id")
-  customerId      Int?                   @map("customer_id")
+  id              Int                     @id @default(autoincrement())
+  campaignId      Int                     @map("campaign_id")
+  subscriberId    Int?                    @map("subscriber_id")
+  customerId      Int?                    @map("customer_id")
   email           String
   name            String?
   status          CampaignRecipientStatus @default(PENDING)
-  providerMessage String?                @map("provider_message")
-  errorMessage    String?                @map("error_message")
-  sentAt          DateTime?              @map("sent_at")
-  createdAt       DateTime               @default(now()) @map("created_at")
-  campaign        EmailCampaign          @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  subscriber      NewsletterSubscriber?  @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
-  customer        Customer?              @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  providerMessage String?                 @map("provider_message")
+  errorMessage    String?                 @map("error_message")
+  sentAt          DateTime?               @map("sent_at")
+  createdAt       DateTime                @default(now()) @map("created_at")
+  campaign        EmailCampaign           @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  subscriber      NewsletterSubscriber?   @relation(fields: [subscriberId], references: [id], onDelete: SetNull)
+  customer        Customer?               @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
   @@index([campaignId, status])
   @@index([email])
@@ -467,53 +474,173 @@ model CouponUsage {
   @@map("coupon_usage")
 }
 
+model WalletAccount {
+  id            Int                 @id @default(autoincrement())
+  customerId    Int                 @unique @map("customer_id")
+  balance       Decimal             @default(0.00) @db.Decimal(12, 2)
+  totalCredited Decimal             @default(0.00) @map("total_credited") @db.Decimal(12, 2)
+  totalDebited  Decimal             @default(0.00) @map("total_debited") @db.Decimal(12, 2)
+  totalExpired  Decimal             @default(0.00) @map("total_expired") @db.Decimal(12, 2)
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  customer      Customer            @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transactions  WalletTransaction[]
+  creditLots    WalletCreditLot[]
+
+  @@map("wallet_accounts")
+}
+
+model WalletTransaction {
+  id               Int                   @id @default(autoincrement())
+  walletId         Int                   @map("wallet_id")
+  customerId       Int                   @map("customer_id")
+  type             WalletTransactionType
+  sourceType       WalletSourceType      @map("source_type")
+  amount           Decimal               @db.Decimal(12, 2)
+  balanceAfter     Decimal               @map("balance_after") @db.Decimal(12, 2)
+  description      String?
+  expiresAt        DateTime?             @map("expires_at")
+  orderId          Int?                  @map("order_id")
+  campaignId       Int?                  @map("campaign_id")
+  createdByAdminId Int?                  @map("created_by_admin_id")
+  metadata         Json?
+  createdAt        DateTime              @default(now()) @map("created_at")
+  wallet           WalletAccount         @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  customer         Customer              @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order            Order?                @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  campaign         WalletCampaign?       @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdByAdmin   Admin?                @relation("AdminCreatedWalletTransactions", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  creditLots       WalletCreditLot[]     @relation("WalletTransactionLots")
+  campaignAward    WalletCampaignAward?
+  refunds          PaymentRefund[]
+
+  @@index([customerId, createdAt])
+  @@index([walletId, createdAt])
+  @@index([campaignId, createdAt])
+  @@map("wallet_transactions")
+}
+
+model WalletCreditLot {
+  id               Int                @id @default(autoincrement())
+  walletId         Int                @map("wallet_id")
+  customerId       Int                @map("customer_id")
+  transactionId    Int                @map("transaction_id")
+  campaignId       Int?               @map("campaign_id")
+  createdByAdminId Int?               @map("created_by_admin_id")
+  originalAmount   Decimal            @map("original_amount") @db.Decimal(12, 2)
+  remainingAmount  Decimal            @map("remaining_amount") @db.Decimal(12, 2)
+  expiresAt        DateTime?          @map("expires_at")
+  status           WalletCreditStatus @default(ACTIVE)
+  description      String?
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  wallet           WalletAccount      @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  customer         Customer           @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  transaction      WalletTransaction  @relation("WalletTransactionLots", fields: [transactionId], references: [id], onDelete: Cascade)
+  campaign         WalletCampaign?    @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  createdByAdmin   Admin?             @relation("AdminCreatedWalletCreditLots", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, status, expiresAt])
+  @@index([customerId, status, expiresAt])
+  @@map("wallet_credit_lots")
+}
+
+model WalletCampaign {
+  id                 Int                       @id @default(autoincrement())
+  name               String
+  code               String?                   @unique
+  description        String?
+  triggerType        WalletCampaignTriggerType @map("trigger_type")
+  status             WalletCampaignStatus      @default(DRAFT)
+  rewardAmount       Decimal                   @map("reward_amount") @db.Decimal(12, 2)
+  rewardValidityDays Int                       @default(30) @map("reward_validity_days")
+  startDate          DateTime                  @map("start_date")
+  endDate            DateTime?                 @map("end_date")
+  rules              Json?
+  totalAwards        Int                       @default(0) @map("total_awards")
+  totalAwardAmount   Decimal                   @default(0.00) @map("total_award_amount") @db.Decimal(12, 2)
+  lastRunAt          DateTime?                 @map("last_run_at")
+  lastRunNote        String?                   @map("last_run_note")
+  createdByAdminId   Int?                      @map("created_by_admin_id")
+  createdAt          DateTime                  @default(now()) @map("created_at")
+  updatedAt          DateTime                  @updatedAt @map("updated_at")
+  createdByAdmin     Admin?                    @relation("AdminCreatedWalletCampaigns", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  transactions       WalletTransaction[]
+  creditLots         WalletCreditLot[]
+  awards             WalletCampaignAward[]
+
+  @@index([status, startDate, endDate])
+  @@map("wallet_campaigns")
+}
+
+model WalletCampaignAward {
+  id                  Int               @id @default(autoincrement())
+  campaignId          Int               @map("campaign_id")
+  customerId          Int               @map("customer_id")
+  orderId             Int?              @map("order_id")
+  walletTransactionId Int               @unique @map("wallet_transaction_id")
+  awardKey            String            @unique @map("award_key")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  campaign            WalletCampaign    @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer            Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order               Order?            @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  walletTransaction   WalletTransaction @relation(fields: [walletTransactionId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, customerId])
+  @@index([customerId, createdAt])
+  @@map("wallet_campaign_awards")
+}
+
 model Order {
-  id                     Int                 @id @default(autoincrement())
-  orderNumber            String?             @unique @map("order_number")
-  patientDob             DateTime?           @map("patient_dob")
-  patientUHID            String?             @map("patient_uhid")
-  patientType            String?             @map("patient_type")
-  patientRelation        String?             @map("patient_relation")
-  userId                 Int                 @map("user_id")
-  labId                  Int?                @map("lab_id")
-  addressId              Int?                @map("address_id")
-  associateId            Int?                @map("associate_id")
-  collectionType         String?             @map("collection_type")
-  preferredDate          DateTime?           @map("preferred_date")
-  preferredTimeSlot      String?             @map("preferred_time_slot")
-  totalAmount            Decimal?            @map("total_amount") @db.Decimal(10, 2)
-  discountAmount         Decimal             @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
-  homeCollectionCharges  Decimal             @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
-  finalAmount            Decimal?            @map("final_amount") @db.Decimal(10, 2)
-  paymentMode            String?             @map("payment_mode")
-  paymentStatus          String?             @map("payment_status")
-  bookingDate            DateTime            @default(now()) @map("booking_date")
-  createdAt              DateTime            @default(now()) @map("created_at")
-  bookingSource          OrderBookingSource  @default(Customer) @map("booking_source")
-  status                 OrderStatus         @default(PENDING)
-  collectionInstructions String?             @map("collection_instructions")
-  couponId               Int?                @map("coupon_id")
-  isReportSharedWithCorp Boolean             @default(false) @map("is_report_shared_with_corp")
-  packageId              Int?                @map("package_id")
-  patientGender          String?             @map("patient_gender")
-  patientName            String              @map("patient_name")
-  patientPhone           String?             @map("patient_phone")
-  technicianId           Int?                @map("technician_id")
-  onsiteLabName          String?             @map("onsite_lab_name")
+  id                     Int                   @id @default(autoincrement())
+  orderNumber            String?               @unique @map("order_number")
+  patientDob             DateTime?             @map("patient_dob")
+  patientUHID            String?               @map("patient_uhid")
+  patientType            String?               @map("patient_type")
+  patientRelation        String?               @map("patient_relation")
+  userId                 Int                   @map("user_id")
+  labId                  Int?                  @map("lab_id")
+  addressId              Int?                  @map("address_id")
+  associateId            Int?                  @map("associate_id")
+  collectionType         String?               @map("collection_type")
+  preferredDate          DateTime?             @map("preferred_date")
+  preferredTimeSlot      String?               @map("preferred_time_slot")
+  totalAmount            Decimal?              @map("total_amount") @db.Decimal(10, 2)
+  discountAmount         Decimal               @default(0.00) @map("discount_amount") @db.Decimal(10, 2)
+  homeCollectionCharges  Decimal               @default(0.00) @map("home_collection_charges") @db.Decimal(10, 2)
+  finalAmount            Decimal?              @map("final_amount") @db.Decimal(10, 2)
+  walletAmountUsed       Decimal               @default(0.00) @map("wallet_amount_used") @db.Decimal(10, 2)
+  paymentMode            String?               @map("payment_mode")
+  paymentStatus          String?               @map("payment_status")
+  bookingDate            DateTime              @default(now()) @map("booking_date")
+  createdAt              DateTime              @default(now()) @map("created_at")
+  bookingSource          OrderBookingSource    @default(Customer) @map("booking_source")
+  status                 OrderStatus           @default(PENDING)
+  collectionInstructions String?               @map("collection_instructions")
+  couponId               Int?                  @map("coupon_id")
+  isReportSharedWithCorp Boolean               @default(false) @map("is_report_shared_with_corp")
+  packageId              Int?                  @map("package_id")
+  patientGender          String?               @map("patient_gender")
+  patientName            String                @map("patient_name")
+  patientPhone           String?               @map("patient_phone")
+  technicianId           Int?                  @map("technician_id")
+  onsiteLabName          String?               @map("onsite_lab_name")
   onsiteEntry            OnsiteEntry?
   activities             OrderActivity[]
   items                  OrderItem[]
   reportSummary          OrderReportSummary?
   reports                OrderReport[]
   refunds                PaymentRefund[]
-  address                CustomerAddress?    @relation(fields: [addressId], references: [id])
-  associate              Associate?          @relation(fields: [associateId], references: [id])
-  coupon                 Coupon?             @relation(fields: [couponId], references: [id])
-  lab                    Lab?                @relation(fields: [labId], references: [id])
-  package                Package?            @relation(fields: [packageId], references: [id])
-  technician             Technician?         @relation(fields: [technicianId], references: [id])
-  customer               Customer            @relation(fields: [userId], references: [id])
+  address                CustomerAddress?      @relation(fields: [addressId], references: [id])
+  associate              Associate?            @relation(fields: [associateId], references: [id])
+  coupon                 Coupon?               @relation(fields: [couponId], references: [id])
+  lab                    Lab?                  @relation(fields: [labId], references: [id])
+  package                Package?              @relation(fields: [packageId], references: [id])
+  technician             Technician?           @relation(fields: [technicianId], references: [id])
+  customer               Customer              @relation(fields: [userId], references: [id])
   payments               Payment[]
+  walletTransactions     WalletTransaction[]
+  walletCampaignAwards   WalletCampaignAward[]
 
   @@index([userId, status])
   @@index([userId, createdAt])
@@ -540,22 +667,22 @@ model OrderItem {
 }
 
 model Payment {
-  id            Int      @id @default(autoincrement())
-  orderId       Int      @map("order_id")
-  method        String
-  transactionId String?  @map("transaction_id")
-  amount        Decimal  @db.Decimal(10, 2)
-  status        String   @default("verified")
-  paymentType   String   @default("PAYMENT") @map("payment_type")
-  gateway       String?
-  refundedAmount Decimal @default(0.00) @map("refunded_amount") @db.Decimal(10, 2)
-  receivedByAdminId Int? @map("received_by_admin_id")
-  notes         String?
-  paymentDate   DateTime @default(now()) @map("payment_date")
-  createdAt     DateTime @default(now()) @map("created_at")
-  order         Order    @relation(fields: [orderId], references: [id])
-  receivedByAdmin Admin? @relation("PaymentReceivedByAdmin", fields: [receivedByAdminId], references: [id], onDelete: SetNull)
-  refunds       PaymentRefund[]
+  id                Int             @id @default(autoincrement())
+  orderId           Int             @map("order_id")
+  method            String
+  transactionId     String?         @map("transaction_id")
+  amount            Decimal         @db.Decimal(10, 2)
+  status            String          @default("verified")
+  paymentType       String          @default("PAYMENT") @map("payment_type")
+  gateway           String?
+  refundedAmount    Decimal         @default(0.00) @map("refunded_amount") @db.Decimal(10, 2)
+  receivedByAdminId Int?            @map("received_by_admin_id")
+  notes             String?
+  paymentDate       DateTime        @default(now()) @map("payment_date")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  order             Order           @relation(fields: [orderId], references: [id])
+  receivedByAdmin   Admin?          @relation("PaymentReceivedByAdmin", fields: [receivedByAdminId], references: [id], onDelete: SetNull)
+  refunds           PaymentRefund[]
 
   @@index([orderId, paymentDate])
   @@index([status])
@@ -563,22 +690,25 @@ model Payment {
 }
 
 model PaymentRefund {
-  id               Int          @id @default(autoincrement())
-  orderId          Int          @map("order_id")
-  paymentId        Int?         @map("payment_id")
-  amount           Decimal      @db.Decimal(10, 2)
-  reason           String
-  mode             String       @default("Manual")
-  transactionId    String?      @map("transaction_id")
-  notes            String?
-  status           RefundStatus @default(INITIATED)
-  createdByAdminId Int?         @map("created_by_admin_id")
-  processedAt      DateTime?    @map("processed_at")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
-  order            Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  payment          Payment?     @relation(fields: [paymentId], references: [id], onDelete: SetNull)
-  createdByAdmin   Admin?       @relation("RefundCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
+  id                  Int                @id @default(autoincrement())
+  orderId             Int                @map("order_id")
+  paymentId           Int?               @map("payment_id")
+  amount              Decimal            @db.Decimal(10, 2)
+  reason              String
+  mode                String             @default("Manual")
+  transactionId       String?            @map("transaction_id")
+  notes               String?
+  status              RefundStatus       @default(INITIATED)
+  destination         RefundDestination  @default(SOURCE)
+  walletTransactionId Int?               @unique @map("wallet_transaction_id")
+  createdByAdminId    Int?               @map("created_by_admin_id")
+  processedAt         DateTime?          @map("processed_at")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  order               Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payment             Payment?           @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  walletTransaction   WalletTransaction? @relation(fields: [walletTransactionId], references: [id], onDelete: SetNull)
+  createdByAdmin      Admin?             @relation("RefundCreatedByAdmin", fields: [createdByAdminId], references: [id], onDelete: SetNull)
 
   @@index([orderId, status])
   @@index([createdAt])
@@ -586,20 +716,20 @@ model PaymentRefund {
 }
 
 model OrderReport {
-  id                   Int      @id @default(autoincrement())
-  encrypted            Boolean  @default(true)
-  iv                   Bytes?
-  authTag              Bytes?   @map("auth_tag")
-  createdAt            DateTime @default(now()) @map("created_at")
-  orderId              Int      @map("order_id")
-  reportType           String?  @map("report_type")
-  storagePath          String?  @map("storage_path")
-  uploadedBy           String?  @map("uploaded_by")
-  fileName             String?  @map("file_name")
-  fileSizeBytes        Int?     @map("file_size_bytes")
-  optimizedSizeBytes   Int?     @map("optimized_size_bytes")
-  coveredOrderItemIds  Int[]    @default([]) @map("covered_order_item_ids")
-  order                Order    @relation(fields: [orderId], references: [id])
+  id                  Int      @id @default(autoincrement())
+  encrypted           Boolean  @default(true)
+  iv                  Bytes?
+  authTag             Bytes?   @map("auth_tag")
+  createdAt           DateTime @default(now()) @map("created_at")
+  orderId             Int      @map("order_id")
+  reportType          String?  @map("report_type")
+  storagePath         String?  @map("storage_path")
+  uploadedBy          String?  @map("uploaded_by")
+  fileName            String?  @map("file_name")
+  fileSizeBytes       Int?     @map("file_size_bytes")
+  optimizedSizeBytes  Int?     @map("optimized_size_bytes")
+  coveredOrderItemIds Int[]    @default([]) @map("covered_order_item_ids")
+  order               Order    @relation(fields: [orderId], references: [id])
 
   @@index([orderId, reportType])
   @@map("order_reports")
@@ -973,4 +1103,46 @@ enum RefundStatus {
   PROCESSED
   FAILED
   CANCELLED
+}
+
+enum RefundDestination {
+  SOURCE
+  WALLET
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+  EXPIRE
+  ADJUSTMENT
+}
+
+enum WalletSourceType {
+  ADMIN_MANUAL
+  CAMPAIGN
+  ORDER_REWARD
+  ORDER_PAYMENT
+  REFUND_REVERSAL
+  SYSTEM_EXPIRY
+  SYSTEM_ADJUSTMENT
+}
+
+enum WalletCreditStatus {
+  ACTIVE
+  CONSUMED
+  EXPIRED
+}
+
+enum WalletCampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum WalletCampaignTriggerType {
+  CORPORATE_BENEFIT_ORDER
+  NEW_USER_FIRST_ORDER
+  MANUAL_SEGMENT
+  DATE_RANGE_ORDER
 }

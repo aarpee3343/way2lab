@@ -25,7 +25,7 @@ export async function GET(req: Request) {
     }
 
     // Validate user
-    if (!user.id || !user.email) {
+    if (!user.id) {
       throw new AppError('Invalid user data', 'INVALID_USER', 400);
     }
 
@@ -57,12 +57,13 @@ export async function GET(req: Request) {
       latestCompletedOrder,
       members,
       user: {
-        name: profile?.name || user.name,
-        email: profile?.email || user.email,
-        phone: profile?.phone,
-        gender: profile?.gender,
-        dateOfBirth: profile?.dateOfBirth,
-        createdAt: profile?.createdAt,
+        name: profile?.name ?? user.name ?? null,
+        email: profile?.email ?? user.email ?? null,
+        phone: profile?.phone ?? null,
+        uhid: profile?.uhid ?? null,
+        gender: profile?.gender ?? null,
+        dateOfBirth: profile?.dateOfBirth ?? null,
+        createdAt: profile?.createdAt ?? null,
       },
     };
 

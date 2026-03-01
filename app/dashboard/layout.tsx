@@ -10,6 +10,7 @@ import {
   FileText, 
   MapPin, 
   Users, 
+  Wallet,
   LogOut, 
   Menu, 
   X,
@@ -63,6 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
     { name: 'My Orders', href: '/dashboard/orders', icon: ClipboardList },
     { name: 'Reports', href: '/dashboard/reports', icon: FileText },
+    { name: 'Wallet', href: '/dashboard/wallet', icon: Wallet },
     { name: 'Addresses', href: '/dashboard/addresses', icon: MapPin },
     { name: 'Family Members', href: '/dashboard/family', icon: Users },
   ];

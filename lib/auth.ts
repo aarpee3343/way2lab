@@ -5,8 +5,8 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export interface AuthUser {
   id: number;
-  email: string;
-  name: string;
+  email?: string | null;
+  name?: string | null;
   role: string;
   corporateId?: number | null;
 }

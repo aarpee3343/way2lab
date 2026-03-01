@@ -95,7 +95,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: 'OTP Expired' }, { status: 400 });
       }
 
-      await prisma.emailVerificationCode.delete({ where: { email: normalizedEmail } }).catch(() => null);
       return NextResponse.json({ success: true, message: 'Verified' });
     }
 

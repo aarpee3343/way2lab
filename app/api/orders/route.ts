@@ -8,6 +8,7 @@ import { OrderStatus } from '@prisma/client';
 import { generateOrderNumber } from '@/lib/utils/generators';
 import { applyCouponDiscount, toMoney } from '@/lib/pricing';
 import { getIdempotentResponse, storeIdempotentResponse } from '@/lib/idempotency';
+import { debitWallet } from '@/lib/wallet';
 
 const normalizeGender = (input?: string | null): string => {
   if (!input) return 'Other';
@@ -83,6 +84,7 @@ export async function POST(req: Request) {
     }
 
     const { labId, items, patientDetails, addressId, schedule, paymentMode, paymentStatus, couponCode } = body;
+    const walletAmountToUse = Math.max(0, Number(body?.walletAmountToUse || 0));
 
     // Basic Validation
     if (!Array.isArray(items) || items.length === 0) {
@@ -357,6 +359,10 @@ export async function POST(req: Request) {
       resolvedPaymentStatus = 'CORPORATE_BILLING';
     }
 
+    const requestedWalletAmount = corporatePaysForBenefit || resolvedFinalAmount <= 0
+      ? 0
+      : Math.min(walletAmountToUse, resolvedFinalAmount);
+
     const order = await prisma.$transaction(async (tx) => {
       const orderNumber = await generateOrderNumber({ category: orderCategory, tx });
 
@@ -368,6 +374,25 @@ export async function POST(req: Request) {
         patientDob = patientDob || customer?.dateOfBirth;
         patientGender = patientGender || customer?.gender;
         patientUHID = patientUHID || customer?.uhid;
+      }
+
+      const walletAmountUsed = requestedWalletAmount > 0
+        ? toMoney(requestedWalletAmount)
+        : 0;
+
+      if (!corporatePaysForBenefit) {
+        if (resolvedFinalAmount <= 0) {
+          resolvedPaymentMode = 'No Payment Required';
+          resolvedPaymentStatus = 'Paid';
+        } else if (walletAmountUsed >= resolvedFinalAmount) {
+          resolvedPaymentMode = 'Wallet';
+          resolvedPaymentStatus = 'Paid';
+        } else if (walletAmountUsed > 0) {
+          resolvedPaymentMode = 'Wallet + Pay Upon Service';
+          resolvedPaymentStatus = 'Partial';
+        } else {
+          resolvedPaymentStatus = resolvedPaymentStatus || 'Pending';
+        }
       }
 
       const newOrder = await tx.order.create({
@@ -394,6 +419,7 @@ export async function POST(req: Request) {
           discountAmount: resolvedDiscountAmount,
           homeCollectionCharges: resolvedHomeCollection,
           finalAmount: resolvedFinalAmount,
+          walletAmountUsed,
           
           couponId,
           paymentMode: resolvedPaymentMode,
@@ -415,6 +441,30 @@ export async function POST(req: Request) {
         include: { items: true }
       });
 
+      if (walletAmountUsed > 0) {
+        await debitWallet(tx, {
+          customerId: user.id,
+          amount: walletAmountUsed,
+          sourceType: 'ORDER_PAYMENT',
+          description: `Wallet used for order ${orderNumber}`,
+          orderId: newOrder.id,
+          metadata: {
+            orderNumber
+          }
+        });
+
+        await tx.payment.create({
+          data: {
+            orderId: newOrder.id,
+            amount: walletAmountUsed,
+            method: 'Wallet',
+            status: 'verified',
+            paymentType: 'WALLET_PAYMENT',
+            notes: `Wallet payment applied during checkout for ${orderNumber}`
+          }
+        });
+      }
+
       // Update Coupon Usage
       if (couponId) {
         await tx.coupon.update({
@@ -429,6 +479,9 @@ export async function POST(req: Request) {
       }
 
       return newOrder;
+    }, {
+      maxWait: 10000,
+      timeout: 20000,
     });
 
     try {

@@ -50,6 +50,7 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
     orderId: '',
     amount: '',
     reason: '',
+    destination: 'WALLET',
     transactionId: '',
     notes: '',
   });
@@ -121,6 +122,7 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
         amount,
         reason: refundForm.reason,
         mode: 'Corporate Manual',
+        destination: refundForm.destination as 'SOURCE' | 'WALLET',
         transactionId: refundForm.transactionId || undefined,
         notes: refundForm.notes || undefined,
       });
@@ -133,6 +135,7 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
         ...prev,
         amount: '',
         reason: '',
+        destination: 'WALLET',
         transactionId: '',
         notes: '',
       }));
@@ -305,6 +308,13 @@ export default function CorporateFinancePage({ params }: { params: Promise<{ id:
               value={refundForm.reason}
               onChange={(e) => setRefundForm((p) => ({ ...p, reason: e.target.value }))}
             />
+            <Select
+              value={refundForm.destination}
+              onChange={(e) => setRefundForm((p) => ({ ...p, destination: e.target.value }))}
+            >
+              <option value="WALLET">Wallet Refund</option>
+              <option value="SOURCE">Source Refund</option>
+            </Select>
             <Input
               placeholder="Refund Transaction ID"
               value={refundForm.transactionId}

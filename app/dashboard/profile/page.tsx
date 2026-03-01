@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { 
   User, Mail, Phone, Calendar, 
   Save, Loader2, AlertCircle, 
-  Shield, Key, Camera
+  Shield, Key, Camera, BadgeCheck
 } from 'lucide-react';
 import { toast } from '@/lib/safe-toast';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -49,9 +49,7 @@ export default function ProfilePage() {
       newErrors.name = 'Name is required';
     }
 
-    if (!user.email?.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(user.email)) {
+    if (user.email?.trim() && !/\S+@\S+\.\S+/.test(user.email)) {
       newErrors.email = 'Email is invalid';
     }
 
@@ -114,6 +112,36 @@ export default function ProfilePage() {
     }
   };
 
+  const profileStatusItems = [
+    {
+      label: 'UHID',
+      value: dashboardUser?.uhid || 'Not assigned yet',
+      ready: Boolean(dashboardUser?.uhid)
+    },
+    {
+      label: 'Phone',
+      value: user.phone || 'Missing',
+      ready: Boolean(user.phone)
+    },
+    {
+      label: 'Email',
+      value: user.email || 'Missing',
+      ready: Boolean(user.email)
+    },
+    {
+      label: 'Gender',
+      value: user.gender || 'Missing',
+      ready: Boolean(user.gender)
+    },
+    {
+      label: 'Date of Birth',
+      value: user.dateOfBirth ? getISTDateInputValue(new Date(user.dateOfBirth)) : 'Missing',
+      ready: Boolean(user.dateOfBirth)
+    }
+  ];
+  const completedItems = profileStatusItems.filter((item) => item.ready).length;
+  const completionPercent = Math.round((completedItems / profileStatusItems.length) * 100);
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* HEADER */}
@@ -137,6 +165,24 @@ export default function ProfilePage() {
         {/* LEFT COLUMN - PROFILE CARD */}
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-slate-200 p-6 sticky top-6">
+            <div className="mb-6 rounded-xl bg-slate-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium text-slate-600">Profile Completion</p>
+                  <p className="text-2xl font-bold text-slate-900">{completionPercent}%</p>
+                </div>
+                <div className="text-right text-xs text-slate-500">
+                  {completedItems} of {profileStatusItems.length} fields ready
+                </div>
+              </div>
+              <div className="mt-3 h-2 rounded-full bg-slate-200">
+                <div
+                  className="h-2 rounded-full bg-blue-600 transition-all"
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+            </div>
+
             {/* AVATAR */}
             <div className="flex flex-col items-center mb-6">
               <div className="relative mb-4">
@@ -147,12 +193,37 @@ export default function ProfilePage() {
                   <Camera size={16} className="text-slate-600" />
                 </button>
               </div>
-              <h2 className="text-xl font-bold text-slate-800">{user.name || 'User'}</h2>
-              <p className="text-sm text-slate-500">{user.email || 'user@example.com'}</p>
+              <h2 className="text-xl font-bold text-slate-800">{user.name || 'Profile incomplete'}</h2>
+              <p className="text-sm text-slate-500">{user.email || user.phone || 'Add your contact details'}</p>
             </div>
 
             {/* STATS */}
             <div className="space-y-4">
+              <div className="p-4 bg-slate-50 rounded-xl">
+                <p className="text-sm text-slate-600 mb-3">Account Identity</p>
+                <div className="space-y-2">
+                  {profileStatusItems.map((item) => (
+                    <div key={item.label} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="text-slate-500">{item.label}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-medium ${item.ready ? 'text-slate-800' : 'text-amber-700'}`}>
+                          {item.value}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                            item.ready
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-amber-100 text-amber-700'
+                          }`}
+                        >
+                          {item.ready ? 'Available' : 'Missing'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <div className="p-4 bg-slate-50 rounded-xl">
                 <p className="text-sm text-slate-600 mb-1">Member Since</p>
                 <p className="font-medium text-slate-800">
@@ -168,8 +239,8 @@ export default function ProfilePage() {
               <div className="p-4 bg-slate-50 rounded-xl">
                 <p className="text-sm text-slate-600 mb-1">Account Status</p>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                  <span className="font-medium text-emerald-700">Active</span>
+                  <BadgeCheck size={16} className="text-emerald-600" />
+                  <span className="font-medium text-emerald-700">Active Customer Account</span>
                 </div>
               </div>
             </div>
@@ -224,7 +295,7 @@ export default function ProfilePage() {
                     className={`w-full px-4 py-3 bg-white border rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.email ? 'border-red-300' : 'border-slate-200'
                     }`}
-                    placeholder="you@example.com"
+                    placeholder="Add email address"
                   />
                   {errors.email && (
                     <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
@@ -247,7 +318,7 @@ export default function ProfilePage() {
                     className={`w-full px-4 py-3 bg-white border rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
                       errors.phone ? 'border-red-300' : 'border-slate-200'
                     }`}
-                    placeholder="+91 98765 43210"
+                    placeholder="Enter 10-digit phone number"
                   />
                   {errors.phone && (
                     <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
